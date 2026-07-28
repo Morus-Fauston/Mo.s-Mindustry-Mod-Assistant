@@ -1,0 +1,32 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 50.0,
+  "range": 368.0,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 250,
+      "item": "graphite"
+    },
+    {
+      "amount": 200,
+      "item": "silicon"
+    },
+    {
+      "amount": 100,
+      "item": "surge-alloy"
+    },
+    {
+      "amount": 40,
+      "item": "oxide"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "afflict"
+}

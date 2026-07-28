@@ -1,0 +1,136 @@
+{
+    "type": "ItemTurret",
+    "name": "轻机枪",
+ /*   "description": "向敌人发射普通子弹\n建议前期快速起防使用",
+    "details": "我其实是个很怀旧的人，我不会忘记她当初是我第一个炮塔",*/
+    "size": 2,
+    "health": 650,
+    "ammoPerShot": 1,
+    "range": 170,
+    "inaccuracy": 2,
+    "maxAmmo": 30,
+    "targetAir": true,
+    "recoil": 0.5,
+    "recoils": 2,
+    "shootCone": 25,
+        "consumes": {
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+    "shoot": {
+        "type": "ShootAlternate",
+        "barrels": 2,
+        "spread": 6.5
+    },
+    "ammoUseEffect": "casing2",
+    "targetGround": true,
+    "ammoTypes": {
+        "copper": {
+            "speed": 7.5,
+            "damage": 8,
+            "lifetime": 24,
+            "width": 6,
+            "height": 9,
+            "ammoMultiplier": 2,
+            "shootEffect": "shootBig",
+                        "reloadMultiplier": 1.5
+        },
+        "pyratite": {
+            "speed": 7.5,
+            "damage": 10,
+            "status": "burning",
+            "statusDuration": 180,
+            "lifetime": 24,
+            "backColor": "FF8C00",
+            "frontColor": "FFB90F",
+            "width": 6,
+            "height": 9,
+            "ammoMultiplier": 6,
+            "shootEffect": "shootBig"
+        },
+        "silicon": {
+                    "reloadMultiplier": 1.3,
+            "speed": 7.5,
+            "damage": 15,
+            "lifetime": 24,
+            "width": 6,
+            "height": 11,
+            "shootEffect": "shootBig",
+            "homingRange": 80,
+            "homingPower": 0.08,
+            "ammoMultiplier": 6
+        },
+        "graphite": {
+            "speed": 7.5,
+            "damage": 22,
+            "status": "freezing",
+            "statusDuration": 70,
+            "lifetime": 24,
+            "width": 7,
+            "height": 10,
+            "ammoMultiplier": 6,
+            "shootEffect": "shootBig"
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 35
+        },
+        {
+            "item": "lead",
+            "amount": 25
+        }
+        {
+            "item": "graphite",
+            "amount": 15
+        }
+    ],
+    "category": "turret",
+    "research": "近卫者铜管机枪",
+    "drawer": {
+        "type": "DrawTurret",
+        "parts": [
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 0,
+                "x": 0,
+                "y": 0,
+                "suffix": "-1",
+                "layer": 49.99,
+                "moveX": 0,
+                "moveY": 0,
+                "under": true,
+                "progress": "recoil",
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -1.5
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 1,
+                "x": 0,
+                "y": 0,
+                "suffix": "-3",
+                "layer": 49.99,
+                "moveX": 0,
+                "moveY": 0,
+                "under": true,
+                "progress": "recoil",
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -1.5
+                    }
+                ]
+            }
+        ]
+    }
+}

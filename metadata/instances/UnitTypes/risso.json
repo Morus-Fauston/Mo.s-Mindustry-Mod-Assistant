@@ -1,0 +1,17 @@
+{
+  "speed": 1.1,
+  "rotateSpeed": 3.3,
+  "drag": 0.13,
+  "accel": 0.4,
+  "hitSize": 10.0,
+  "health": 280.0,
+  "armor": 2.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "risso"
+}

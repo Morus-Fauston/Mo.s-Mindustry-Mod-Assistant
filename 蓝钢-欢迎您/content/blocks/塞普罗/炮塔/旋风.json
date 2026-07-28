@@ -1,0 +1,168 @@
+{
+    "type": "ItemTurret",
+    "name": "旋风",
+    "description": "向敌方战机发射高射炮弹",
+    "size": 3,
+    "health": 1180,
+    "ammoPerShot": 1,
+    "range": 250,
+    "reload": 5,
+    "inaccuracy": 4,
+    "ammoUseEffect": "casing2",
+    "consumes": {
+        "coolant": {
+            "amount": 0.06,
+            "optional": true
+        }
+    },
+    "rotateSpeed": 1.5,
+    "maxAmmo": 100,
+    "targetAir": true,
+    "targetGround": false,
+    "coolantMultiplier": 2,
+    "recoil": 0.5,
+    "shoot": {
+        "type": "ShootBarrel",
+        "barrels": [
+            -3.6,
+            4,
+            0,
+            3.6,
+            4,
+            0
+        ]
+    },
+    "recoils": 2,
+    "drawer": {
+        "type": "DrawTurret",
+        "parts": [
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 0,
+                "x": 0,
+                "y": 3,
+                "suffix": "-1",
+                "layer": 49.99,
+                "moveX": 0,
+                "moveY": 0,
+                "under": true,
+                "progress": "recoil",
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -2
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 1,
+                "x": 0,
+                "y": 3,
+                "suffix": "-2",
+                "layer": 49.99,
+                "moveX": 0,
+                "moveY": 0,
+                "under": true,
+                "progress": "recoil",
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -2
+                    }
+                ]
+            }
+        ]
+    },
+    "ammoTypes": {
+        "blast-compound": {
+            "type": "FlakBulletType",
+            "collidesGround": false,
+            "reloadMultiplier": 1,
+            "speed": 5,
+            "damage": 2,
+            "knockback": 0.8,
+            "lifetime": 50,
+            "width": 6,
+            "height": 9,
+            "ammoMultiplier": 10,
+            "shootEffect": "shootBig",
+            "status": "blasted",
+            "splashDamageRadius": 40,
+            "splashDamage": 35
+        },
+        "scrap": {
+            "type": "FlakBulletType",
+            "collidesGround": false,
+            "reloadMultiplier": 1,
+            "speed": 9,
+            "damage": 2,
+            "knockback": 0.2,
+            "lifetime": 30,
+            "width": 6,
+            "height": 9,
+            "ammoMultiplier": 10,
+            "shootEffect": "shootBig",
+            "splashDamageRadius": 14,
+            "splashDamage": 14
+        },
+        "metaglass": {
+            "type": "FlakBulletType",
+            "collidesGround": false,
+            "reloadMultiplier": 0.8,
+            "speed": 9,
+            "damage": 3,
+            "knockback": 0.2,
+            "lifetime": 30,
+            "width": 6,
+            "height": 9,
+            "ammoMultiplier": 10,
+            "shootEffect": "shootBig",
+            "splashDamageRadius": 18,
+            "splashDamage": 20,
+            "fragBullets": 5,
+            "fragBullet": {
+                "type": "BasicBulletType",
+                "width": 5,
+                "height": 12,
+                "collidesGround": false,
+                "speed": 1.5,
+                "damage": 6,
+                "lifetime": 20,
+                "despawnEffect": "none",
+                "hitEffect": "none"
+            }
+        },
+        "lead": {
+            "type": "FlakBulletType",
+            "collidesGround": false,
+            "reloadMultiplier": 1,
+            "speed": 9,
+            "damage": 4,
+            "knockback": 0.2,
+            "lifetime": 30,
+            "width": 6,
+            "height": 9,
+            "ammoMultiplier": 10,
+            "shootEffect": "shootBig",
+            "splashDamageRadius": 20,
+            "splashDamage": 17
+        }
+    },
+    "requirements": [
+        {
+            "item": "lead",
+            "amount": 35
+        },
+        {
+            "item": "copper",
+            "amount": 35
+        },
+        "silicon/25",
+        "graphite/25"
+    ],
+    "category": "turret",
+    "research": "scatter"
+}

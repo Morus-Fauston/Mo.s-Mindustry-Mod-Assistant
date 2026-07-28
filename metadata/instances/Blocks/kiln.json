@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 60,
+      "item": "copper"
+    },
+    {
+      "amount": 30,
+      "item": "lead"
+    },
+    {
+      "amount": 30,
+      "item": "graphite"
+    }
+  ],
+  "category": "crafting",
+  "buildTime": -1.0,
+  "name": "kiln"
+}

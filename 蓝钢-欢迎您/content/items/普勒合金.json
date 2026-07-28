@@ -1,0 +1,13 @@
+{
+    "name": "普勒合金",
+    "description": "最硬的材料，比蓝钢更硬一点",
+    "details": "一种受到打击就会放电的重工业关键材料",
+    "cost": 5,
+    "color": "ABB67CFF",
+    "charge": 0.8,
+    "hardness": 8,
+    "radioactivity": 0,
+    "explosiveness": 0,
+    "flammability": 0,
+    "research": "蓝钢"
+}

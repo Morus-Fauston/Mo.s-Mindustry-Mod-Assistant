@@ -1,0 +1,28 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 6,
+  "requirements": [
+    {
+      "amount": 200,
+      "item": "lead"
+    },
+    {
+      "amount": 100,
+      "item": "metaglass"
+    },
+    {
+      "amount": 150,
+      "item": "silicon"
+    },
+    {
+      "amount": 75,
+      "item": "phase-fabric"
+    }
+  ],
+  "category": "logic",
+  "buildTime": -1.0,
+  "name": "large-logic-display"
+}

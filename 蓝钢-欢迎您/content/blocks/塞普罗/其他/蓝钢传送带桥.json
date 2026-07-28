@@ -1,0 +1,31 @@
+{
+    "type": "ItemBridge",
+    "name": "蓝钢传送带桥",
+    "description": "可跨越任何建筑或地形传输物品\n可跨越40个格",
+    "health": 100,
+    "range": 40,
+    "transportTime": 1,
+    "consumes": {
+        "power": 1
+    },
+    "requirements": [
+        {
+            "item": "phase-fabric",
+            "amount": 10
+        },
+        {
+            "item": "silicon",
+            "amount": 10
+        },
+        {
+            "item": "蓝钢",
+            "amount": 15
+        },
+        {
+            "item": "lead",
+            "amount": 10
+        }
+    ],
+    "category": "distribution",
+    "research": "phase-conveyor"
+}

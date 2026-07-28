@@ -1,0 +1,36 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 7.0,
+  "range": 260.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 900,
+      "item": "copper"
+    },
+    {
+      "amount": 300,
+      "item": "graphite"
+    },
+    {
+      "amount": 250,
+      "item": "thorium"
+    },
+    {
+      "amount": 175,
+      "item": "plastanium"
+    },
+    {
+      "amount": 250,
+      "item": "surge-alloy"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "spectre"
+}

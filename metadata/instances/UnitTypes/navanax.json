@@ -1,0 +1,17 @@
+{
+  "speed": 0.65,
+  "rotateSpeed": 1.1,
+  "drag": 0.17,
+  "accel": 0.2,
+  "hitSize": 58.0,
+  "health": 20000.0,
+  "armor": 16.0,
+  "range": -1.0,
+  "buildSpeed": 3.5,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "navanax"
+}

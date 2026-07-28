@@ -1,0 +1,36 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 5,
+  "requirements": [
+    {
+      "amount": 500,
+      "item": "silicon"
+    },
+    {
+      "amount": 150,
+      "item": "phase-fabric"
+    },
+    {
+      "amount": 200,
+      "item": "surge-alloy"
+    },
+    {
+      "amount": 750,
+      "item": "tungsten"
+    },
+    {
+      "amount": 150,
+      "item": "oxide"
+    },
+    {
+      "amount": 300,
+      "item": "carbide"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "neoplasia-reactor"
+}

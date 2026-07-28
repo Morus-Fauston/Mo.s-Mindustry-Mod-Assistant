@@ -1,0 +1,36 @@
+{
+  "targetAir": false,
+  "targetGround": true,
+  "reload": 600.0,
+  "range": 1350.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 400,
+      "item": "graphite"
+    },
+    {
+      "amount": 450,
+      "item": "silicon"
+    },
+    {
+      "amount": 500,
+      "item": "tungsten"
+    },
+    {
+      "amount": 100,
+      "item": "oxide"
+    },
+    {
+      "amount": 200,
+      "item": "carbide"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "scathe"
+}

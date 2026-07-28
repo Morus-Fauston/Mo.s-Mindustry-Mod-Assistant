@@ -1,0 +1,24 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 200,
+      "item": "copper"
+    },
+    {
+      "amount": 120,
+      "item": "lead"
+    },
+    {
+      "amount": 90,
+      "item": "silicon"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "additive-reconstructor"
+}

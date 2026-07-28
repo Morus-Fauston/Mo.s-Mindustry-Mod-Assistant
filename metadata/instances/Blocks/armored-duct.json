@@ -1,0 +1,20 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 140,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 2,
+      "item": "beryllium"
+    },
+    {
+      "amount": 1,
+      "item": "tungsten"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "armored-duct"
+}

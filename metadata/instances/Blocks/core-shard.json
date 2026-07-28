@@ -1,0 +1,20 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 1100,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 1000,
+      "item": "copper"
+    },
+    {
+      "amount": 800,
+      "item": "lead"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "core-shard"
+}

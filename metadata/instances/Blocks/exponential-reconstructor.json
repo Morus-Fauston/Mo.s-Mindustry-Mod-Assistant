@@ -1,0 +1,36 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 7,
+  "requirements": [
+    {
+      "amount": 2000,
+      "item": "lead"
+    },
+    {
+      "amount": 2000,
+      "item": "titanium"
+    },
+    {
+      "amount": 750,
+      "item": "thorium"
+    },
+    {
+      "amount": 1000,
+      "item": "silicon"
+    },
+    {
+      "amount": 450,
+      "item": "plastanium"
+    },
+    {
+      "amount": 600,
+      "item": "phase-fabric"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "exponential-reconstructor"
+}

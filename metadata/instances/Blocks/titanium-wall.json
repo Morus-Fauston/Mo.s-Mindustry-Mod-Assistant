@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 440,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 6,
+      "item": "titanium"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "titanium-wall"
+}

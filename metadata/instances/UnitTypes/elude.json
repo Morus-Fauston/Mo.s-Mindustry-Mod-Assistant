@@ -1,0 +1,17 @@
+{
+  "speed": 1.8,
+  "rotateSpeed": 5.0,
+  "drag": 0.07,
+  "accel": 0.09,
+  "hitSize": 11.0,
+  "health": 600.0,
+  "armor": 1.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": 0,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "elude"
+}

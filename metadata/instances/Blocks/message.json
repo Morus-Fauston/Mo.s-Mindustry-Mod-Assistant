@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 5,
+      "item": "copper"
+    },
+    {
+      "amount": 5,
+      "item": "graphite"
+    }
+  ],
+  "category": "logic",
+  "buildTime": -1.0,
+  "name": "message"
+}

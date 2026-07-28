@@ -1,0 +1,24 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 30,
+      "item": "copper"
+    },
+    {
+      "amount": 30,
+      "item": "lead"
+    },
+    {
+      "amount": 20,
+      "item": "silicon"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "repair-point"
+}

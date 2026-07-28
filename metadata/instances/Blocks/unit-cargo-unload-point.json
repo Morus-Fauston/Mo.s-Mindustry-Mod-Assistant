@@ -1,0 +1,20 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 60,
+      "item": "silicon"
+    },
+    {
+      "amount": 60,
+      "item": "tungsten"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "unit-cargo-unload-point"
+}

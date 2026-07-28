@@ -1,0 +1,25 @@
+{
+  "range": 200.0,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 60,
+      "item": "thorium"
+    },
+    {
+      "amount": 150,
+      "item": "silicon"
+    },
+    {
+      "amount": 40,
+      "item": "oxide"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "build-tower"
+}

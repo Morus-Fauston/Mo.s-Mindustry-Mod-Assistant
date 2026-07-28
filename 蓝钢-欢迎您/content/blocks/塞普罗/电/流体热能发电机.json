@@ -1,0 +1,39 @@
+{
+    "type": "ConsumeGenerator",
+    "name": "流体热能发电机",
+    "description": "与热能发电机相似，输入矿渣即发电",
+    "size": 2,
+    "health": 300,
+    "itemCapacity": 20,
+    "hasLiquids": true,
+    "hasItems": true,
+    "powerProduction": 10,
+    "generateEffect": "reactorsmoke",
+    "consumes": {
+        "liquid": {
+            "liquid": "slag",
+            "amount": 0.10
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 55
+        },
+        {
+            "item": "lead",
+            "amount": 55
+        },
+        {
+            "item": "metaglass",
+            "amount": 65
+        },
+        {
+            "item": "silicon",
+            "amount": 45
+        }
+    ],
+    "category": "power",
+    "research": "thermal-generator",
+    "itemDuration": 720
+}

@@ -1,0 +1,10 @@
+{
+  "color": "#ff795eff",
+  "explosiveness": 1.2,
+  "flammability": 0.4,
+  "radioactivity": 0.0,
+  "charge": 0.0,
+  "hardness": 0,
+  "cost": 1.0,
+  "name": "blast-compound"
+}

@@ -1,0 +1,30 @@
+{
+  "range": 440.0,
+  "reload": 200.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 125,
+      "item": "lead"
+    },
+    {
+      "amount": 125,
+      "item": "titanium"
+    },
+    {
+      "amount": 50,
+      "item": "thorium"
+    },
+    {
+      "amount": 75,
+      "item": "silicon"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "mass-driver"
+}

@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 50,
+      "item": "copper"
+    },
+    {
+      "amount": 120,
+      "item": "lead"
+    },
+    {
+      "amount": 80,
+      "item": "silicon"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "ground-factory"
+}

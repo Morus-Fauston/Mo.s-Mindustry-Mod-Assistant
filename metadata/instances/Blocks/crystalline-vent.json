@@ -1,0 +1,11 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 1,
+  "requirements": [],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "crystalline-vent"
+}

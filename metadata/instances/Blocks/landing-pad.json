@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 200,
+      "item": "copper"
+    },
+    {
+      "amount": 100,
+      "item": "graphite"
+    },
+    {
+      "amount": 100,
+      "item": "titanium"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "landing-pad"
+}

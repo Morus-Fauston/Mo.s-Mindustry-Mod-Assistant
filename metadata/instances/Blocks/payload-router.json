@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 10,
+      "item": "copper"
+    },
+    {
+      "amount": 15,
+      "item": "graphite"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "payload-router"
+}

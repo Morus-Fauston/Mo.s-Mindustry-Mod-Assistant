@@ -1,0 +1,124 @@
+{
+    "type": "powerTurret",
+    "name": "希光",
+    "description": "向敌人快速发射有间隔的密集穿甲电荷弹",
+    "health": 1200,
+    "size": 7,
+    "range": 640,
+    "reload": 800,
+    "recoil": 4,
+    "recoilTime": 30,
+    "cooldownTime": 400,
+    "shake": 3,
+    "rotateSpeed": 1.5,
+    "inaccuracy": 1,
+    "minWarmup": 0.85,
+    "shootWarmupSpeed": 0.08,
+    "heatColor": "F3E979FF",
+    "shoot": {
+        "type": "ShootBarrel",
+        "shots": 230,
+        "shotDelay": 2,
+        "barrels": [
+            0,
+            -10,
+            0,
+            -8,
+            -5,
+            0,
+            8,
+            -5,
+            0
+        ]
+    },
+    "canOverdrive": false,
+    "shootSound": "shootEclipse",
+    "ammoPerShot": 1,
+    "liquidCapacity": 90,
+    "consumes": {
+        "power": 10,
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+    "coolantMultiplier": 0.5,
+    "shootType": {
+        "damage": 45,
+        "speed": 20,
+        "drag": 0.005,
+        "lifetime": 36,
+        "pierce": true,
+        "pierceBuilding": true,
+        "pierceCap": 2,
+        "statusDuration": 120,
+        "width": 5,
+        "height": 75,
+        "shootEffect": "shootBig",
+        "smokeEffect": "shootBigSmoke",
+        "ammoMultiplier": 1,
+        "frontColor": "F3E979FF",
+        "backColor": "F3E979FF",
+        "trailLength": 2,
+        "trailWidth": 1.2,
+        "trailColor": "F3E979FF",
+        "despawnEffect": {
+            "type": "ParticleEffect",
+            "particles": 8,
+            "line": true,
+            "strokeFrom": 2,
+            "strokeTo": 0,
+            "lenFrom": 5,
+            "lenTo": 0,
+            "length": 20,
+            "baseLength": 20,
+            "lifetime": 10,
+            "colorFrom": "F3E979FF",
+            "colorTo": "F3E979FF",
+            "cone": 8
+        }
+    },
+    "requirements": [
+                "copper/770",
+        {
+            "item": "lead",
+            "amount": 760
+        },
+        "普勒合金/750",
+        "silicon/650",
+        "蓝钢/650",
+        "graphite/550",
+        "thorium/575",
+        "plastanium/375"
+    ],
+    "category": "turret",
+    "research": "邃灵",
+    "drawer": {
+        "type": "DrawTurret",
+        "parts": [
+            {
+                "type": "RegionPart",
+                "heatColor": "F3E979FF",
+                "mirror": true,
+                "under": false,
+                "x": 0,
+                "y": 3,
+                "suffix": "-1",
+                "moveX": -3,
+                "moveY": -1
+            },
+            {
+                "type": "RegionPart",
+                "heatColor": "F3E979FF",
+                "mirror": true,
+                "under": false,
+                "x": 0,
+                "y": 3,
+                "suffix": "-2",
+                "moveX": -3,
+                "moveY": -1,
+                "moveRot": 20
+            }
+        ]
+    }
+}

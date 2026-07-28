@@ -1,0 +1,28 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 6000,
+  "size": 5,
+  "requirements": [
+    {
+      "amount": 8000,
+      "item": "copper"
+    },
+    {
+      "amount": 8000,
+      "item": "lead"
+    },
+    {
+      "amount": 4000,
+      "item": "thorium"
+    },
+    {
+      "amount": 5000,
+      "item": "silicon"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "core-nucleus"
+}

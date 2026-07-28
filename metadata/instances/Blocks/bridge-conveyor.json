@@ -1,0 +1,21 @@
+{
+  "range": 4,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 6,
+      "item": "copper"
+    },
+    {
+      "amount": 6,
+      "item": "lead"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "bridge-conveyor"
+}

@@ -1,0 +1,68 @@
+{
+    "type": "GenericCrafter",
+    "description": "将废料融化为矿渣",
+    "name": "大型熔炉",
+    "outputLiquid": {
+        "liquid": "slag",
+        "amount": 1
+    },
+    "size": 2,
+    "hasPower": true,
+    "hasLiquids": true,
+    "hasItems": true,
+    "craftTime": 10,
+    "itemCapacity": 16,
+    "liquidCapacity": 120,
+    "health": 400,
+    "updateEffect": "smeltsmoke",
+    "consumes": {
+        "power": 1,
+        "items": {
+            "items": [
+                {
+                    "item": "scrap",
+                    "amount": 4
+                }
+            ]
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 65
+        },
+        {
+            "item": "lead",
+            "amount": 65
+        },
+        {
+            "item": "metaglass",
+            "amount": 65
+        },
+        {
+            "item": "graphite",
+            "amount": 65
+        },
+        {
+            "item": "silicon",
+            "amount": 65
+        }
+    ],
+    "drawer": {
+        "type": "DrawMulti",
+        "drawers": [
+            {
+                "type": "DrawRegion",
+                "suffix": "-bottom"
+            },
+            {
+                "type": "DrawFlame",
+                "flameRadius": 0,
+                "flameRadiusIn": 0
+            },
+            "DrawDefault"
+        ]
+    },
+    "category": "crafting",
+    "research": "melter"
+}

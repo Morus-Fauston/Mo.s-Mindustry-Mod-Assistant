@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": 90,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 15,
+      "item": "lead"
+    },
+    {
+      "amount": 5,
+      "item": "graphite"
+    }
+  ],
+  "category": "crafting",
+  "buildTime": -1.0,
+  "name": "incinerator"
+}

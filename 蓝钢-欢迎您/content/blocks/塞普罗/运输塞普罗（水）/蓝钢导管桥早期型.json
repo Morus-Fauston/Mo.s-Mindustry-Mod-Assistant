@@ -1,0 +1,25 @@
+{
+    "type": "LiquidBridge",
+    "name": "蓝钢导管桥早期型",
+    "description": "跨越任意地形或建筑物传输液体\n比普通导管桥范围更大",
+    "health": 360,
+    "range": 10,
+    "liquidCapacity": 100,
+    "hasPower": false,
+    "requirements": [
+        {
+            "item": "metaglass",
+            "amount": 5
+        },
+        {
+            "item": "蓝钢",
+            "amount": 5
+        },
+        {
+            "item": "silicon",
+            "amount": 5
+        }
+    ],
+    "category": "liquid",
+    "research": "bridge-conduit"
+}

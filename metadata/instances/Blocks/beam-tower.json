@@ -1,0 +1,25 @@
+{
+  "range": 23,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 10,
+      "item": "silicon"
+    },
+    {
+      "amount": 30,
+      "item": "beryllium"
+    },
+    {
+      "amount": 10,
+      "item": "oxide"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "beam-tower"
+}

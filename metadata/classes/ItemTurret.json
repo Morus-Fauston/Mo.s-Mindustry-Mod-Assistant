@@ -1,0 +1,15 @@
+{
+  "name": "ItemTurret",
+  "fullName": "mindustry.world.blocks.defense.turrets.ItemTurret",
+  "parent": "Turret",
+  "fields": [
+    {
+      "name": "ammoTypes",
+      "javaType": "ObjectMap",
+      "mode": "INLINE_OBJECT",
+      "nullable": false,
+      "default": null,
+      "inlineType": "ObjectMap"
+    }
+  ]
+}

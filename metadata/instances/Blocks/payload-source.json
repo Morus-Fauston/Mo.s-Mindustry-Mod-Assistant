@@ -1,0 +1,11 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 5,
+  "requirements": [],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "payload-source"
+}

@@ -1,0 +1,24 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 100,
+      "item": "lead"
+    },
+    {
+      "amount": 50,
+      "item": "metaglass"
+    },
+    {
+      "amount": 50,
+      "item": "silicon"
+    }
+  ],
+  "category": "logic",
+  "buildTime": -1.0,
+  "name": "logic-display"
+}

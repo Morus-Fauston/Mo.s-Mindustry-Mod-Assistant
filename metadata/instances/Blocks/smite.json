@@ -1,0 +1,36 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 100.0,
+  "range": 300.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 5,
+  "requirements": [
+    {
+      "amount": 800,
+      "item": "silicon"
+    },
+    {
+      "amount": 300,
+      "item": "phase-fabric"
+    },
+    {
+      "amount": 400,
+      "item": "surge-alloy"
+    },
+    {
+      "amount": 200,
+      "item": "oxide"
+    },
+    {
+      "amount": 500,
+      "item": "carbide"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "smite"
+}

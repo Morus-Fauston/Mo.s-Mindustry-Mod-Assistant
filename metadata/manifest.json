@@ -1,0 +1,33 @@
+{
+  "gameVersion": "159",
+  "extractorVersion": "1.0",
+  "generatedAt": "2026-07-28T18:52:08.545036800Z",
+  "classes": [
+    "Content",
+    "MappableContent",
+    "UnlockableContent",
+    "UnitType",
+    "Block",
+    "Weapon",
+    "BulletType",
+    "Wall",
+    "BaseTurret",
+    "ReloadTurret",
+    "Turret",
+    "ItemTurret"
+  ],
+  "instanceCategories": [
+    "Items",
+    "UnitTypes",
+    "StatusEffects",
+    "Blocks",
+    "Liquids"
+  ],
+  "instanceCounts": {
+    "Items": 22,
+    "UnitTypes": 68,
+    "StatusEffects": 23,
+    "Blocks": 446,
+    "Liquids": 11
+  }
+}

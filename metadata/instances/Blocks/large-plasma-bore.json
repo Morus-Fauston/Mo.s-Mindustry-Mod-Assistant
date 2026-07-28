@@ -1,0 +1,29 @@
+{
+  "range": 6,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 100,
+      "item": "silicon"
+    },
+    {
+      "amount": 100,
+      "item": "beryllium"
+    },
+    {
+      "amount": 70,
+      "item": "tungsten"
+    },
+    {
+      "amount": 25,
+      "item": "oxide"
+    }
+  ],
+  "category": "production",
+  "buildTime": -1.0,
+  "name": "large-plasma-bore"
+}

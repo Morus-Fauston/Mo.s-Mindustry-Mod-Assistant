@@ -1,0 +1,57 @@
+{
+    "craftTime": 600,
+    "health": 450,
+    "size": 4,
+    "hasLiquids": true,
+    "hasPower": true,
+    "hasItems": true,
+    "drawer": {
+        "type": "DrawMulti",
+        "drawers": [
+            "DrawDefault",
+            "DrawCultivator",
+            {
+                "type": "DrawRegion",
+                "suffix": "-top"
+            }
+        ]
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 65
+        },
+        {
+            "item": "lead",
+            "amount": 65
+        },
+        {
+            "amount": 65,
+            "item": "silicon"
+        },
+        "titanium/65",
+        {
+            "amount": 65,
+            "item": "metaglass"
+        }
+    ],
+    "description": "笨重效率不高，需要大量电力，但输出多\n培养孢子需要耐心",
+    "liquidCapacity": 200,
+    "consumes": {
+        "power": 18,
+        "liquid": {
+            "liquid": "water",
+            "amount": 1.67
+        }
+    },
+    "itemCapacity": 200,
+    "name": "重型培养机",
+    "outputItem": {
+        "item": "spore-pod",
+        "amount": 100
+    },
+    "attribute": "spores",
+    "type": "AttributeCrafter",
+    "category": "production",
+    "research": "cultivator"
+}

@@ -1,0 +1,8 @@
+类型。模组名字 - 东西名字.name = 
+类型。模组名字 - 东西名字.description =
+类型。模组名字 - 东西名字.details =
+
+item - 物品
+block - 方块
+liquid - 液体
+planet - 星球

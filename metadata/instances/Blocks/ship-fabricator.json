@@ -1,0 +1,20 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 250,
+      "item": "silicon"
+    },
+    {
+      "amount": 200,
+      "item": "beryllium"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "ship-fabricator"
+}

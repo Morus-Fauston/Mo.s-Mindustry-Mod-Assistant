@@ -1,0 +1,28 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 35,
+      "item": "copper"
+    },
+    {
+      "amount": 30,
+      "item": "graphite"
+    },
+    {
+      "amount": 20,
+      "item": "titanium"
+    },
+    {
+      "amount": 30,
+      "item": "silicon"
+    }
+  ],
+  "category": "production",
+  "buildTime": -1.0,
+  "name": "laser-drill"
+}

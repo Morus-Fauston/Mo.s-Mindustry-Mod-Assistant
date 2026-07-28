@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 65,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 1,
+      "item": "copper"
+    },
+    {
+      "amount": 1,
+      "item": "lead"
+    },
+    {
+      "amount": 1,
+      "item": "titanium"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "titanium-conveyor"
+}

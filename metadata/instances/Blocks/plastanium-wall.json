@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 500,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 2,
+      "item": "metaglass"
+    },
+    {
+      "amount": 5,
+      "item": "plastanium"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "plastanium-wall"
+}

@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 8,
+      "item": "graphite"
+    },
+    {
+      "amount": 3,
+      "item": "surge-alloy"
+    }
+  ],
+  "category": "crafting",
+  "buildTime": -1.0,
+  "name": "small-heat-redirector"
+}

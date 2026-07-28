@@ -1,0 +1,49 @@
+{
+    "name": "巨型钻油机",
+    "description": "使用大量电力来钻取大量石油",
+        "details": "都是科幻游戏了，石油？我直接抽！（狗头保护）",
+    "type": "SolidPump",
+    "health": 800,
+    "size": 4,
+    "floating": true,
+    "hasPower": true,
+    "hasLiquids": true,
+    "liquidCapacity": 120,
+    "canOverdrive": false,
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 120
+        },
+        {
+            "item": "lead",
+            "amount": 120
+        },
+        {
+            "item": "graphite",
+            "amount": 80
+        },
+        {
+            "item": "thorium",
+            "amount": 80
+        },
+        {
+            "item": "metaglass",
+            "amount": 60
+        },
+        {
+            "item": "蓝钢",
+            "amount": 60
+        }
+    ],
+    "consumes": {
+        "power": 20
+    },
+    "pumpAmount": 2,
+    "rotateSpeed": 0.8,
+    "result": "oil",
+    "baseEfficiency": 1,
+    "attribute": "oil",
+    "category": "production",
+    "research": "oil-extractor"
+}

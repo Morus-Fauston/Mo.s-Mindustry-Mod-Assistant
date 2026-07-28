@@ -1,0 +1,36 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": 900,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 500,
+      "item": "lead"
+    },
+    {
+      "amount": 250,
+      "item": "metaglass"
+    },
+    {
+      "amount": 400,
+      "item": "graphite"
+    },
+    {
+      "amount": 100,
+      "item": "thorium"
+    },
+    {
+      "amount": 300,
+      "item": "silicon"
+    },
+    {
+      "amount": 250,
+      "item": "surge-alloy"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "impact-reactor"
+}

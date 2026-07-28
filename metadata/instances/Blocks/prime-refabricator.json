@@ -1,0 +1,28 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 5,
+  "requirements": [
+    {
+      "amount": 250,
+      "item": "thorium"
+    },
+    {
+      "amount": 400,
+      "item": "silicon"
+    },
+    {
+      "amount": 200,
+      "item": "tungsten"
+    },
+    {
+      "amount": 200,
+      "item": "oxide"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "prime-refabricator"
+}

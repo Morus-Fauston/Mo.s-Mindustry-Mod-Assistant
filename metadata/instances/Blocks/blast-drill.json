@@ -1,0 +1,28 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 65,
+      "item": "copper"
+    },
+    {
+      "amount": 50,
+      "item": "titanium"
+    },
+    {
+      "amount": 75,
+      "item": "thorium"
+    },
+    {
+      "amount": 60,
+      "item": "silicon"
+    }
+  ],
+  "category": "production",
+  "buildTime": -1.0,
+  "name": "blast-drill"
+}

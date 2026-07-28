@@ -1,0 +1,17 @@
+{
+  "speed": 2.6,
+  "rotateSpeed": 15.0,
+  "drag": 0.05,
+  "accel": 0.1,
+  "hitSize": 9.0,
+  "health": 400.0,
+  "armor": 0.0,
+  "range": 130.0,
+  "buildSpeed": 0.5,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 3.5,
+  "name": "poly"
+}

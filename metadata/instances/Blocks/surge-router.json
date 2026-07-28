@@ -1,0 +1,20 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": 130,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 5,
+      "item": "surge-alloy"
+    },
+    {
+      "amount": 1,
+      "item": "tungsten"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "surge-router"
+}

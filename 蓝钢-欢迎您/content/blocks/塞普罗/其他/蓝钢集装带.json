@@ -1,0 +1,41 @@
+{
+    "consumes": {
+        "power": 0.2
+    },
+    "outputRouter": false,
+    "hasPower": true,
+    "consumesPower": true,
+    "conductivePower": true,
+    "underBullets": true,
+    "type": "StackConveyor",
+    "name": "蓝钢集装带",
+    "description": "将物品打包40个物品\n电力可以加速传送带",
+    "health": 120,
+    "requirements": [
+        {
+            "item": "蓝钢",
+            "amount": 4
+        },
+        {
+            "item": "lead",
+            "amount": 3
+        },
+        {
+            "item": "graphite",
+            "amount": 2
+        },
+        {
+            "item": "titanium",
+            "amount": 2
+        },
+        {
+            "item": "silicon",
+            "amount": 2
+        }
+    ],
+    "category": "distribution",
+    "research": "plastanium-conveyor",
+    "speed": 0.6,
+    "baseEfficiency": 0.1,
+    "itemCapacity": 40
+}

@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 4500,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 1000,
+      "item": "graphite"
+    },
+    {
+      "amount": 1000,
+      "item": "silicon"
+    },
+    {
+      "amount": 800,
+      "item": "beryllium"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "core-bastion"
+}

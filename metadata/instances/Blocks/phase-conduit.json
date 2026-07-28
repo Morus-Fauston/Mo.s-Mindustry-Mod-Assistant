@@ -1,0 +1,29 @@
+{
+  "range": 12,
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 20,
+      "item": "metaglass"
+    },
+    {
+      "amount": 10,
+      "item": "titanium"
+    },
+    {
+      "amount": 7,
+      "item": "silicon"
+    },
+    {
+      "amount": 5,
+      "item": "phase-fabric"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "phase-conduit"
+}

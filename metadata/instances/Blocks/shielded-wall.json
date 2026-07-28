@@ -1,0 +1,24 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": 4160,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 20,
+      "item": "phase-fabric"
+    },
+    {
+      "amount": 12,
+      "item": "surge-alloy"
+    },
+    {
+      "amount": 12,
+      "item": "beryllium"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "shielded-wall"
+}

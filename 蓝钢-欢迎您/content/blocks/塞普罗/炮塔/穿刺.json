@@ -1,0 +1,137 @@
+{
+    "drawer": {
+        "type": "DrawTurret",
+        "parts": [
+            {
+                "layer": 110,
+                "progress": "reload",
+                "x": 0,
+                "y": 2.2,
+                "type": "RegionPart",
+                "suffix": "-转",
+                "mirror": false,
+                "under": true,
+                "moveRot": 1080
+            }
+        ]
+    },
+    "details": "630近防炮不是730近防炮\n因为我们虽子弹30mm但只有根6管子（狗头）",
+    "name": "穿刺",
+    "type": "ItemTurret",
+    "description": "近防炮",
+    "size": 4,
+    "recoil": 0,
+    "rotateSpeed": 4,
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 320
+        },
+        {
+            "item": "lead",
+            "amount": 320
+        },
+        {
+            "item": "蓝钢",
+            "amount": 220
+        },
+        {
+            "item": "silicon",
+            "amount": 220
+        },
+        {
+            "item": "graphite",
+            "amount": 180
+        },
+        {
+            "item": "titanium",
+            "amount": 200
+        }
+    ],
+    "consumes": {
+        "coolant": {
+            "amount": 0.01,
+            "optional": true
+        }
+    },
+    "category": "turret",
+    "health": 1200,
+    "research": "旋风",
+    "range": 500,
+    "maxAmmo": 30,
+    "canOverdrive": false,
+    "coolantMultiplier": 0.4,
+    "ammoUseEffect": "casing3Double",
+    "ammoPerShot": 1,
+    "targetGround": false,
+    "targetAir": true,
+    "inaccuracy": 1,
+    "shootSound": "防空",
+    "reload": 2,
+    "shoot": {
+        "type": "ShootAlternate",
+        "shots": 6,
+        "barrels": 3,
+        "spread": 1
+    },
+    "ammoTypes": {
+        "copper": {
+            "pierceCap": 2,
+            "type": "BasicBulletType",
+            "collidesGround": false,
+            "lifetime": 50,
+            "speed": 11,
+            "damage": 3,
+            "hitSize": 4,
+            "drawSize": 40,
+            "drag": 0,
+            "pierce": true,
+            "ammoMultiplier": 1,
+            "recoil": 0,
+            "killShooter": false,
+            "knockback": 0,
+            "statusDuration": 100,
+            "reloadMultiplier": 1.5,
+            "splashDamageRadius": 8,
+            "splashDamage": 3
+        },
+        "graphite": {
+            "splashDamageRadius": 8,
+            "splashDamage": 6,
+            "type": "BasicBulletType",
+            "collidesGround": false,
+            "lifetime": 50,
+            "speed": 11,
+            "damage": 6,
+            "hitSize": 4,
+            "drawSize": 40,
+            "drag": 0,
+            "pierce": true,
+            "ammoMultiplier": 1,
+            "recoil": 0,
+            "killShooter": false,
+            "knockback": 0,
+            "statusDuration": 100,
+            "reloadMultiplier": 1
+        },
+        "thorium": {
+            "splashDamageRadius": 16,
+            "splashDamage": 10,
+            "reloadMultiplier": 2,
+            "collidesGround": false,
+            "type": "BasicBulletType",
+            "lifetime": 50,
+            "speed": 11,
+            "damage": 10,
+            "hitSize": 4,
+            "drawSize": 40,
+            "drag": 0,
+            "pierce": true,
+            "ammoMultiplier": 1,
+            "recoil": 0,
+            "killShooter": false,
+            "knockback": 0,
+            "statusDuration": 100
+        }
+    }
+}

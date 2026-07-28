@@ -1,0 +1,32 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 150,
+      "item": "copper"
+    },
+    {
+      "amount": 115,
+      "item": "lead"
+    },
+    {
+      "amount": 175,
+      "item": "graphite"
+    },
+    {
+      "amount": 115,
+      "item": "thorium"
+    },
+    {
+      "amount": 75,
+      "item": "silicon"
+    }
+  ],
+  "category": "production",
+  "buildTime": -1.0,
+  "name": "oil-extractor"
+}

@@ -1,0 +1,43 @@
+{
+    "type": "LaunchPad",
+    "name": "蓝钢发射台",
+    "description": "将物资发射向指定地区",
+    "health": 8080,
+    "size": 8,
+    "itemCapacity": 30000,
+    "launchTime":120,
+    "hasPower": true,
+        "liquidCapacity": 240,
+    "consumes": {
+        "power": 34
+"liquid": "oil/2"
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 3000
+        },
+        {
+            "item": "lead",
+            "amount": 3000
+        },
+        {
+            "item": "titanium",
+            "amount": 1000
+        },
+        {
+            "item": "silicon",
+            "amount": 1000
+        },
+        {
+            "item": "蓝钢",
+            "amount": 1500
+        },
+        {
+            "item": "surge-alloy",
+            "amount": 1000
+        }
+    ],
+    "category": "effect",
+    "research": "launch-pad"
+}

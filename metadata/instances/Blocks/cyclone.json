@@ -1,0 +1,28 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 10.0,
+  "range": 200.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 200,
+      "item": "copper"
+    },
+    {
+      "amount": 125,
+      "item": "titanium"
+    },
+    {
+      "amount": 80,
+      "item": "plastanium"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "cyclone"
+}

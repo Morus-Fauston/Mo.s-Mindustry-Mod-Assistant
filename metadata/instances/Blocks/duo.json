@@ -1,0 +1,20 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 20.0,
+  "range": 160.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 250,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 35,
+      "item": "copper"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "duo"
+}

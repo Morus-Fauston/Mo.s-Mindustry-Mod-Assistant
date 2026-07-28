@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 5,
+      "item": "copper"
+    },
+    {
+      "amount": 20,
+      "item": "lead"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "battery"
+}

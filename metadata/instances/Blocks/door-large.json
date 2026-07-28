@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 1600,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 24,
+      "item": "titanium"
+    },
+    {
+      "amount": 16,
+      "item": "silicon"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "door-large"
+}

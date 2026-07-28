@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 150,
+      "item": "silicon"
+    },
+    {
+      "amount": 180,
+      "item": "beryllium"
+    },
+    {
+      "amount": 60,
+      "item": "oxide"
+    }
+  ],
+  "category": "crafting",
+  "buildTime": -1.0,
+  "name": "atmospheric-concentrator"
+}

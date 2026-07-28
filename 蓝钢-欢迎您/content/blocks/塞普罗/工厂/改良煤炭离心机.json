@@ -1,0 +1,42 @@
+{
+    "type": "GenericCrafter",
+    "health": 180,
+    "name": "改良煤炭离心机",
+    "description": "将石油压缩为煤炭\n在原有的基础上进行改良，强化了材料运用率和输出与速度",
+    "outputItem": {
+        "item": "coal",
+        "amount": 2
+    },
+    "itemCapacity": 20,
+    "liquidCapacity": 48,
+    "size": 2,
+    "hasPower": true,
+    "hasLiquids": true,
+    "hasItems": true,
+    "craftTime": 24,
+    "updateEffect": "mine",
+    "consumes": {
+        "power": 1,
+        "liquid": {
+            "liquid": "oil",
+            "amount": 0.15,
+            "booster": false
+        }
+    },
+    "requirements": [
+        {
+            "item": "lead",
+            "amount": 40
+        },
+        {
+            "item": "graphite",
+            "amount": 50
+        },
+        {
+            "item": "titanium",
+            "amount": 30
+        }
+    ],
+    "category": "crafting",
+    "research": "coal-centrifuge"
+}

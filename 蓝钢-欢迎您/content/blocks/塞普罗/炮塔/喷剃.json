@@ -1,0 +1,76 @@
+{
+    "type": "PowerTurret",
+    "name": "喷剃",
+    "description": "向着敌方空军发射能量型分裂子弹\n只对空",
+    "targetAir": true,
+    "targetGround": false,
+    "health": 300,
+    "size": 2,
+    "shootSound": "shootReign",
+    "shake": 1,
+    "inaccuracy": 10,
+    "velocityRnd": 0.3,
+    "shoot": {
+        "shots": 30
+    },
+    "recoil": 2,
+    "shootEffect": "shootBig",
+    "shootType": {
+        "trailLength": 1,
+        "trailWidth": 2,
+        "trailColor": "87CEEB",
+        "frontColor": "87CEEB",
+        "backColor": "87CEEB",
+        "collidesGround": false,
+        "hitSound": "explosion",
+        "speed": 7.5,
+        "damage": 3,
+        "lifetime": 40,
+        "splashDamageRadius": 16,
+        "splashDamage": 55,
+        "width": 7,
+        "height": 9,
+        "shootEffect": "shootBig",
+        "despawnEffect": {
+            "type": "ParticleEffect",
+            "particles": 8,
+            "line": true,
+            "strokeFrom": 2,
+            "strokeTo": 0,
+            "lenFrom": 5,
+            "lenTo": 0,
+            "length": 20,
+            "baseLength": 20,
+            "lifetime": 10,
+            "colorFrom": "FFFFFF",
+            "colorTo": "87CEEB",
+            "cone": 8
+        }
+    },
+    "consumes": {
+        "power": 5,
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+    "reload": 20,
+    "rotateSpeed": 7,
+    "range": 250,
+    "category": "turret",
+    "research": "散碎",
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 90
+        },
+        {
+            "item": "titanium",
+            "amount": 80
+        },
+        {
+            "item": "silicon",
+            "amount": 80
+        }
+    ]
+}

@@ -1,0 +1,9 @@
+{
+  "color": "#596ab8ff",
+  "flammability": 0.0,
+  "temperature": 0.5,
+  "heatCapacity": 0.4,
+  "viscosity": 0.5,
+  "explosiveness": 0.0,
+  "name": "water"
+}

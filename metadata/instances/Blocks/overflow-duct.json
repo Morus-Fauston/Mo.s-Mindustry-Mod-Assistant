@@ -1,0 +1,20 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 90,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 8,
+      "item": "graphite"
+    },
+    {
+      "amount": 8,
+      "item": "beryllium"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "overflow-duct"
+}

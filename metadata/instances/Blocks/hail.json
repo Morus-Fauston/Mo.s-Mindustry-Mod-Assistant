@@ -1,0 +1,24 @@
+{
+  "targetAir": false,
+  "targetGround": true,
+  "reload": 60.0,
+  "range": 235.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 260,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 40,
+      "item": "copper"
+    },
+    {
+      "amount": 17,
+      "item": "graphite"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "hail"
+}

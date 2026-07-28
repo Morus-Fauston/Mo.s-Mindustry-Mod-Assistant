@@ -1,0 +1,110 @@
+{
+    "type": "ItemTurret",
+    "name": "独力",
+    "description": "向敌人发射大型穿甲弹\n比幽灵便宜，但伤相比较低",
+    "details": "“独力？”不他曾经叫“亡灵”\n敬那份热情！\n最后这是丐版幽灵（狗头）",
+    "health": 1300,
+    "size": 4,
+    "reload": 4.5,
+    "range": 300,
+    "maxAmmo": 60,
+    "canOverdrive": false,
+    "coolantMultiplier": 1,
+    "ammoUseEffect": "casing3Double",
+    "ammoPerShot": 1,
+    "targetGround": true,
+    "targetAir": true,
+    "liquidCapacity": 150,
+    "inaccuracy": 1,
+    "consumes": {
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+    "shootSound": "shootDiffuse",
+    "rotateSpeed": 4,
+    "ammoTypes": {
+        "copper": {
+            "speed": 10,
+            "damage": 19,
+            "reloadMultiplier": 1.6,
+            "lifetime": 35,
+            "width": 16,
+            "height": 20,
+            "ammoMultiplier": 1,
+            "shootEffect": "shootBig",
+            "smokeEffect": "shootBigSmoke"
+        },
+        "pyratite": {
+            "speed": 10,
+            "damage": 50,
+            "splashDamageRadius": 20,
+            "splashDamage": 20,
+            "knockback": 0.7,
+            "makeFire": true,
+            "status": "burning",
+            "statusDuration": 300,
+            "lifetime": 35,
+            "pierceCap": 1,
+            "backColor": "FF8C00",
+            "frontColor": "FFB90F",
+            "width": 16,
+            "height": 20,
+            "ammoMultiplier": 4,
+            "despawnEffect": "flakExplosionBig",
+            "hitEffect": "flakExplosionBig",
+            "shootEffect": "shootBig",
+            "smokeEffect": "shootBigSmoke"
+        },
+        "thorium": {
+            "speed": 10,
+            "damage": 60,
+            "lifetime": 35,
+            "pierce": true,
+            "pierceBuilding": true,
+            "pierceCap": 2,
+            "width": 18,
+            "height": 23,
+            "shootEffect": "shootBig",
+            "smokeEffect": "shootBigSmoke",
+            "ammoMultiplier": 2
+        },
+        "graphite": {
+            "speed": 10,
+            "damage": 40,
+            "knockback": 0.2,
+            "reloadMultiplier": 1.35,
+            "lifetime": 35,
+            "width": 16,
+            "height": 20,
+            "ammoMultiplier": 3,
+            "shootEffect": "shootBig",
+            "smokeEffect": "shootBigSmoke"
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 700
+        },
+        {
+            "item": "lead",
+            "amount": 650
+        },
+        {
+            "item": "graphite",
+            "amount": 300
+        },
+        {
+            "item": "thorium",
+            "amount": 200
+        },
+        {
+            "item": "silicon",
+            "amount": 200
+        }
+    ],
+    "category": "turret",
+    "research": "spectre"
+}

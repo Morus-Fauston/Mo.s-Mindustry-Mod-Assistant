@@ -1,0 +1,17 @@
+{
+  "range": 4,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 90,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 15,
+      "item": "beryllium"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "duct-bridge"
+}

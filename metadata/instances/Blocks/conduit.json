@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": 45,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 1,
+      "item": "metaglass"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "conduit"
+}

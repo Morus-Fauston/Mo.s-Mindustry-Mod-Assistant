@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 280,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 1,
+      "item": "metaglass"
+    },
+    {
+      "amount": 1,
+      "item": "thorium"
+    },
+    {
+      "amount": 1,
+      "item": "plastanium"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "armored-conveyor"
+}

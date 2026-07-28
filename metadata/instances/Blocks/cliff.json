@@ -1,0 +1,11 @@
+{
+  "size": 11.0,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "requirements": [],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "cliff"
+}

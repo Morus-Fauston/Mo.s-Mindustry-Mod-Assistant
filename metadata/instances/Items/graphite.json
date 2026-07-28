@@ -1,0 +1,10 @@
+{
+  "color": "#b2c6d2ff",
+  "explosiveness": 0.0,
+  "flammability": 0.0,
+  "radioactivity": 0.0,
+  "charge": 0.0,
+  "hardness": 0,
+  "cost": 1.0,
+  "name": "graphite"
+}

@@ -1,0 +1,17 @@
+{
+  "speed": 3.0,
+  "rotateSpeed": 15.0,
+  "drag": 0.05,
+  "accel": 0.1,
+  "hitSize": 8.0,
+  "health": 150.0,
+  "armor": 0.0,
+  "range": -1.0,
+  "buildSpeed": 0.5,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": 30,
+  "ammoCapacity": 1,
+  "mineSpeed": 6.5,
+  "name": "alpha"
+}

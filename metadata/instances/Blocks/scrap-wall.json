@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 240,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 6,
+      "item": "scrap"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "scrap-wall"
+}

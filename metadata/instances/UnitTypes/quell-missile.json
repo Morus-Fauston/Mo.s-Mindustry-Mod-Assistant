@@ -1,0 +1,17 @@
+{
+  "speed": 4.3,
+  "rotateSpeed": 2.5,
+  "drag": 0.3,
+  "accel": 0.5,
+  "hitSize": 6.0,
+  "health": 45.0,
+  "armor": 0.0,
+  "range": 6.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "quell-missile"
+}

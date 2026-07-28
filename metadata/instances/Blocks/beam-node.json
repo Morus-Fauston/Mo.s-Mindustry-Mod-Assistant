@@ -1,0 +1,17 @@
+{
+  "range": 10,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": 90,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 8,
+      "item": "beryllium"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "beam-node"
+}

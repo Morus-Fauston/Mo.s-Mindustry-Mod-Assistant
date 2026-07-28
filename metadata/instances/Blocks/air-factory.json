@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 60,
+      "item": "copper"
+    },
+    {
+      "amount": 70,
+      "item": "lead"
+    },
+    {
+      "amount": 60,
+      "item": "silicon"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "air-factory"
+}

@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 140,
+      "item": "graphite"
+    },
+    {
+      "amount": 220,
+      "item": "silicon"
+    },
+    {
+      "amount": 180,
+      "item": "tungsten"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "payload-unloader"
+}

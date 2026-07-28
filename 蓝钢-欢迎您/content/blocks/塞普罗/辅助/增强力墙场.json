@@ -1,0 +1,54 @@
+{
+    "name": "增强力墙场",
+    "description": "生成一面力场墙",
+    "type": "ForceProjector",
+    "health": 2500,
+    "size": 3,
+    "radius": 360,
+    "phaseUseTime": 150,
+    "phaseRadiusBoost": 0.3,
+    "itemCapacity": 20,
+    "liquidCapacity": 300,
+    "shieldHealth": 9000,
+    "cooldownNormal": 4,
+    "cooldownLiquid": 9,
+    "cooldownBrokenBase": 4,
+    "phaseShieldBoost": 1000,
+    "consumes": {
+        "power": 13,
+        "items": {
+            "items": [
+                {
+                    "item": "phase-fabric",
+                    "amount": 1
+                }
+            ],
+            "booster": true,
+            "optional": true
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 350
+        },
+        {
+            "item": "lead",
+            "amount": 350
+        },
+        {
+            "item": "silicon",
+            "amount": 350
+        },
+        {
+            "item": "titanium",
+            "amount": 350
+        },
+        {
+            "item": "plastanium",
+            "amount": 350
+        }
+    ],
+    "category": "effect",
+    "research": "force-projector"
+}

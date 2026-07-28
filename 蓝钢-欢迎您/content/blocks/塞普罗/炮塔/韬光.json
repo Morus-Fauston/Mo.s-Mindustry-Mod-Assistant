@@ -1,0 +1,287 @@
+{
+    "type": "PowerTurret",
+    "name": "韬光",
+    "description": "向敌人空军发射密集能量子弹\n只对空军",
+    "targetAir": true,
+    "targetGround": false,
+    "health": 3350,
+    "size": 7,
+    "shootSound": "shootEclipse",
+    "shake": 0.8,
+    "inaccuracy": 0.6,
+    "recoil": 3,
+    "shootY": 0,
+    "coolantMultiplier": 0.9,
+    "heatColor": "F4F4F4FF",
+    "shoot": {
+        "type": "ShootBarrel",
+        "barrels": [
+            0,
+            20,
+            0,
+            -8,
+            30,
+            0,
+            8,
+            30,
+            0
+        ]
+    },
+    "shootType": {
+        "type": "BasicBulletType",
+        "damage": 65,
+        "collidesGround": false,
+        "speed": 20,
+        "lifetime": 36,
+        "drag": 0.005,
+        "pierce": true,
+        "pierceCap": 2,
+        "absorbable": false,
+        "frontColor": "F4F4F4FF",
+        "backColor": "F4F4F4FF",
+        "width": 5,
+        "height": 25,
+        "trailLength": 2,
+        "trailWidth": 1.3,
+        "trailColor": "F4F4F4FF",
+        "shrinkY": 0,
+        "smokeEffect": {
+            "effect": "dynamicSpikes",
+            "rotation": 5,
+            "color": "F4F4F4FF",
+            "type": "WrapEffect"
+        },
+        "despawnEffect": {
+            "type": "ParticleEffect",
+            "particles": 8,
+            "line": true,
+            "strokeFrom": 2,
+            "strokeTo": 0,
+            "lenFrom": 5,
+            "lenTo": 0,
+            "length": 20,
+            "baseLength": 20,
+            "lifetime": 10,
+            "colorFrom": "F4F4F4FF",
+            "colorTo": "F4F4F4FF",
+            "cone": 8
+        },
+        "ammoMultiplier": 1
+    },
+    "consumes": {
+        "power": 15,
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+    "reload": 1,
+    "rotateSpeed": 1.5,
+    "range": 600,
+    "category": "turret",
+    "research": "穿刺",
+    "requirements": [
+        "copper/800",
+        {
+            "item": "lead",
+            "amount": 750
+        },
+        {
+            "item": "普勒合金",
+            "amount": 600
+        },
+        {
+            "item": "titanium",
+            "amount": 450
+        },
+        {
+            "item": "silicon",
+            "amount": 500
+        },
+        {
+            "item": "metaglass",
+            "amount": 280
+        },
+        {
+            "item": "plastanium",
+            "amount": 350
+        },
+        {
+            "item": "蓝钢",
+            "amount": 600
+        }
+    ],
+    "drawer": {
+        "type": "DrawTurret",
+        "parts": [
+            {
+                "type": "RegionPart",
+                "mirror": true,
+                "under": false,
+                "x": 0,
+                "y": 3,
+                "suffix": "-1",
+                "moveX": -3,
+                "moveY": -1,
+                "heatColor": "F4F4F4FF"
+            },
+            {
+                "type": "RegionPart",
+                "mirror": true,
+                "under": false,
+                "x": 0,
+                "y": 3,
+                "suffix": "-2",
+                "moveX": -3,
+                "moveY": -1,
+                "moveRot": 20,
+                "heatColor": "F4F4F4FF"
+            },
+            {
+                "type": "ShapePart",
+                "color": "F4F4F4FF",
+                "stroke": 0,
+                "strokeTo": 2,
+                "circle": true,
+                "hollow": true,
+                "radius": 0,
+                "radiusTo": 10,
+                "layer": 110,
+                "y": -20
+            },
+            {
+                "type": "ShapePart",
+                "color": "F4F4F4FF",
+                "stroke": 0,
+                "strokeTo": 2,
+                "circle": true,
+                "hollow": true,
+                "radius": 0,
+                "radiusTo": 4,
+                "layer": 110,
+                "y": -20
+            },
+            {
+                "type": "HaloPart",
+                "color": "F4F4F4FF",
+                "tri": true,
+                "hollow": true,
+                "shapes": 4,
+                "triLength": 0,
+                "triLengthTo": 4,
+                "radius": 5,
+                "radiusTo": 5,
+                "haloRadius": 10,
+                "haloRotateSpeed": 0.6,
+                "haloRotation": 0,
+                "layer": 110,
+                "y": -20
+            },
+            {
+                "type": "HaloPart",
+                "color": "F4F4F4FF",
+                "tri": true,
+                "hollow": true,
+                "shapes": 4,
+                "triLength": 0,
+                "triLengthTo": 2,
+                "radius": 7,
+                "radiusTo": 7,
+                "haloRadius": 17,
+                "shapeRotation": 180,
+                "haloRotateSpeed": -0.9,
+                "haloRotation": 0,
+                "layer": 110,
+                "y": -20
+            },
+            {
+                "type": "HaloPart",
+                "color": "F4F4F4FF",
+                "tri": true,
+                "hollow": true,
+                "shapes": 4,
+                "triLength": 0,
+                "triLengthTo": 5,
+                "radius": 7,
+                "radiusTo": 7,
+                "haloRadius": 17,
+                "haloRotateSpeed": -0.9,
+                "haloRotation": 0,
+                "layer": 110,
+                "y": -20
+            },
+            {
+                "type": "HaloPart",
+                "color": "F4F4F4FF",
+                "tri": true,
+                "hollow": true,
+                "shapes": 1,
+                "triLength": 0,
+                "triLengthTo": 6,
+                "radius": 5,
+                "radiusTo": 5,
+                "haloRadius": 0,
+                "shapeRotation": 90,
+                "haloRotateSpeed": 0,
+                "haloRotation": 0,
+                "layer": 110,
+                "x": 16,
+                "y": -20
+            },
+            {
+                "type": "HaloPart",
+                "color": "F4F4F4FF",
+                "tri": true,
+                "hollow": true,
+                "shapes": 1,
+                "triLength": 0,
+                "triLengthTo": 20,
+                "radius": 5,
+                "radiusTo": 5,
+                "haloRadius": 0,
+                "shapeRotation": -90,
+                "haloRotateSpeed": 0,
+                "haloRotation": 0,
+                "layer": 110,
+                "x": 16,
+                "y": -20
+            },
+            {
+                "type": "HaloPart",
+                "color": "F4F4F4FF",
+                "tri": true,
+                "hollow": true,
+                "shapes": 1,
+                "triLength": 0,
+                "triLengthTo": 6,
+                "radius": 5,
+                "radiusTo": 5,
+                "haloRadius": 0,
+                "shapeRotation": -90,
+                "haloRotateSpeed": 0,
+                "haloRotation": 0,
+                "layer": 110,
+                "x": -16,
+                "y": -20
+            },
+            {
+                "type": "HaloPart",
+                "color": "F4F4F4FF",
+                "tri": true,
+                "hollow": true,
+                "shapes": 1,
+                "triLength": 0,
+                "triLengthTo": 20,
+                "radius": 5,
+                "radiusTo": 5,
+                "haloRadius": 0,
+                "shapeRotation": 90,
+                "haloRotateSpeed": 0,
+                "haloRotation": 0,
+                "layer": 110,
+                "x": -16,
+                "y": -20
+            }
+        ]
+    }
+}

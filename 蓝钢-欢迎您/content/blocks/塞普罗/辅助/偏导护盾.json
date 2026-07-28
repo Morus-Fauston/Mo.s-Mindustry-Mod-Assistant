@@ -1,0 +1,56 @@
+{
+    "type": "ForceProjector",
+    "name": "偏导护盾",
+    "description": "产生六边形力场，保护单位和建筑",
+    "health": 5000,
+    "size": 5,
+    "radius": 410,
+    "canOverdrive": false,
+    "shieldHealth": 50000,
+    "phaseUseTime": 40000,
+    "phaseRadiusBoost": 2000,
+    "cooldownNormal": 5,
+    "cooldownLiquid": 10,
+    "cooldownBrokenBase": 10,
+    "liquidCapacity": 100,
+    "itemCapacity": 20,
+    "consumes": {
+        "power": 34,
+        "items": {
+            "booster": true,
+            "optional": true
+        }
+    },
+    "requirements": [
+        {
+            "item": "普勒合金",
+            "amount": 500
+        },
+        {
+            "item": "蓝钢",
+            "amount": 600
+        },
+        {
+            "item": "lead",
+            "amount": 800
+        },
+        {
+            "item": "phase-fabric",
+            "amount": 500
+        },
+        {
+            "item": "silicon",
+            "amount": 500
+        },
+        {
+            "item": "titanium",
+            "amount": 500
+        },
+        {
+            "item": "plastanium",
+            "amount": 500
+        }
+    ],
+    "research": "增强力墙场",
+    "category": "effect"
+}

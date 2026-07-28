@@ -1,0 +1,17 @@
+{
+  "speed": 2.7,
+  "rotateSpeed": 5.0,
+  "drag": 0.04,
+  "accel": 0.08,
+  "hitSize": 9.0,
+  "health": 70.0,
+  "armor": 0.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": 10,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "flare"
+}

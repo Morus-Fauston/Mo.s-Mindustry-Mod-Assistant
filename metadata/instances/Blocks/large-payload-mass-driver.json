@@ -1,0 +1,34 @@
+{
+  "range": 2100.0,
+  "reload": 130.0,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 5,
+  "requirements": [
+    {
+      "amount": 100,
+      "item": "graphite"
+    },
+    {
+      "amount": 200,
+      "item": "silicon"
+    },
+    {
+      "amount": 20,
+      "item": "phase-fabric"
+    },
+    {
+      "amount": 200,
+      "item": "tungsten"
+    },
+    {
+      "amount": 30,
+      "item": "oxide"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "large-payload-mass-driver"
+}

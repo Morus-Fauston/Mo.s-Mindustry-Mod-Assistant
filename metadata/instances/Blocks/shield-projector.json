@@ -1,0 +1,11 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "shield-projector"
+}

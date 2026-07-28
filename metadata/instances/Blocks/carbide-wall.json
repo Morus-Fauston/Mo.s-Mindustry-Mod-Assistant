@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 1080,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 6,
+      "item": "thorium"
+    },
+    {
+      "amount": 6,
+      "item": "carbide"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "carbide-wall"
+}

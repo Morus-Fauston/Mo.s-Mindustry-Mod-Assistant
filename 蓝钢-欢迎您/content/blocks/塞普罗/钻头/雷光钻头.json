@@ -1,0 +1,66 @@
+{
+    "name": "雷光钻头",
+    "description": "加水效果更好",
+    "type": "Drill",
+    "size": 5,
+    "tier": 8,
+    "health": 2880,
+    "rotateSpeed": 10,
+    "warmupSpeed": 0.06,
+    "itemCapacity": 10,
+    "liquidCapacity": 20,
+    "canOverdrive": false,
+    "drawRim": true,
+    "hasItems": true,
+    "drillTime": 35,
+    "liquidBoostIntensity": 1.55,
+    "updateEffect": {
+        "effect": "surgeCruciSmoke",
+        "rotation": 10,
+        "color": "FEB380FF",
+        "type": "WrapEffect"
+    },
+    "drillEffect": {
+        "effect": "surgeCruciSmoke",
+        "rotation": 10,
+        "color": "FEB380FF",
+        "type": "WrapEffect"
+    },
+    "consumes": {
+        "power": 30,
+        "liquid": {
+            "liquid": "water",
+            "amount": 0.1,
+            "booster": true,
+            "optional": true
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 95
+        },
+        {
+            "item": "lead",
+            "amount": 95
+        },
+        {
+            "item": "thorium",
+            "amount": 80
+        },
+        {
+            "item": "graphite",
+            "amount": 80
+        },
+        {
+            "item": "titanium",
+            "amount": 80
+        },
+        {
+            "item": "silicon",
+            "amount": 70
+        }
+    ],
+    "category": "production",
+    "research": "blast-drill"
+}

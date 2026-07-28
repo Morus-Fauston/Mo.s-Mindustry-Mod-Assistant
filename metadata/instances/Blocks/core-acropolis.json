@@ -1,0 +1,32 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 30000,
+  "size": 6,
+  "requirements": [
+    {
+      "amount": 5000,
+      "item": "silicon"
+    },
+    {
+      "amount": 6000,
+      "item": "beryllium"
+    },
+    {
+      "amount": 5000,
+      "item": "tungsten"
+    },
+    {
+      "amount": 3000,
+      "item": "oxide"
+    },
+    {
+      "amount": 3000,
+      "item": "carbide"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "core-acropolis"
+}

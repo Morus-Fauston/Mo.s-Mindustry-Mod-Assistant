@@ -1,0 +1,28 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 120,
+      "item": "silicon"
+    },
+    {
+      "amount": 140,
+      "item": "beryllium"
+    },
+    {
+      "amount": 40,
+      "item": "oxide"
+    },
+    {
+      "amount": 80,
+      "item": "carbide"
+    }
+  ],
+  "category": "crafting",
+  "buildTime": -1.0,
+  "name": "cyanogen-synthesizer"
+}

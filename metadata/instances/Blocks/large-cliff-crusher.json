@@ -1,0 +1,28 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 80,
+      "item": "silicon"
+    },
+    {
+      "amount": 15,
+      "item": "surge-alloy"
+    },
+    {
+      "amount": 100,
+      "item": "beryllium"
+    },
+    {
+      "amount": 50,
+      "item": "tungsten"
+    }
+  ],
+  "category": "production",
+  "buildTime": -1.0,
+  "name": "large-cliff-crusher"
+}

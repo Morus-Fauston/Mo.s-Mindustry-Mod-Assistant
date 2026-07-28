@@ -1,0 +1,17 @@
+{
+  "speed": 1.0,
+  "rotateSpeed": 1.7,
+  "drag": 0.3,
+  "accel": 0.5,
+  "hitSize": 48.0,
+  "health": 20000.0,
+  "armor": 12.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "latum"
+}

@@ -1,0 +1,24 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 10,
+      "item": "metaglass"
+    },
+    {
+      "amount": 10,
+      "item": "silicon"
+    },
+    {
+      "amount": 5,
+      "item": "plastanium"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "diode"
+}

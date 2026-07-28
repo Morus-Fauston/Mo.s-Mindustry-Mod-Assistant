@@ -1,0 +1,10 @@
+{
+  "color": "#272727ff",
+  "explosiveness": 0.2,
+  "flammability": 1.0,
+  "radioactivity": 0.0,
+  "charge": 0.0,
+  "hardness": 2,
+  "cost": 1.0,
+  "name": "coal"
+}

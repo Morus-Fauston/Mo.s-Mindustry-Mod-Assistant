@@ -1,0 +1,51 @@
+{
+    "name": "蓝钢钻头",
+    "description": "由蓝钢为主体的强力钻头",
+        "details": "没有水~♡要坏掉了~♡哦（指无水加速）~♡♡♡",
+    "size": 3,
+    "health": 3000,
+    "type": "Drill",
+    "tier": 20,
+    "drillTime": 12,
+    "hardnessDrillMultiplier": 8,
+    "canOverdrive": false,
+    "warmupSpeed": 0.1,
+    "drillEffect": "mine",
+    "updateEffect": "mine",
+    "rotateSpeed": 5,
+    "drawMineItem": true,
+    "consumes": {
+        "power": 18
+    },
+    "itemCapacity": 100,
+    "hasItems": true,
+    "hasLiquids": false,
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 55
+        },
+        {
+            "item": "lead",
+            "amount": 55
+        },
+        {
+            "item": "蓝钢",
+            "amount": 105
+        },
+        {
+            "item": "silicon",
+            "amount": 55
+        },
+        {
+            "item": "titanium",
+            "amount": 55
+        },
+        {
+            "item": "thorium",
+            "amount": 55
+        }
+    ],
+    "category": "production",
+    "research": "blast-drill"
+}

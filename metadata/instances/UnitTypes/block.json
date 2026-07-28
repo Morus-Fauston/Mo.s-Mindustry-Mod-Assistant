@@ -1,0 +1,17 @@
+{
+  "speed": 0.0,
+  "rotateSpeed": 360.0,
+  "drag": 0.3,
+  "accel": 0.5,
+  "hitSize": 0.0,
+  "health": 1.0,
+  "armor": 0.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": 0,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "block"
+}

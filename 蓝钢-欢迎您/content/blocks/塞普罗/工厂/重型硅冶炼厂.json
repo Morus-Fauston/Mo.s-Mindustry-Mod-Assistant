@@ -1,0 +1,71 @@
+{
+    "type": "GenericCrafter",
+    "health": 2680,
+    "name": "重型硅冶炼厂",
+    "description": "生产硅",
+    "outputItem": {
+        "item": "silicon",
+        "amount": 10
+    },
+    "itemCapacity": 40,
+    "size": 4,
+    "hasPower": true,
+    "hasLiquids": false,
+    "hasItems": true,
+    "craftTime": 30,
+    "updateEffect": "mineBig",
+    "consumes": {
+        "power": 34,
+        "items": {
+            "items": [
+                {
+                    "item": "coal",
+                    "amount": 3
+                },
+                {
+                    "item": "sand",
+                    "amount": 8
+                }
+            ]
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 130
+        },
+        {
+            "item": "lead",
+            "amount": 130
+        },
+        {
+            "item": "graphite",
+            "amount": 130
+        },
+        {
+            "item": "silicon",
+            "amount": 130
+        },
+        {
+            "item": "titanium",
+            "amount": 130
+        },
+        {
+            "item": "蓝钢",
+            "amount": 130
+        }
+    ],
+    "drawer": {
+        "type": "DrawMulti",
+        "drawers": [
+            "DrawDefault",
+            "DrawFlame",
+            {
+                "type": "DrawFlame",
+                "flameColor": "888888FF"
+            }
+        ]
+    },
+    "category": "crafting",
+    "research": "大型硅冶炼厂"
+}

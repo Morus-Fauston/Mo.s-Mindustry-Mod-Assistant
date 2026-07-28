@@ -1,0 +1,16 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 12,
+      "item": "copper"
+    }
+  ],
+  "category": "production",
+  "buildTime": -1.0,
+  "name": "mechanical-drill"
+}

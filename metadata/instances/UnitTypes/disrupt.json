@@ -1,0 +1,17 @@
+{
+  "speed": 1.0,
+  "rotateSpeed": 2.0,
+  "drag": 0.07,
+  "accel": 0.1,
+  "hitSize": 46.0,
+  "health": 12000.0,
+  "armor": 9.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "disrupt"
+}

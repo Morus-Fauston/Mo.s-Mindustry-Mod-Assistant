@@ -1,0 +1,35 @@
+{
+    "type": "PowerNode",
+    "name": "蓝钢电力塔",
+    "description": "更远更多连接点\n还有储电能力，容量4000",
+    "size": 3,
+    "health": 760,
+    "maxNodes": 100,
+    "laserRange": 50,
+    "research": "surge-tower",
+    "hasPower": true,
+    "consumesPower": true,
+    "consumes": {
+        "powerBuffered": 4000
+    },
+    "outputsPower": true,
+    "requirements": [
+        {
+            "item": "蓝钢",
+            "amount": 50
+        },
+        {
+            "item": "silicon",
+            "amount": 30
+        },
+        {
+            "item": "titanium",
+            "amount": 30
+        },
+        {
+            "item": "lead",
+            "amount": 30
+        }
+    ],
+    "category": "power"
+}

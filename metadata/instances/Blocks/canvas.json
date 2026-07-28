@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 10,
+      "item": "silicon"
+    },
+    {
+      "amount": 10,
+      "item": "beryllium"
+    }
+  ],
+  "category": "logic",
+  "buildTime": -1.0,
+  "name": "canvas"
+}

@@ -1,0 +1,28 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 100,
+      "item": "thorium"
+    },
+    {
+      "amount": 100,
+      "item": "silicon"
+    },
+    {
+      "amount": 200,
+      "item": "tungsten"
+    },
+    {
+      "amount": 90,
+      "item": "carbide"
+    }
+  ],
+  "category": "crafting",
+  "buildTime": -1.0,
+  "name": "phase-synthesizer"
+}

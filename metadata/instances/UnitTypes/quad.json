@@ -1,0 +1,17 @@
+{
+  "speed": 1.2,
+  "rotateSpeed": 2.0,
+  "drag": 0.017,
+  "accel": 0.05,
+  "hitSize": 36.0,
+  "health": 6000.0,
+  "armor": 8.0,
+  "range": 140.0,
+  "buildSpeed": 2.5,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "quad"
+}

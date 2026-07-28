@@ -224,6 +224,9 @@ __marimo__/
 # Personal docs (not part of the distributed project)
 Docs/
 
+# Reference mods (for learning, not distributed)
+蓝钢-欢迎您/
+
 # Extractor build artifacts
 extractor/.gradle/
 extractor/build/

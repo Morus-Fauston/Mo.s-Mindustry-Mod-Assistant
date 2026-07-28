@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 3680,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 24,
+      "item": "surge-alloy"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "surge-wall-large"
+}

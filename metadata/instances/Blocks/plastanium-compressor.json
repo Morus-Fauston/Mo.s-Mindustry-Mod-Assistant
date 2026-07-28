@@ -1,0 +1,28 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": 320,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 115,
+      "item": "lead"
+    },
+    {
+      "amount": 60,
+      "item": "graphite"
+    },
+    {
+      "amount": 80,
+      "item": "titanium"
+    },
+    {
+      "amount": 80,
+      "item": "silicon"
+    }
+  ],
+  "category": "crafting",
+  "buildTime": -1.0,
+  "name": "plastanium-compressor"
+}

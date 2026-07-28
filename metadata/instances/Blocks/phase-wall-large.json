@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 2400,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 24,
+      "item": "phase-fabric"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "phase-wall-large"
+}

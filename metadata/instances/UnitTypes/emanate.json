@@ -1,0 +1,17 @@
+{
+  "speed": 7.5,
+  "rotateSpeed": 8.0,
+  "drag": 0.08,
+  "accel": 0.08,
+  "hitSize": 12.0,
+  "health": 700.0,
+  "armor": 3.0,
+  "range": 65.0,
+  "buildSpeed": 1.5,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": 110,
+  "ammoCapacity": 1,
+  "mineSpeed": 9.0,
+  "name": "emanate"
+}

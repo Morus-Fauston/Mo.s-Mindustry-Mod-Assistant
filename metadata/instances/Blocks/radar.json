@@ -1,0 +1,24 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 50,
+      "item": "graphite"
+    },
+    {
+      "amount": 60,
+      "item": "silicon"
+    },
+    {
+      "amount": 10,
+      "item": "beryllium"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "radar"
+}

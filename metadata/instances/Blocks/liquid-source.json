@@ -1,0 +1,11 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 1,
+  "requirements": [],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "liquid-source"
+}

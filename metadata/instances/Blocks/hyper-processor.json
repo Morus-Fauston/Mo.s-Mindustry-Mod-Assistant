@@ -1,0 +1,29 @@
+{
+  "range": 336.0,
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 450,
+      "item": "lead"
+    },
+    {
+      "amount": 75,
+      "item": "thorium"
+    },
+    {
+      "amount": 150,
+      "item": "silicon"
+    },
+    {
+      "amount": 50,
+      "item": "surge-alloy"
+    }
+  ],
+  "category": "logic",
+  "buildTime": -1.0,
+  "name": "hyper-processor"
+}

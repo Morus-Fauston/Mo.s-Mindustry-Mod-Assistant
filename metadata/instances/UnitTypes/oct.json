@@ -1,0 +1,17 @@
+{
+  "speed": 0.8,
+  "rotateSpeed": 1.0,
+  "drag": 0.018,
+  "accel": 0.04,
+  "hitSize": 66.0,
+  "health": 24000.0,
+  "armor": 16.0,
+  "range": -1.0,
+  "buildSpeed": 4.0,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "oct"
+}

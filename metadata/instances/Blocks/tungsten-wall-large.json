@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 2880,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 24,
+      "item": "tungsten"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "tungsten-wall-large"
+}

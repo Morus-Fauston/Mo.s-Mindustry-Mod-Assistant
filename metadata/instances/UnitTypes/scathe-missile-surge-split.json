@@ -1,0 +1,17 @@
+{
+  "speed": 4.8,
+  "rotateSpeed": 1.4,
+  "drag": 0.3,
+  "accel": 0.5,
+  "hitSize": 6.0,
+  "health": 50.0,
+  "armor": 0.0,
+  "range": 6.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "scathe-missile-surge-split"
+}

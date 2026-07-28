@@ -1,0 +1,14 @@
+{
+  "name": "ReloadTurret",
+  "fullName": "mindustry.world.blocks.defense.turrets.ReloadTurret",
+  "parent": "BaseTurret",
+  "fields": [
+    {
+      "name": "reload",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

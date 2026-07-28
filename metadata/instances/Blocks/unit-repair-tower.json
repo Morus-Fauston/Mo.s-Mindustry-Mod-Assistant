@@ -1,0 +1,25 @@
+{
+  "range": 100.0,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 90,
+      "item": "graphite"
+    },
+    {
+      "amount": 90,
+      "item": "silicon"
+    },
+    {
+      "amount": 80,
+      "item": "tungsten"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "unit-repair-tower"
+}

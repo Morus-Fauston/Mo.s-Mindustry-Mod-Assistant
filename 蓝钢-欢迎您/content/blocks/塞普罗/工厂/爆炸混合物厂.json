@@ -1,0 +1,52 @@
+{
+    "type": "GenericCrafter",
+    "health": 600,
+    "name": "大型爆炸混合物器",
+    "description": "生产爆炸混合物",
+    "outputItem": {
+        "item": "blast-compound",
+        "amount": 10
+    },
+    "itemCapacity": 40,
+    "size": 3,
+    "hasPower": true,
+    "hasLiquids": false,
+    "hasItems": true,
+    "craftTime": 30,
+    "updateEffect": "mineBig",
+    "consumes": {
+        "power": 17,
+        "items": {
+            "items": [
+                {
+                    "item": "pyratite",
+                    "amount": 7
+                },
+                {
+                    "item": "spore-pod",
+                    "amount": 7
+                }
+            ]
+        }
+    },
+    "requirements": [
+            {
+            "item": "copper",
+            "amount": 100
+        },
+        {
+            "item": "lead",
+            "amount": 100
+        },
+        {
+            "item": "silicon",
+            "amount": 100
+        },
+        {
+            "item": "titanium",
+            "amount": 100
+        },
+    ],
+    "category": "crafting",
+    "research": "blast-mixer"
+}

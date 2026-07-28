@@ -1,0 +1,26 @@
+{
+  "range": 700.0,
+  "reload": 130.0,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 20,
+      "item": "graphite"
+    },
+    {
+      "amount": 50,
+      "item": "silicon"
+    },
+    {
+      "amount": 40,
+      "item": "tungsten"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "payload-mass-driver"
+}

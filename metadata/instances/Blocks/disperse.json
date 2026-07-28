@@ -1,0 +1,32 @@
+{
+  "targetAir": true,
+  "targetGround": false,
+  "reload": 9.0,
+  "range": 310.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 50,
+      "item": "thorium"
+    },
+    {
+      "amount": 200,
+      "item": "silicon"
+    },
+    {
+      "amount": 350,
+      "item": "beryllium"
+    },
+    {
+      "amount": 50,
+      "item": "oxide"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "disperse"
+}

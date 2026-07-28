@@ -1,0 +1,28 @@
+{
+  "targetAir": false,
+  "targetGround": true,
+  "reload": 138.0,
+  "range": 390.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 400,
+      "item": "thorium"
+    },
+    {
+      "amount": 300,
+      "item": "silicon"
+    },
+    {
+      "amount": 250,
+      "item": "tungsten"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "titan"
+}

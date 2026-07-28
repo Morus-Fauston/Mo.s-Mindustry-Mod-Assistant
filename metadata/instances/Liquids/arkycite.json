@@ -1,0 +1,9 @@
+{
+  "color": "#84a94bff",
+  "flammability": 0.4,
+  "temperature": 0.5,
+  "heatCapacity": 0.5,
+  "viscosity": 0.7,
+  "explosiveness": 0.0,
+  "name": "arkycite"
+}

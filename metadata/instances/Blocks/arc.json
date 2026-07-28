@@ -1,0 +1,24 @@
+{
+  "targetAir": false,
+  "targetGround": true,
+  "reload": 35.0,
+  "range": 90.0,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": 260,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 50,
+      "item": "copper"
+    },
+    {
+      "amount": 50,
+      "item": "lead"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "arc"
+}

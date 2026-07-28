@@ -1,0 +1,17 @@
+{
+  "speed": 1.65,
+  "rotateSpeed": 4.5,
+  "drag": 0.03,
+  "accel": 0.08,
+  "hitSize": 11.0,
+  "health": 340.0,
+  "armor": 3.0,
+  "range": 140.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": 0,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "horizon"
+}

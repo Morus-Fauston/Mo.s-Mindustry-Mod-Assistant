@@ -1,0 +1,20 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 20,
+      "item": "graphite"
+    },
+    {
+      "amount": 60,
+      "item": "beryllium"
+    }
+  ],
+  "category": "production",
+  "buildTime": -1.0,
+  "name": "vent-condenser"
+}

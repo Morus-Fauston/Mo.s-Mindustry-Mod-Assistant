@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 2,
+      "item": "copper"
+    },
+    {
+      "amount": 2,
+      "item": "lead"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "sorter"
+}

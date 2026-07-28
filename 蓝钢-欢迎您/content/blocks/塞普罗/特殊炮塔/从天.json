@@ -1,0 +1,329 @@
+{
+    "drawer": {
+        "type": "DrawTurret",
+        "parts": [
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 0,
+                "x": 31,
+                "y": 0,
+                "suffix": "-2",
+                "layer": 49.98,
+                "moveX": 0,
+                "moveY": 90,
+                "under": true,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -40
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 1,
+                "x": -31,
+                "y": 0,
+                "suffix": "-1",
+                "layer": 49.98,
+                "moveX": 0,
+                "moveY": 90,
+                "under": true,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -40
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 0,
+                "x": 31,
+                "y": -7,
+                "suffix": "-4",
+                "layer": 49.99,
+                "moveX": 0,
+                "moveY": 10,
+                "under": true,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -30
+                    }
+                ]
+            },
+            {
+                "progress": "reload",
+                "x": 0,
+                "y": -55,
+                "type": "RegionPart",
+                "suffix": "-雷达",
+                "mirror": false,
+                "layer": 60,
+                "moveRot": 720
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 0,
+                "x": -31,
+                "y": -7,
+                "suffix": "-4",
+                "layer": 49.99,
+                "moveX": 0,
+                "moveY": 10,
+                "under": true,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -30
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": true,
+                "under": true,
+                "layer": 49.99,
+                "x": 0,
+                "y": 0,
+                "suffix": "-3",
+                "moveX": -15,
+                "moveY": 0,
+                "moveRot": 20
+            }
+        ]
+    },
+    "consumes": {
+        "power": 440,
+        "liquid": {
+            "liquid": "water",
+            "amount": 2
+        }
+    },
+    "armor": 64,
+    "cooldownTime": 300,
+    "type": "ItemTurret",
+    "name": "从天",
+    "description": "双联攻城巨构炮塔\n[red]仅可手动开火",
+    "details": "双联380mm战列舰主炮\n战时临时充当岸防炮",
+    "size": 16,
+    "liquidCapacity": 960,
+    "health": 380000,
+    "ammoPerShot": 170,
+    "maxAmmo": 680,
+    "range": 3000,
+    "recoil": 10,
+    "inaccuracy": 5,
+    "rotateSpeed": 0.1,
+    "smokeEffect": [
+        {
+            "type": "ParticleEffect",
+            "particles": 16,
+            "sizeFrom": 12,
+            "sizeTo": 0,
+            "length": 40,
+            "baseLength": 30,
+            "lifetime": 300,
+            "colorFrom": "7B7B7B80",
+            "colorTo": "7B7B7B80",
+            "interp": "circleOut",
+            "sizeInterp": "pow5In",
+            "cone": 135
+        },
+        {
+            "type": "ParticleEffect",
+            "particles": 32,
+            "sizeFrom": 10,
+            "sizeTo": 0,
+            "length": 40,
+            "baseLength": 120,
+            "lifetime": 260,
+            "colorFrom": "7B7B7B80",
+            "colorTo": "7B7B7B80",
+            "interp": "circleOut",
+            "sizeInterp": "pow5In",
+            "cone": 22.5
+        }
+    ],
+    "shoot": {
+        "shots": 2,
+        "shotDelay": 0,
+        "type": "ShootBarrel",
+        "barrels": [
+            31,
+            90,
+            0,
+            -31,
+            90,
+            0
+        ]
+    },
+    "targetAir": false,
+    "canOverdrive": false,
+    "targetGround": false,
+    "accurateDelay": false,
+    "shootCone": 5,
+    "shake": 70,
+    "shootSound": "shootArtillerySapBig",
+    "ammoUseEffect": {
+        "type": "MultiEffect",
+        "effects": [
+            {
+                "type": "ParticleEffect",
+                "particles": 1,
+                "line": true,
+                "casingFlip": true,
+                "interp": "pow10Out",
+                "sizeInterp": "pow5In",
+                "strokeFrom": 15,
+                "strokeTo": 0,
+                "lenFrom": 21,
+                "lenTo": 0,
+                "length": -100,
+                "layer": 49,
+                "randLength": false,
+                "baseLength": -10,
+                "lifetime": 80,
+                "colorFrom": "FFE176",
+                "colorTo": "737373",
+                "cone": 45
+            }
+        ]
+    },
+    "reload": 400,
+    "recoils": 2,
+    "shootWarmupSpeed": 0.0090,
+    "recoilTime": 90,
+    "minWarmup": 0.86,
+    "ammoTypes": {
+        "blast-compound": {
+            "hitShake": 1,
+            "type": "ArtilleryBulletType",
+            "absorbable": false,
+            "splashDamageRadius": 400,
+            "splashDamage": 4000,
+            "speed": 7,
+            "lifetime": 1000,
+            "trailEffect": "smoke",
+            "width": 30,
+            "height": 80,
+            "keepVelocity": false,
+            "hitColor": "7B7B7BFF",
+            "despawnEffect": "titanExplosion",
+            "smokeEffect": "shootSmallFlame",
+            "fragBullets": 120,
+            "fragLifeMin": 0.6,
+            "fragVelocityMin": 0.9,
+            "buildingDamageMultiplier": 1.5,
+            "fragBullet": {
+                "buildingDamageMultiplier": 1.5,
+                "speed": 9,
+                "damage": 400,
+                "lifetime": 25,
+                "height": 150,
+                "width": 5
+            },
+            "hitEffect": {
+                "type": "MultiEffect",
+                "effects": [
+                    {
+                        "type": "WaveEffect",
+                        "lifetime": 50,
+                        "sizeFrom": 0,
+                        "sizeTo": 300,
+                        "strokeFrom": 10,
+                        "strokeTo": 0,
+                        "colorFrom": "7B7B7BFF",
+                        "colorTo": "7B7B7B80"
+                    },
+                    {
+                        "type": "ParticleEffect",
+                        "particles": 30,
+                        "offset": 100,
+                        "sizeFrom": 18,
+                        "sizeTo": 0,
+                        "length": 100,
+                        "baseLength": 50,
+                        "lifetime": 100,
+                        "interp": "circleOut",
+                        "sizeInterp": "pow5In",
+                        "colorFrom": "7B7B7BFF",
+                        "colorTo": "7B7B7B80"
+                    }
+                ]
+            },
+            "hitSound": "explosionReactor",
+            "shootEffect": {
+                "type": "MultiEffect",
+                "effects": [
+                    {
+                        "type": "WaveEffect",
+                        "lifetime": 160,
+                        "sizeFrom": 0,
+                        "sizeTo": 3000,
+                        "strokeFrom": 30,
+                        "strokeTo": 0,
+                        "colorFrom": "7B7B7BFF",
+                        "colorTo": "7B7B7B80"
+                    },
+                                        {
+                        "type": "WaveEffect",
+                        "lifetime": 180,
+                        "sizeFrom": 0,
+                        "sizeTo": 3000,
+                        "strokeFrom": 20,
+                        "strokeTo": 0,
+                        "colorFrom": "7B7B7BFF",
+                        "colorTo": "7B7B7B80"
+                    },
+                                                            {
+                        "type": "WaveEffect",
+                        "lifetime": 200,
+                        "sizeFrom": 0,
+                        "sizeTo": 3000,
+                        "strokeFrom": 10,
+                        "strokeTo": 0,
+                        "colorFrom": "7B7B7BFF",
+                        "colorTo": "7B7B7B80"
+                    }
+                ]
+            }
+        }
+    },
+    "requirements": [
+        "蓝钢/6000",
+        {
+            "item": "copper",
+            "amount": 2000
+        },
+        {
+            "item": "lead",
+            "amount": 2000
+        },
+        {
+            "item": "silicon",
+            "amount": 2000
+        },
+        "titanium/3000",
+        {
+            "item": "graphite",
+            "amount": 2000
+        },
+        {
+            "item": "thorium",
+            "amount": 2000
+        },
+        {
+            "item": "plastanium",
+            "amount": 2000
+        },
+        "surge-alloy/2000"
+    ],
+    "category": "turret",
+    "research": "起灵"
+}

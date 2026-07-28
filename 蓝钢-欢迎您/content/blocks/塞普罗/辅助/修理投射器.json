@@ -1,0 +1,36 @@
+{
+    "type": "mendProjector",
+    "name": "修理投射器",
+    "description": "修复建筑",
+    "health": 3000,
+    "size": 3,
+    "buildCostMultiplier": 0.3,
+    "reload": 150,
+    "range": 200,
+    "healPercent": 20,
+    "itemCapacity": 10,
+    "phaseBoost": 10,
+    "phaseRangeBoost": 70,
+    "canOverdrive": false,
+    "consumes": {
+        "power": 17,
+        "items": {
+            "items": [
+                "silicon/1",
+                "phase-fabric/1"
+            ],
+            "optional": true,
+            "booster": true
+        }
+    },
+    "requirements": [
+        "copper/600",
+        "lead/600",
+        "蓝钢/350",
+        "silicon/350",
+        "titanium/300",
+        "plastanium/200"
+    ],
+    "category": "effect",
+    "research": "mend-projector"
+}

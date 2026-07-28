@@ -1,0 +1,32 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": 700,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 300,
+      "item": "lead"
+    },
+    {
+      "amount": 50,
+      "item": "metaglass"
+    },
+    {
+      "amount": 150,
+      "item": "graphite"
+    },
+    {
+      "amount": 150,
+      "item": "thorium"
+    },
+    {
+      "amount": 200,
+      "item": "silicon"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "thorium-reactor"
+}

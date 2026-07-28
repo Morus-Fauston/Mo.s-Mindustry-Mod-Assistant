@@ -1,0 +1,269 @@
+{
+    "itemCapacity": 3600,
+    "type": "UnitFactory",
+    "name": "多量单位工厂",
+    "description": "直接造多量级单位",
+    "health": 10240,
+    "size": 11,
+    "liquidCapacity": 800,
+    "consumes": {
+        "power": 60,
+        "liquid": {
+            "liquid": "cryofluid",
+            "amount": 6
+        }
+    },
+    "plans": [
+        {
+            "unit": "肿龙",
+            "time": 21600,
+            "requirements": [
+                {
+                    "item": "surge-alloy",
+                    "amount": 1750
+                },
+                {
+                    "item": "silicon",
+                    "amount": 1700
+                },
+                {
+                    "item": "plastanium",
+                    "amount": 1850
+                },
+                {
+                    "item": "phase-fabric",
+                    "amount": 1550
+                },
+                {
+                    "item": "thorium",
+                    "amount": 1600
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 1850
+                }
+            ]
+        },
+        {
+            "unit": "重型堡垒",
+            "time": 21600,
+            "requirements": [
+                {
+                    "item": "surge-alloy",
+                    "amount": 1750
+                },
+                {
+                    "item": "silicon",
+                    "amount": 1700
+                },
+                {
+                    "item": "plastanium",
+                    "amount": 1850
+                },
+                {
+                    "item": "phase-fabric",
+                    "amount": 1550
+                },
+                {
+                    "item": "thorium",
+                    "amount": 1600
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 1850
+                }
+            ]
+        },
+        {
+            "unit": "死者",
+            "time": 21600,
+            "requirements": [
+                {
+                    "item": "surge-alloy",
+                    "amount": 1750
+                },
+                {
+                    "item": "silicon",
+                    "amount": 1700
+                },
+                {
+                    "item": "plastanium",
+                    "amount": 1850
+                },
+                {
+                    "item": "phase-fabric",
+                    "amount": 1550
+                },
+                {
+                    "item": "thorium",
+                    "amount": 1600
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 1850
+                }
+            ]
+        },
+        {
+            "unit": "死恒蝎",
+            "time": 21600,
+            "requirements": [
+                {
+                    "item": "surge-alloy",
+                    "amount": 1750
+                },
+                {
+                    "item": "silicon",
+                    "amount": 1700
+                },
+                {
+                    "item": "plastanium",
+                    "amount": 1850
+                },
+                {
+                    "item": "phase-fabric",
+                    "amount": 1550
+                },
+                {
+                    "item": "thorium",
+                    "amount": 1600
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 1850
+                }
+            ]
+        },
+        {
+            "unit": "灭星",
+            "time": 21600,
+            "requirements": [
+                {
+                    "item": "surge-alloy",
+                    "amount": 1750
+                },
+                {
+                    "item": "silicon",
+                    "amount": 1700
+                },
+                {
+                    "item": "plastanium",
+                    "amount": 1850
+                },
+                {
+                    "item": "phase-fabric",
+                    "amount": 1550
+                },
+                {
+                    "item": "thorium",
+                    "amount": 1600
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 1850
+                }
+            ]
+        },
+        {
+            "unit": "移除者",
+            "time": 21600,
+            "requirements": [
+                {
+                    "item": "surge-alloy",
+                    "amount": 1750
+                },
+                {
+                    "item": "silicon",
+                    "amount": 1700
+                },
+                {
+                    "item": "plastanium",
+                    "amount": 1850
+                },
+                {
+                    "item": "phase-fabric",
+                    "amount": 1550
+                },
+                {
+                    "item": "thorium",
+                    "amount": 1600
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 1850
+                }
+            ]
+        },
+        {
+            "unit": "亦鲸",
+            "time": 21600,
+            "requirements": [
+                {
+                    "item": "surge-alloy",
+                    "amount": 1750
+                },
+                {
+                    "item": "silicon",
+                    "amount": 1700
+                },
+                {
+                    "item": "plastanium",
+                    "amount": 1850
+                },
+                {
+                    "item": "phase-fabric",
+                    "amount": 1550
+                },
+                {
+                    "item": "thorium",
+                    "amount": 1600
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 1850
+                }
+            ]
+        }
+    ],
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 3000
+        },
+        {
+            "item": "lead",
+            "amount": 3000
+        },
+        {
+            "item": "phase-fabric",
+            "amount": 1600
+        },
+        {
+            "item": "thorium",
+            "amount": 1600
+        },
+        {
+            "item": "普勒合金",
+            "amount": 2000
+        },
+        {
+            "item": "silicon",
+            "amount": 4000
+        },
+        {
+            "item": "surge-alloy",
+            "amount": 1200
+        },
+        {
+            "item": "plastanium",
+            "amount": 1800
+        },
+                {
+            "item": "蓝钢",
+            "amount": 3000
+        }
+    ],
+    "category": "units",
+    "buildVisibility": "shown",
+    "research": "多量级单位重构工厂"
+}

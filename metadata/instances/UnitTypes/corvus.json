@@ -1,0 +1,17 @@
+{
+  "speed": 0.3,
+  "rotateSpeed": 1.5,
+  "drag": 0.3,
+  "accel": 0.5,
+  "hitSize": 29.0,
+  "health": 18000.0,
+  "armor": 9.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "corvus"
+}

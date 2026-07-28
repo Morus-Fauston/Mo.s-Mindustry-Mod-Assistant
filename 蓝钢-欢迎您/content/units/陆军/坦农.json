@@ -1,0 +1,78 @@
+{
+   "crushDamage": 0.5,
+   "treadFrames": 10,
+    "treadPullOffset": 4,
+    "treadRects": [
+        {
+            "x": -23,
+            "y": -27,
+            "width": 19,
+            "height": 52
+        }
+    ],
+    "requirements": {
+        "block": "ground-factory",
+        "requirements": [
+            {
+                "item": "lead",
+                "amount": 20
+            },
+            {
+                "item": "silicon",
+                "amount": 20
+            }
+        ],
+        "time": 1200
+    },
+    "name": "坦农",
+    "description": "反单位导弹作战单位",
+    "type": "tank",
+    "armor": 5,
+    "speed": 1.5,
+    "rotateSpeed": 4,
+    "hitSize": 16,
+    "health": 300,
+    "ammoCapacity": 300,
+    "rippleScale": 1.2,
+    "squareShape": true,
+    "omniMovement": false,
+    "rotateMoveFirst": true,
+    "itemCapacity": 20,
+    "research": "dagger",
+    "weapons": [
+        {
+            "name": "坦农武器",
+            "x": 0,
+            "y": 0,
+            "shootY": 4,
+            "rotateSpeed": 2,
+            "top": true,
+            "rotate": true,
+            "mirror": false,
+            "reload": 60,
+            "shootSound": "shootMissile",
+            "inaccuracy": 0,
+            "ignoreRotation": false,
+            "bullet": {
+                "type": "MissileBulletType",
+                "damage": 10,
+                "trailLength": 6,
+                "trailWidth": 1,
+                "backColor": "FF8C00",
+                "frontColor": "FFB90F",
+                "trailEffect": "smoke",
+                "trailColor": "FF8C00",
+                "splashDamageRadius": 8,
+                "splashDamage": 5,
+                "homingRange": 40,
+                "homingPower": 0.06,
+                "hitEffect": "explosion",
+                "despawnEffect": "explosion",
+                "width": 8,
+                "height": 9,
+                "speed": 6,
+                "lifetime": 40
+            }
+        }
+    ]
+}

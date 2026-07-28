@@ -1,0 +1,9 @@
+{
+  "color": "#313131ff",
+  "flammability": 1.2,
+  "temperature": 0.5,
+  "heatCapacity": 0.7,
+  "viscosity": 0.75,
+  "explosiveness": 1.2,
+  "name": "oil"
+}

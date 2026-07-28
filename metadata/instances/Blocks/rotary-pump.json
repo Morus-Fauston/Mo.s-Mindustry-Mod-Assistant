@@ -1,0 +1,28 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 70,
+      "item": "copper"
+    },
+    {
+      "amount": 50,
+      "item": "metaglass"
+    },
+    {
+      "amount": 35,
+      "item": "titanium"
+    },
+    {
+      "amount": 20,
+      "item": "silicon"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "rotary-pump"
+}

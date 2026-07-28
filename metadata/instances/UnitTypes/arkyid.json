@@ -1,0 +1,17 @@
+{
+  "speed": 0.62,
+  "rotateSpeed": 2.7,
+  "drag": 0.1,
+  "accel": 0.5,
+  "hitSize": 23.0,
+  "health": 8000.0,
+  "armor": 6.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "arkyid"
+}

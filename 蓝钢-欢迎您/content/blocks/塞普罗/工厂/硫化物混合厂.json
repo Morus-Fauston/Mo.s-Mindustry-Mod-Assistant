@@ -1,0 +1,56 @@
+{
+    "type": "GenericCrafter",
+    "health": 600,
+    "name": "大型硫化物混合器",
+    "description": "生产硫化物",
+    "outputItem": {
+        "item": "pyratite",
+        "amount": 10
+    },
+    "itemCapacity": 40,
+    "size": 3,
+    "hasPower": true,
+    "hasLiquids": false,
+    "hasItems": true,
+    "craftTime": 30,
+    "updateEffect": "mineBig",
+    "consumes": {
+        "power": 17,
+        "items": {
+            "items": [
+                {
+                    "item": "coal",
+                    "amount": 7
+                },
+                {
+                    "item": "lead",
+                    "amount": 7
+                },
+                {
+                    "item": "sand",
+                    "amount": 7
+                }
+            ]
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 125
+        },
+        {
+            "item": "lead",
+            "amount": 125
+        },
+        {
+            "item": "蓝钢",
+            "amount": 125
+        },
+        {
+            "item": "titanium",
+            "amount": 125
+        }
+    ],
+    "category": "crafting",
+    "research": "pyratite-mixer"
+}

@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": 250,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 4,
+      "item": "graphite"
+    },
+    {
+      "amount": 8,
+      "item": "beryllium"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "reinforced-liquid-junction"
+}

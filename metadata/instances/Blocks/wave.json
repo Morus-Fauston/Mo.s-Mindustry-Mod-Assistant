@@ -1,0 +1,28 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 3.0,
+  "range": 110.0,
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 25,
+      "item": "copper"
+    },
+    {
+      "amount": 75,
+      "item": "lead"
+    },
+    {
+      "amount": 45,
+      "item": "metaglass"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "wave"
+}

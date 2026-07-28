@@ -1,0 +1,9 @@
+{
+  "color": "#6ecdecff",
+  "flammability": 0.0,
+  "temperature": 0.25,
+  "heatCapacity": 0.9,
+  "viscosity": 0.5,
+  "explosiveness": 0.0,
+  "name": "cryofluid"
+}

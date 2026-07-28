@@ -1,0 +1,22 @@
+{
+  "UnitType": {
+    "basic": ["name", "health", "armor", "speed", "hitSize", "flying"],
+    "movement": ["rotateSpeed", "accel", "drag"],
+    "combat": ["weapons", "range", "ammoCapacity", "itemCapacity"],
+    "appearance": ["lightRadius", "lightColor"]
+  },
+  "Wall": {
+    "basic": ["name", "health", "size"],
+    "defense": ["armor", "insulated", "absorbLasers"]
+  },
+  "ItemTurret": {
+    "basic": ["name", "health", "size"],
+    "combat": ["range", "reload", "ammoTypes", "targetAir", "targetGround", "inaccuracy"],
+    "appearance": []
+  },
+  "Weapon": {
+    "basic": ["name", "reload", "x", "y"],
+    "behavior": ["mirror", "alternate", "rotate", "shootCone"],
+    "bullet": ["bullet"]
+  }
+}

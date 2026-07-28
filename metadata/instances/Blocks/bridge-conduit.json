@@ -1,0 +1,21 @@
+{
+  "range": 4,
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 8,
+      "item": "metaglass"
+    },
+    {
+      "amount": 4,
+      "item": "graphite"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "bridge-conduit"
+}

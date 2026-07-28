@@ -1,0 +1,218 @@
+{
+    "name": "激刺",
+    "description": "向敌人发射高温激光",
+    "details": "青春毒刺（狗头）",
+    "type": "PowerTurret",
+    "size": 4,
+    "health": 2350,
+    "heatColor": "826AC1FF",
+    "shootSound": "wreckFall",
+    "range": 180,
+    "loopSound": "none",
+    "reload": 1,
+    "liquidCapacity": 60,
+    "inaccuracy": 0,
+    "recoil": 0,
+    "rotateSpeed": 1,
+    "coolEffect": "steam",
+    "shootWarmupSpeed": 0.030,
+    "recoilTime": 90,
+    "minWarmup": 0.86,
+    "moveWhileCharging": false,
+    "canOverdrive": false,
+    "placeableLiquid": true,
+    "shootType": {
+        "smokeEffect": "none",
+        "type": "ContinuousFlameBulletType",
+        "damage": 20,
+        "length": 180,
+        "knockback": 0.5,
+        "pierceCap": 2,
+        "buildingDamageMultiplier": 0.3,
+        "status": "melting",
+        "statusDuration": 120,
+        "colors": [
+            "BA8AF7A1",
+            "BA8AF7CC",
+            "BA8AF7FF",
+            "826AC1FF",
+            "5D5398FF"
+        ],
+        "hitEffect": {
+            "type": "ParticleEffect",
+            "line": true,
+            "particles": 8,
+            "lifetime": 25,
+            "length": 65,
+            "cone": -360,
+            "lenFrom": 7,
+            "lenTo": 1,
+            "colorFrom": "826AC1FF",
+            "colorTo": "BA8AF7FF"
+        },
+        "flareWidth": 4,
+        "flareLength": 15,
+        "flareColor": "BA8AF7FF",
+        "hitColor": "BA8AF7FF"
+    },
+    "consumes": {
+        "power": 21,
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 500
+        },
+        {
+            "item": "lead",
+            "amount": 500
+        },
+        "graphite/500",
+        "silicon/300",
+        "蓝钢/400",
+        "surge-alloy/300"
+    ],
+    "category": "turret",
+    "research": "meltdown",
+    "drawer": {
+        "type": "DrawTurret",
+        "parts": [
+            {
+                "progress": {
+                    "type": "warmup",
+                    "op": "delay",
+                    "amount": 0.65
+                },
+                "heatColor": "826AC1FF",
+                "type": "RegionPart",
+                "mirror": true,
+                "under": false,
+                "layer": 49.9,
+                "suffix": "-2",
+                "x": 0,
+                "y": 0,
+                "moveX": -14,
+                "moveY": -2,
+                "moveRot": 45
+            },
+            {
+                "progress": {
+                    "type": "warmup",
+                    "op": "delay",
+                    "amount": 0.85
+                },
+                "heatColor": "826AC1FF",
+                "type": "RegionPart",
+                "mirror": true,
+                "under": false,
+                "layer": 49.9,
+                "suffix": "-2",
+                "x": 0,
+                "y": 0,
+                "moveX": -12,
+                "moveY": 5,
+                "moveRot": 45
+            },
+            {
+                "progress": {
+                    "type": "warmup",
+                    "op": "delay",
+                    "amount": 0.65
+                },
+                "type": "HaloPart",
+                "color": "826AC1FF",
+                "tri": true,
+                "mirror": true,
+                "hollow": true,
+                "shapes": 1,
+                "triLength": 0,
+                "triLengthTo": 5,
+                "radius": 4,
+                "radiusTo": 4,
+                "haloRadius": 0,
+                "shapeRotation": 135,
+                "haloRotateSpeed": 0,
+                "haloRotation": 0,
+                "layer": 110,
+                "x": -7.5,
+                "y": -11
+            },
+            {
+                "progress": {
+                    "type": "warmup",
+                    "op": "delay",
+                    "amount": 0.65
+                },
+                "type": "HaloPart",
+                "color": "826AC1FF",
+                "tri": true,
+                "mirror": true,
+                "hollow": true,
+                "shapes": 1,
+                "triLength": 0,
+                "triLengthTo": 1,
+                "radius": 4,
+                "radiusTo": 4,
+                "haloRadius": 0,
+                "shapeRotation": -45,
+                "haloRotateSpeed": 0,
+                "haloRotation": 0,
+                "layer": 110,
+                "x": -7.5,
+                "y": -11
+            },
+            {
+                "progress": {
+                    "type": "warmup",
+                    "op": "delay",
+                    "amount": 0.45
+                },
+                "type": "HaloPart",
+                "color": "826AC1FF",
+                "tri": true,
+                "hollow": true,
+                "mirror": true,
+                "shapes": 1,
+                "triLength": 0,
+                "triLengthTo": 10,
+                "radius": 5,
+                "radiusTo": 5,
+                "haloRadius": 0,
+                "shapeRotation": 135,
+                "haloRotateSpeed": 0,
+                "haloRotation": 0,
+                "layer": 110,
+                "x": -3,
+                "y": -13.5
+            },
+            {
+                "progress": {
+                    "type": "warmup",
+                    "op": "delay",
+                    "amount": 0.45
+                },
+                "type": "HaloPart",
+                "color": "826AC1FF",
+                "tri": true,
+                "mirror": true,
+                "hollow": true,
+                "shapes": 1,
+                "triLength": 0,
+                "triLengthTo": 2,
+                "radius": 5,
+                "radiusTo": 5,
+                "haloRadius": 0,
+                "shapeRotation": -45,
+                "haloRotateSpeed": 0,
+                "haloRotation": 0,
+                "layer": 110,
+                "x": -3,
+                "y": -13.5
+            }
+        ]
+    }
+}

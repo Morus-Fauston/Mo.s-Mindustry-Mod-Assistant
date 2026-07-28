@@ -1,0 +1,32 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 70,
+      "item": "copper"
+    },
+    {
+      "amount": 100,
+      "item": "lead"
+    },
+    {
+      "amount": 50,
+      "item": "metaglass"
+    },
+    {
+      "amount": 50,
+      "item": "titanium"
+    },
+    {
+      "amount": 65,
+      "item": "silicon"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "differential-generator"
+}

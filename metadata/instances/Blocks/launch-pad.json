@@ -1,0 +1,28 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 350,
+      "item": "copper"
+    },
+    {
+      "amount": 200,
+      "item": "lead"
+    },
+    {
+      "amount": 150,
+      "item": "titanium"
+    },
+    {
+      "amount": 140,
+      "item": "silicon"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "launch-pad"
+}

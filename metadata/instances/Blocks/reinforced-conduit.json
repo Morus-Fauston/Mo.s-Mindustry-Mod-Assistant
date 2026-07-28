@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": 250,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 2,
+      "item": "beryllium"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "reinforced-conduit"
+}

@@ -1,0 +1,9 @@
+{
+  "color": "#fc81ddff",
+  "flammability": 1.0,
+  "temperature": 0.5,
+  "heatCapacity": 0.5,
+  "viscosity": 0.5,
+  "explosiveness": 1.0,
+  "name": "ozone"
+}

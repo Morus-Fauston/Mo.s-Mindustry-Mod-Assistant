@@ -1,0 +1,35 @@
+{
+    "type": "mendProjector",
+    "name": "重型修理投射器",
+    "description": "通电修复方块或炮塔",
+    "health": 3000,
+    "size": 4,
+    "reload": 60,
+    "range": 500,
+    "healPercent": 33,
+    "itemCapacity": 50,
+    "phaseBoost": 50,
+    "phaseRangeBoost": 100,
+    "canOverdrive": false,
+    "consumes": {
+        "power": 60,
+        "items": {
+            "items": [
+                "silicon/5",
+                "phase-fabric/5"
+            ],
+            "optional": true,
+            "booster": true
+        }
+    },
+    "requirements": [
+        "蓝钢/700",
+        "copper/600",
+        "lead/600",
+        "普勒合金/400",
+        "phase-fabric/400",
+        "surge-alloy/400"
+    ],
+    "category": "effect",
+    "research": "修理投射器"
+}

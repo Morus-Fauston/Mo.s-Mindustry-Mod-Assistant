@@ -1,0 +1,32 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 10.0,
+  "range": 130.0,
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 200,
+      "item": "silicon"
+    },
+    {
+      "amount": 400,
+      "item": "beryllium"
+    },
+    {
+      "amount": 150,
+      "item": "tungsten"
+    },
+    {
+      "amount": 40,
+      "item": "oxide"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "sublimate"
+}

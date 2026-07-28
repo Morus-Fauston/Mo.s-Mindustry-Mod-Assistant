@@ -1,0 +1,16 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 100,
+      "item": "titanium"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "container"
+}

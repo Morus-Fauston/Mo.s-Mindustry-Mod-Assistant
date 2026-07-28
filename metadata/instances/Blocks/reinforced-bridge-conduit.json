@@ -1,0 +1,21 @@
+{
+  "range": 4,
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": 250,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 8,
+      "item": "graphite"
+    },
+    {
+      "amount": 20,
+      "item": "beryllium"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "reinforced-bridge-conduit"
+}

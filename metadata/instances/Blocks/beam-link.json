@@ -1,0 +1,36 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 250,
+      "item": "silicon"
+    },
+    {
+      "amount": 75,
+      "item": "phase-fabric"
+    },
+    {
+      "amount": 75,
+      "item": "surge-alloy"
+    },
+    {
+      "amount": 250,
+      "item": "beryllium"
+    },
+    {
+      "amount": 150,
+      "item": "oxide"
+    },
+    {
+      "amount": 75,
+      "item": "carbide"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "beam-link"
+}

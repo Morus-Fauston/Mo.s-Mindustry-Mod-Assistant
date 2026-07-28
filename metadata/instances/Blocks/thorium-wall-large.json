@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 3200,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 24,
+      "item": "thorium"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "thorium-wall-large"
+}

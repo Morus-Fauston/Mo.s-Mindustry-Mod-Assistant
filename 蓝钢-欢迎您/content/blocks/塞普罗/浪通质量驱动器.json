@@ -1,0 +1,47 @@
+{
+    "type": "MassDriver",
+    "name": "浪通质量驱动器",
+    "description": "远距离物品传输建筑\n收集一定数量的物品后将其发射到远处的另一个质量驱动器\n一发可2k运载",
+    "size": 5,
+    "health": 1200,
+    "hasPower": true,
+    "hasLiquids": false,
+    "hasItems": true,
+    "itemCapacity": 2000,
+    "range": 1000,
+    "rotateSpeed": 2,
+    "shake": 4,
+    "shootEffect": "shootBig",
+    "smokeEffect": "shootSmallSmoke",
+    "consumes": {
+        "power": 20
+    },
+    "requirements": [
+        {
+            "item": "lead",
+            "amount": 360
+        },
+        {
+            "item": "蓝钢",
+            "amount": 230
+        },
+        {
+            "item": "thorium",
+            "amount": 230
+        },
+        {
+            "item": "silicon",
+            "amount": 180
+        },
+        {
+            "item": "titanium",
+            "amount": 135
+        },
+        {
+            "item": "surge-alloy",
+            "amount": 95
+        }
+    ],
+    "category": "distribution",
+    "research": "mass-driver"
+}

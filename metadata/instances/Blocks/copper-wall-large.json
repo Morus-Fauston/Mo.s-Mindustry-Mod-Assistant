@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 1280,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 24,
+      "item": "copper"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "copper-wall-large"
+}

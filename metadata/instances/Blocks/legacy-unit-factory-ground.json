@@ -1,0 +1,11 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 1,
+  "requirements": [],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "legacy-unit-factory-ground"
+}

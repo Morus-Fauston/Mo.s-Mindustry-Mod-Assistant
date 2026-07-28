@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": 200,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 30,
+      "item": "copper"
+    },
+    {
+      "amount": 35,
+      "item": "lead"
+    },
+    {
+      "amount": 45,
+      "item": "graphite"
+    }
+  ],
+  "category": "crafting",
+  "buildTime": -1.0,
+  "name": "melter"
+}

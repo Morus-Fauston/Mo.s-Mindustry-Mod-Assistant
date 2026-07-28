@@ -1,0 +1,182 @@
+{
+    "type": "ItemTurret",
+    "consumes": {
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+      "coolantMultiplier": 10,
+    "name": "散华",
+    "description": "向敌人发射穿透子弹",
+    "shootSound": "shootAltLong",
+    "health": 1620,
+    "size": 3,
+    "reload": 20,
+    "shake": 2,
+    "rotateSpeed": 2,
+    "recoil": 1,
+    "shootCone": 30,
+    "range": 270,
+    "recoils": 2,
+    "drawer": {
+        "type": "DrawTurret",
+        "basePrefix": "reinforced-",
+        "parts": [
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 0,
+                "x": 0,
+                "y": 0,
+                "suffix": "-1",
+                "layer": 49.99,
+                "moveX": 0,
+                "moveY": 0,
+                "under": true,
+                "progress": "recoil",
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -2
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 1,
+                "x": 0,
+                "y": 0,
+                "suffix": "-2",
+                "layer": 49.99,
+                "moveX": 0,
+                "moveY": 0,
+                "under": true,
+                "progress": "recoil",
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -2
+                    }
+                ]
+            }
+        ]
+    },
+    "shoot": {
+        "type": "ShootAlternate",
+        "barrels": 2,
+    },
+    "ammoTypes": {
+        "beryllium": {
+            "pierceCap": 2,
+            "buildingDamageMultiplier": 0.3,
+            "height": 15,
+            "width": 15,
+            "damage": 66.75,
+            "speed": 10,
+            "lifetime": 30,
+            "ammoMultiplier": 1,
+            "frontColor": "92DD7EFF",
+            "backColor": "92DD7EFF",
+            "trailLength": 16,
+            "trailWidth": 2.5,
+            "trailColor": "92DD7EFF",
+            "hitSound": "none",
+            "despawnEffect": {
+                "type": "ParticleEffect",
+                "particles": 6,
+                "line": true,
+                "strokeFrom": 3,
+                "strokeTo": 0,
+                "lenFrom": 6,
+                "lenTo": 0,
+                "length": 16,
+                "baseLength": 4,
+                "lifetime": 30,
+                "colorFrom": "92DD7EFF",
+                "colorTo": "92DD7EFF",
+                "cone": 360
+            },
+            "hitEffect": "none",
+            "shootEffect": {
+                "type": "ParticleEffect",
+                "particles": 6,
+                "line": true,
+                "strokeFrom": 3,
+                "strokeTo": 0,
+                "lenFrom": 9,
+                "lenTo": 0,
+                "length": 25,
+                "baseLength": 3,
+                "lifetime": 30,
+                "colorFrom": "92DD7EFF",
+                "colorTo": "92DD7EFF",
+                "cone": 15
+            }
+        },
+        "tungsten": {
+            "pierceCap": 3,
+            "buildingDamageMultiplier": 0.3,
+            "height": 15,
+            "width": 15,
+            "damage": 73.25,
+            "speed": 10,
+            "lifetime": 30,
+            "ammoMultiplier": 1,
+            "frontColor": "A0B0C8FF",
+            "backColor": "A0B0C8FF",
+            "trailLength": 16,
+            "trailWidth": 2.5,
+            "trailColor": "A0B0C8FF",
+            "hitSound": "none",
+            "despawnEffect": {
+                "type": "ParticleEffect",
+                "particles": 6,
+                "line": true,
+                "strokeFrom": 3,
+                "strokeTo": 0,
+                "lenFrom": 6,
+                "lenTo": 0,
+                "length": 16,
+                "baseLength": 4,
+                "lifetime": 30,
+                "colorFrom": "A0B0C8FF",
+                "colorTo": "A0B0C8FF",
+                "cone": 360
+            },
+            "hitEffect": "none",
+            "shootEffect": {
+                "type": "ParticleEffect",
+                "particles": 6,
+                "line": true,
+                "strokeFrom": 3,
+                "strokeTo": 0,
+                "lenFrom": 9,
+                "lenTo": 0,
+                "length": 25,
+                "baseLength": 3,
+                "lifetime": 30,
+                "colorFrom": "A0B0C8FF",
+                "colorTo": "A0B0C8FF",
+                "cone": 15
+            }
+        }
+    },
+    "requirements": [
+        {
+            "item": "graphite",
+            "amount": 250
+        },
+        {
+            "item": "silicon",
+            "amount": 200
+        },
+        {
+            "item": "beryllium",
+            "amount": 200
+        }
+    ],
+    "category": "turret",
+    "research": "breach"
+}

@@ -1,0 +1,17 @@
+{
+  "speed": 0.65,
+  "rotateSpeed": 3.0,
+  "drag": 0.1,
+  "accel": 0.5,
+  "hitSize": 21.0,
+  "health": 2700.0,
+  "armor": 7.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "anthicus"
+}

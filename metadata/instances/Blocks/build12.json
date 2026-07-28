@@ -1,0 +1,11 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 10,
+  "size": 12,
+  "requirements": [],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "build12"
+}

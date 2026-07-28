@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 15,
+      "item": "metaglass"
+    },
+    {
+      "amount": 10,
+      "item": "titanium"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "liquid-container"
+}

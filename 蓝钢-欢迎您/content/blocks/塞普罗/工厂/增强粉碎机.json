@@ -1,0 +1,52 @@
+{
+    "type": "GenericCrafter",
+    "name": "增强粉碎机",
+    "description": "比较快的将废料粉碎为沙。",
+    "outputItem": {
+        "item": "sand",
+        "amount": 3
+    },
+    "size": 2,
+    "health": 140,
+    "hasPower": true,
+    "hasLiquids": false,
+    "hasItems": true,
+    "craftTime": 10,
+    "itemCapacity": 30,
+    "updateEffect": "pulverizeSmall",
+    "drawer": {
+        "type": "DrawMulti",
+        "drawers": [
+            "DrawDefault",
+            {
+                "type": "DrawRegion",
+                "suffix": "-转",
+                "spinSprite": true,
+                "rotateSpeed": 4
+            },
+            {
+                "type": "DrawRegion",
+                "suffix": "-顶"
+            }
+        ]
+    },
+    "consumes": {
+        "power": 2,
+        "items": {
+            "items": [
+                {
+                    "item": "scrap",
+                    "amount": 2
+                }
+            ]
+        }
+    },
+    "ambientSound": "grinding",
+    "requirements": [
+        "copper/45",
+        "lead/35",
+        "graphite/25"
+    ],
+    "category": "crafting",
+    "research": "pulverizer"
+}

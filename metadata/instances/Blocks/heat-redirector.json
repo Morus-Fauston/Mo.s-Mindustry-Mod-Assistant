@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 10,
+      "item": "graphite"
+    },
+    {
+      "amount": 10,
+      "item": "tungsten"
+    }
+  ],
+  "category": "crafting",
+  "buildTime": -1.0,
+  "name": "heat-redirector"
+}

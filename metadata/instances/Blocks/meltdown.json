@@ -1,0 +1,36 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 90.0,
+  "range": 195.0,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 1200,
+      "item": "copper"
+    },
+    {
+      "amount": 350,
+      "item": "lead"
+    },
+    {
+      "amount": 300,
+      "item": "graphite"
+    },
+    {
+      "amount": 325,
+      "item": "silicon"
+    },
+    {
+      "amount": 325,
+      "item": "surge-alloy"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "meltdown"
+}

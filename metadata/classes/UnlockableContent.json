@@ -1,0 +1,163 @@
+{
+  "name": "UnlockableContent",
+  "fullName": "mindustry.ctype.UnlockableContent",
+  "parent": "MappableContent",
+  "fields": [
+    {
+      "name": "stats",
+      "javaType": "Stats",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "localizedName",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "description",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "details",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "credit",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "alwaysUnlocked",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "inlineDescription",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "hideDetails",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "hideDatabase",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "generateIcons",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "selectionSize",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "uiIcon",
+      "javaType": "TextureRegion",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "fullIcon",
+      "javaType": "TextureRegion",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "fullOverride",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "allDatabaseTabs",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "shownPlanets",
+      "javaType": "ObjectSet",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "databaseTabs",
+      "javaType": "ObjectSet",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "databaseCategory",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "databaseTag",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "techNode",
+      "javaType": "TechNode",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "techNodes",
+      "javaType": "Seq",
+      "mode": "ARRAY",
+      "nullable": false,
+      "default": null,
+      "elementType": "TechNode",
+      "polymorphic": false
+    },
+    {
+      "name": "unlocked",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    }
+  ]
+}

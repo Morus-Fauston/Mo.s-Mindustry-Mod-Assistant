@@ -1,0 +1,32 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 100,
+      "item": "lead"
+    },
+    {
+      "amount": 50,
+      "item": "thorium"
+    },
+    {
+      "amount": 75,
+      "item": "silicon"
+    },
+    {
+      "amount": 75,
+      "item": "plastanium"
+    },
+    {
+      "amount": 25,
+      "item": "phase-fabric"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "rtg-generator"
+}

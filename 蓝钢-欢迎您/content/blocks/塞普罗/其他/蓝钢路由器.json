@@ -1,0 +1,20 @@
+{
+    "type": "Router",
+    "name": "蓝钢路由器",
+    "description": "更快，更实用，可以放心的使用路由器了",
+    "speed": 2.0,
+    "health": 250,
+    "requirements": [
+        {
+            "item": "蓝钢",
+            "amount": 5
+        },
+        {
+            "item": "lead",
+            "amount": 10
+        }
+    ],
+    "category": "distribution",
+    "research": "router",
+    "placeableLiquid": true
+}

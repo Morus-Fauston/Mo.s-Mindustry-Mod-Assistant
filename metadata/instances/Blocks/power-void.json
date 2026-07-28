@@ -1,0 +1,11 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 1,
+  "requirements": [],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "power-void"
+}

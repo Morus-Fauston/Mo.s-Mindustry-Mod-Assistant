@@ -1,0 +1,67 @@
+{
+    "name": "重型超速投射器",
+    "description": "超速工厂和炮塔",
+    "type": "OverdriveProjector",
+    "health": 3000,
+    "size": 4,
+    "range": 400,
+    "speedBoost": 3,
+    "hasBoost": true,
+    "speedBoostPhase": 1,
+    "useTime": 300,
+    "phaseRangeBoost": 100,
+    "itemCapacity": 10,
+    "liquidCapacity": 20,
+    "canOverdrive": false,
+    "consumes": {
+        "power": 34,
+        "items": {
+            "items": [
+                {
+                    "item": "phase-fabric",
+                    "amount": 1
+                },
+                {
+                    "item": "graphite",
+                    "amount": 1
+                },
+                {
+                    "item": "silicon",
+                    "amount": 1
+                }
+            ],
+            "booster": true,
+            "optional": true
+        },
+        "liquid": {
+            "liquid": "蓝冻液",
+            "amount": 0.1,
+            "booster": true,
+            "optional": true
+        }
+    },
+    "requirements": [
+        {
+            "item": "plastanium",
+            "amount": 350
+        },
+        {
+            "item": "蓝钢",
+            "amount": 400
+        },
+        {
+            "item": "phase-fabric",
+            "amount": 350
+        },
+        {
+            "item": "lead",
+            "amount": 600
+        },
+        {
+            "item": "surge-alloy",
+            "amount": 350
+        }
+    ],
+    "category": "effect",
+    "research": "overdrive-dome"
+}

@@ -1,0 +1,21 @@
+{
+  "categories": [
+    {
+      "id": "turrets",
+      "name": "炮台",
+      "subCategories": [
+        { "id": "item_turret", "name": "物品炮台", "types": ["ItemTurret"] },
+        { "id": "power_turret", "name": "电力炮台", "types": ["PowerTurret"] },
+        { "id": "liquid_turret", "name": "液体炮台", "types": ["LiquidTurret"] }
+      ]
+    },
+    {
+      "id": "defense",
+      "name": "防御",
+      "subCategories": [
+        { "id": "wall", "name": "墙", "types": ["Wall"] },
+        { "id": "door", "name": "门", "types": ["Door"] }
+      ]
+    }
+  ]
+}

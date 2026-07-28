@@ -1,0 +1,17 @@
+{
+  "speed": 5.6,
+  "rotateSpeed": 7.0,
+  "drag": 0.08,
+  "accel": 0.09,
+  "hitSize": 9.0,
+  "health": 300.0,
+  "armor": 1.0,
+  "range": 60.0,
+  "buildSpeed": 1.2,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": 60,
+  "ammoCapacity": 1,
+  "mineSpeed": 6.0,
+  "name": "evoke"
+}

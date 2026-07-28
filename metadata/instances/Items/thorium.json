@@ -1,0 +1,10 @@
+{
+  "color": "#f9a3c7ff",
+  "explosiveness": 0.2,
+  "flammability": 0.0,
+  "radioactivity": 1.0,
+  "charge": 0.0,
+  "hardness": 4,
+  "cost": 1.1,
+  "name": "thorium"
+}

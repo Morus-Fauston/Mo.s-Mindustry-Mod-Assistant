@@ -1,0 +1,9 @@
+{
+  "color": "#ffa166ff",
+  "flammability": 0.0,
+  "temperature": 1.0,
+  "heatCapacity": 0.5,
+  "viscosity": 0.7,
+  "explosiveness": 0.0,
+  "name": "slag"
+}

@@ -1,0 +1,32 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 5,
+  "requirements": [
+    {
+      "amount": 600,
+      "item": "thorium"
+    },
+    {
+      "amount": 1000,
+      "item": "silicon"
+    },
+    {
+      "amount": 550,
+      "item": "tungsten"
+    },
+    {
+      "amount": 200,
+      "item": "oxide"
+    },
+    {
+      "amount": 200,
+      "item": "carbide"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "mech-assembler"
+}

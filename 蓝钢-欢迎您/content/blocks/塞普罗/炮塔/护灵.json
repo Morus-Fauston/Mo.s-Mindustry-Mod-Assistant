@@ -1,0 +1,91 @@
+{
+    "type": "ItemTurret",
+    "name": "护灵",
+    "description": "向敌人发射密集弹道攻击，可以用液体加速",
+    "health": 800,
+    "size": 2,
+    "reload": 2,
+    "range": 240,
+    "maxAmmo": 100,
+    "recoil": 1,
+    "shoot": {
+        "type": "ShootAlternate",
+        "barrels": 2,
+        "spread": 8
+    },
+    "shake": 0.5,
+    "liquidCapacity": 30,
+    "ammoUseEffect": "casing2",
+    "targetGround": true,
+    "targetAir": true,
+    "inaccuracy": 2,
+    "rotateSpeed": 5,
+    "consumes": {
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+    "ammoTypes": {
+        "copper": {
+            "speed": 7.5,
+            "damage": 8,
+            "knockback": 0.5,
+            "lifetime": 45,
+            "width": 6,
+            "height": 9,
+            "ammoMultiplier": 6,
+            "shootEffect": "shootBig",
+            "reloadMultiplier": 1.5
+        },
+        "pyratite": {
+            "speed": 7.5,
+            "damage": 13,
+            "status": "burning",
+            "statusDuration": 600,
+            "lifetime": 45,
+            "backColor": "FF8C00",
+            "frontColor": "FFB90F",
+            "width": 6,
+            "height": 9,
+            "ammoMultiplier": 6,
+            "shootEffect": "shootBig"
+        },
+        "graphite": {
+            "speed": 7.5,
+            "damage": 17,
+            "reloadMultiplier": 1.3,
+            "status": "freezing",
+            "statusDuration": 70,
+            "lifetime": 45,
+            "width": 7,
+            "height": 10,
+            "ammoMultiplier": 6,
+            "shootEffect": "shootBig"
+        },
+        "thorium": {
+            "speed": 7.5,
+            "damage": 21,
+            "lifetime": 45,
+            "reloadMultiplier": 0.7,
+            "width": 10,
+            "height": 11,
+            "shootEffect": "shootBig",
+            "ammoMultiplier": 6
+        }
+    },
+    "requirements": [
+        "copper/25",
+        "lead/25",
+        {
+            "item": "graphite",
+            "amount": 30
+        },
+        {
+            "item": "titanium",
+            "amount": 15
+        }
+    ],
+    "category": "turret",
+    "research": "salvo"
+}

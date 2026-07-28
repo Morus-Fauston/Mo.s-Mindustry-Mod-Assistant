@@ -1,0 +1,28 @@
+{
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 5,
+  "requirements": [
+    {
+      "amount": 80,
+      "item": "thorium"
+    },
+    {
+      "amount": 150,
+      "item": "silicon"
+    },
+    {
+      "amount": 200,
+      "item": "tungsten"
+    },
+    {
+      "amount": 100,
+      "item": "oxide"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "large-constructor"
+}

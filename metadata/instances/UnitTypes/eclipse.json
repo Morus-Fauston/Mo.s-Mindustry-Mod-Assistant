@@ -1,0 +1,17 @@
+{
+  "speed": 0.54,
+  "rotateSpeed": 1.0,
+  "drag": 0.04,
+  "accel": 0.04,
+  "hitSize": 58.0,
+  "health": 22000.0,
+  "armor": 13.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "eclipse"
+}

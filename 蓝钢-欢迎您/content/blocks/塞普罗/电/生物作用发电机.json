@@ -1,0 +1,42 @@
+{
+    "type": "ConsumeGenerator",
+    "name": "生物作用发电机",
+    "description": "专门榨取孢子荚中的能量进行发电",
+    "size": 2,
+    "health": 360,
+    "itemCapacity": 10,
+    "hasItems": true,
+    "powerProduction": 8.5,
+    "generateEffect": "reactorsmoke",
+    "consumes": {
+        "items": {
+            "items": [
+                {
+                    "item": "spore-pod",
+                    "amount": 1
+                }
+            ]
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 55
+        },
+        {
+            "item": "lead",
+            "amount": 55
+        },
+        {
+            "item": "graphite",
+            "amount": 55
+        },
+        {
+            "item": "silicon",
+            "amount": 55
+        }
+    ],
+    "category": "power",
+    "research": "steam-generator",
+    "itemDuration": 90
+}

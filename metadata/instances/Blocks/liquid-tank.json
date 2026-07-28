@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": 500,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 40,
+      "item": "metaglass"
+    },
+    {
+      "amount": 30,
+      "item": "titanium"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "liquid-tank"
+}

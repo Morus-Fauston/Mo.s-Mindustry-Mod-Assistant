@@ -1,0 +1,28 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 5,
+  "requirements": [
+    {
+      "amount": 650,
+      "item": "lead"
+    },
+    {
+      "amount": 350,
+      "item": "titanium"
+    },
+    {
+      "amount": 650,
+      "item": "thorium"
+    },
+    {
+      "amount": 450,
+      "item": "silicon"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "multiplicative-reconstructor"
+}

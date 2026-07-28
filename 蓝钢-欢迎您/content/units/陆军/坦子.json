@@ -1,0 +1,530 @@
+{
+    "crushDamage": 5,
+    "treadFrames": 10,
+    "treadPullOffset": 5,
+    "treadRects": [
+        {
+            "x": -128,
+            "y": -125,
+            "width": 90,
+            "height": 251
+        }
+    ],
+    "parts": [
+        {
+            "type": "RegionPart",
+            "mirror": true,
+            "under": true,
+            "x": -18.8,
+            "y": 17.1,
+            "moveX": -8,
+            "moveY": -15,
+            "suffix": "-盖子1"
+        },
+        {
+            "type": "RegionPart",
+            "mirror": true,
+            "under": true,
+            "x": -18.9,
+            "y": -19.2,
+            "moveX": 8,
+            "moveY": -5,
+            "suffix": "-盖子2"
+        }
+    ],
+    "requirements": {
+        "block": "tetrative-reconstructor",
+        "previous": "坦候"
+    },
+    "name": "坦子",
+    "description": "炮和导弹组合作战单位",
+    "type": "tank",
+    "armor": 64,
+    "speed": 1,
+    "rotateSpeed": 1.5,
+    "hitSize": 58,
+    "health": 32000,
+    "ammoCapacity": 1000,
+    "rippleScale": 1.2,
+    "squareShape": true,
+    "omniMovement": false,
+    "rotateMoveFirst": true,
+    "itemCapacity": 640,
+    "research": "坦候",
+    "weapons": [
+        {
+            "shoot": {
+                "type": "ShootAlternate",
+                "barrels": 2,
+                "spread": 17,
+                "shots": 2,
+                "shotDelay": 5
+            },
+            "layerOffset": 1,
+            "recoils": 2,
+            "parts": [
+                {
+                    "type": "RegionPart",
+                    "mirror": false,
+                    "recoilIndex": 0,
+                    "x": -8.5,
+                    "y": 24.5,
+                    "suffix": "-管子",
+                    "moveX": 0,
+                    "moveY": 0,
+                    "under": true,
+                    "progress": "recoil",
+                    "moves": [
+                        {
+                            "progress": "recoil",
+                            "y": -4
+                        }
+                    ]
+                },
+                {
+                    "type": "RegionPart",
+                    "mirror": false,
+                    "recoilIndex": 1,
+                    "x": 8.5,
+                    "y": 24.5,
+                    "suffix": "-管子",
+                    "moveX": 0,
+                    "moveY": 0,
+                    "under": true,
+                    "progress": "recoil",
+                    "moves": [
+                        {
+                            "progress": "recoil",
+                            "y": -4
+                        }
+                    ]
+                }
+            ],
+            "mirror": false,
+            "rotateSpeed": 1.5,
+            "name": "坦子武器",
+            "x": 0,
+            "y": 0,
+            "shootY": 40,
+            "top": true,
+            "rotate": true,
+            "shake": 5,
+            "recoil": 0,
+            "ejectEffect": "casing4",
+            "reload": 30,
+            "shootSound": "shootDiffuse",
+            "inaccuracy": 1,
+            "bullet": {
+                "smokeEffect": {
+                    "type": "MultiEffect",
+                    "effects": [
+                        {
+                            "type": "ParticleEffect",
+                            "particles": 8,
+                            "sizeFrom": 4,
+                            "sizeTo": 0,
+                            "length": 10,
+                            "baseLength": 10,
+                            "lifetime": 60,
+                            "colorFrom": "7B7B7B80",
+                            "colorTo": "7B7B7B80",
+                            "interp": "circleOut",
+                            "sizeInterp": "pow5In",
+                            "cone": 360
+                        }
+                    ]
+                },
+                "speed": 8,
+                "trailEffect": "artilleryTrail",
+                "shootEffect": "shootBig2",
+                "collides": true,
+                "hitEffect": {
+                    "type": "MultiEffect",
+                    "effects": [
+                        {
+                            "type": "ParticleEffect",
+                            "particles": 6,
+                            "sizeFrom": 4,
+                            "sizeTo": 0,
+                            "length": 20,
+                            "baseLength": 20,
+                            "lifetime": 40,
+                            "colorFrom": "7B7B7B80",
+                            "colorTo": "7B7B7B80",
+                            "interp": "circleOut",
+                            "sizeInterp": "pow5In",
+                            "cone": 360
+                        },
+                        {
+                            "type": "WaveEffect",
+                            "lifetime": 20,
+                            "sizeFrom": 0,
+                            "sizeTo": 50,
+                            "strokeFrom": 4,
+                            "strokeTo": 0,
+                            "colorFrom": "7B7B7BFF",
+                            "colorTo": "7B7B7B80"
+                        }
+                    ]
+                },
+                "knockback": 2,
+                "lifetime": 60,
+                "damage": 150,
+                "splashDamageRadius": 48,
+                "splashDamage": 260,
+                "width": 15,
+                "height": 30,
+                "shrinkY": 0
+            }
+        },
+        {
+            "x": 24,
+            "y": 20.8,
+            "shootY": 0,
+            "recoil": 0,
+            "rotateSpeed": 10,
+            "top": true,
+            "rotate": true,
+            "mirror": true,
+            "reload": 25,
+            "shootSound": "shootMissile",
+            "inaccuracy": 0,
+            "ignoreRotation": false,
+            "bullet": {
+                "smokeEffect": {
+                    "type": "MultiEffect",
+                    "effects": [
+                        {
+                            "type": "WaveEffect",
+                            "lifetime": 40,
+                            "sizeFrom": 0,
+                            "sizeTo": 4,
+                            "strokeFrom": 20,
+                            "strokeTo": 0,
+                            "interp": "circleOut",
+                            "colorFrom": "EEC591",
+                            "colorTo": "FFFFFF70"
+                        }
+                    ]
+                },
+                "type": "MissileBulletType",
+                "damage": 60,
+                "trailLength": 6,
+                "trailWidth": 1,
+                "trailEffect": "smoke",
+                "trailColor": "ffffff",
+                "splashDamageRadius": 24,
+                "splashDamage": 30,
+                "homingRange": 800,
+                "homingPower": 0.15,
+                "hitEffect": "explosion",
+                "despawnEffect": "explosion",
+                "sprite": "蓝钢工业-导弹",
+                "width": 20,
+                "height": 35,
+                "speed": 6,
+                "lifetime": 85
+            }
+        },
+        {
+            "display": false,
+            "x": -14.8,
+            "y": 20.8,
+            "shootY": 0,
+            "recoil": 0,
+            "rotateSpeed": 10,
+            "top": true,
+            "rotate": true,
+            "mirror": true,
+            "reload": 25,
+            "shootSound": "shootMissile",
+            "inaccuracy": 0,
+            "ignoreRotation": false,
+            "bullet": {
+                "smokeEffect": {
+                    "type": "MultiEffect",
+                    "effects": [
+                        {
+                            "type": "WaveEffect",
+                            "lifetime": 40,
+                            "sizeFrom": 0,
+                            "sizeTo": 4,
+                            "strokeFrom": 20,
+                            "strokeTo": 0,
+                            "interp": "circleOut",
+                            "colorFrom": "EEC591",
+                            "colorTo": "FFFFFF70"
+                        }
+                    ]
+                },
+                "type": "MissileBulletType",
+                "damage": 60,
+                "trailLength": 6,
+                "trailWidth": 1,
+                "trailEffect": "smoke",
+                "trailColor": "ffffff",
+                "splashDamageRadius": 24,
+                "splashDamage": 30,
+                "homingRange": 800,
+                "homingPower": 0.15,
+                "hitEffect": "explosion",
+                "despawnEffect": "explosion",
+                "sprite": "蓝钢工业-导弹",
+                "width": 20,
+                "height": 35,
+                "speed": 6,
+                "lifetime": 85
+            }
+        },
+        {
+            "display": false,
+            "x": 11.3,
+            "y": 13.8,
+            "shootY": 0,
+            "recoil": 0,
+            "rotateSpeed": 10,
+            "top": true,
+            "rotate": true,
+            "mirror": true,
+            "reload": 25,
+            "shootSound": "shootMissile",
+            "inaccuracy": 0,
+            "ignoreRotation": false,
+            "bullet": {
+                "smokeEffect": {
+                    "type": "MultiEffect",
+                    "effects": [
+                        {
+                            "type": "WaveEffect",
+                            "lifetime": 40,
+                            "sizeFrom": 0,
+                            "sizeTo": 4,
+                            "strokeFrom": 20,
+                            "strokeTo": 0,
+                            "interp": "circleOut",
+                            "colorFrom": "EEC591",
+                            "colorTo": "FFFFFF70"
+                        }
+                    ]
+                },
+                "type": "MissileBulletType",
+                "damage": 60,
+                "trailLength": 6,
+                "trailWidth": 1,
+                "trailEffect": "smoke",
+                "trailColor": "ffffff",
+                "splashDamageRadius": 24,
+                "splashDamage": 30,
+                "homingRange": 800,
+                "homingPower": 0.15,
+                "hitEffect": "explosion",
+                "despawnEffect": "explosion",
+                "sprite": "蓝钢工业-导弹",
+                "width": 20,
+                "height": 35,
+                "speed": 6,
+                "lifetime": 85
+            }
+        },
+        {
+            "display": false,
+            "x": -19.8,
+            "y": 13.6,
+            "shootY": 0,
+            "recoil": 0,
+            "rotateSpeed": 10,
+            "top": true,
+            "rotate": true,
+            "mirror": true,
+            "reload": 25,
+            "shootSound": "shootMissile",
+            "inaccuracy": 0,
+            "ignoreRotation": false,
+            "bullet": {
+                "smokeEffect": {
+                    "type": "MultiEffect",
+                    "effects": [
+                        {
+                            "type": "WaveEffect",
+                            "lifetime": 40,
+                            "sizeFrom": 0,
+                            "sizeTo": 4,
+                            "strokeFrom": 20,
+                            "strokeTo": 0,
+                            "interp": "circleOut",
+                            "colorFrom": "EEC591",
+                            "colorTo": "FFFFFF70"
+                        }
+                    ]
+                },
+                "type": "MissileBulletType",
+                "damage": 60,
+                "trailLength": 6,
+                "trailWidth": 1,
+                "trailEffect": "smoke",
+                "trailColor": "ffffff",
+                "splashDamageRadius": 24,
+                "splashDamage": 30,
+                "homingRange": 800,
+                "homingPower": 0.15,
+                "hitEffect": "explosion",
+                "despawnEffect": "explosion",
+                "sprite": "蓝钢工业-导弹",
+                "width": 20,
+                "height": 35,
+                "speed": 6,
+                "lifetime": 85
+            }
+        },
+        {
+            "display": false,
+            "x": -15.7,
+            "y": -15,
+            "shootY": 0,
+            "recoil": 0,
+            "rotateSpeed": 10,
+            "top": true,
+            "rotate": true,
+            "mirror": true,
+            "reload": 25,
+            "shootSound": "shootMissile",
+            "inaccuracy": 0,
+            "ignoreRotation": false,
+            "bullet": {
+                "smokeEffect": {
+                    "type": "MultiEffect",
+                    "effects": [
+                        {
+                            "type": "WaveEffect",
+                            "lifetime": 40,
+                            "sizeFrom": 0,
+                            "sizeTo": 4,
+                            "strokeFrom": 20,
+                            "strokeTo": 0,
+                            "interp": "circleOut",
+                            "colorFrom": "EEC591",
+                            "colorTo": "FFFFFF70"
+                        }
+                    ]
+                },
+                "type": "MissileBulletType",
+                "damage": 60,
+                "trailLength": 6,
+                "trailWidth": 1,
+                "trailEffect": "smoke",
+                "trailColor": "ffffff",
+                "splashDamageRadius": 24,
+                "splashDamage": 30,
+                "homingRange": 800,
+                "homingPower": 0.15,
+                "hitEffect": "explosion",
+                "despawnEffect": "explosion",
+                "sprite": "蓝钢工业-导弹",
+                "width": 20,
+                "height": 35,
+                "speed": 6,
+                "lifetime": 85
+            }
+        },
+        {
+            "display": false,
+            "x": 23,
+            "y": -17,
+            "shootY": 0,
+            "recoil": 0,
+            "rotateSpeed": 10,
+            "top": true,
+            "rotate": true,
+            "mirror": true,
+            "reload": 25,
+            "shootSound": "shootMissile",
+            "inaccuracy": 0,
+            "ignoreRotation": false,
+            "bullet": {
+                "smokeEffect": {
+                    "type": "MultiEffect",
+                    "effects": [
+                        {
+                            "type": "WaveEffect",
+                            "lifetime": 40,
+                            "sizeFrom": 0,
+                            "sizeTo": 4,
+                            "strokeFrom": 20,
+                            "strokeTo": 0,
+                            "interp": "circleOut",
+                            "colorFrom": "EEC591",
+                            "colorTo": "FFFFFF70"
+                        }
+                    ]
+                },
+                "type": "MissileBulletType",
+                "damage": 60,
+                "trailLength": 6,
+                "trailWidth": 1,
+                "trailEffect": "smoke",
+                "trailColor": "ffffff",
+                "splashDamageRadius": 24,
+                "splashDamage": 30,
+                "homingRange": 800,
+                "homingPower": 0.15,
+                "hitEffect": "explosion",
+                "despawnEffect": "explosion",
+                "sprite": "蓝钢工业-导弹",
+                "width": 20,
+                "height": 35,
+                "speed": 6,
+                "lifetime": 85
+            }
+        },
+        {
+            "display": false,
+            "x": 21,
+            "y": -24,
+            "shootY": 0,
+            "recoil": 0,
+            "rotateSpeed": 10,
+            "top": true,
+            "rotate": true,
+            "mirror": true,
+            "reload": 25,
+            "shootSound": "shootMissile",
+            "inaccuracy": 0,
+            "ignoreRotation": false,
+            "bullet": {
+                "smokeEffect": {
+                    "type": "MultiEffect",
+                    "effects": [
+                        {
+                            "type": "WaveEffect",
+                            "lifetime": 40,
+                            "sizeFrom": 0,
+                            "sizeTo": 4,
+                            "strokeFrom": 20,
+                            "strokeTo": 0,
+                            "interp": "circleOut",
+                            "colorFrom": "EEC591",
+                            "colorTo": "FFFFFF70"
+                        }
+                    ]
+                },
+                "type": "MissileBulletType",
+                "damage": 60,
+                "trailLength": 6,
+                "trailWidth": 1,
+                "trailEffect": "smoke",
+                "trailColor": "ffffff",
+                "splashDamageRadius": 24,
+                "splashDamage": 30,
+                "homingRange": 800,
+                "homingPower": 0.15,
+                "hitEffect": "explosion",
+                "despawnEffect": "explosion",
+                "sprite": "蓝钢工业-导弹",
+                "width": 20,
+                "height": 35,
+                "speed": 6,
+                "lifetime": 85
+            }
+        }
+    ]
+}

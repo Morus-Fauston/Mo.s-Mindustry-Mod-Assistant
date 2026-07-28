@@ -1,0 +1,28 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 5,
+  "requirements": [
+    {
+      "amount": 500,
+      "item": "thorium"
+    },
+    {
+      "amount": 400,
+      "item": "phase-fabric"
+    },
+    {
+      "amount": 250,
+      "item": "oxide"
+    },
+    {
+      "amount": 300,
+      "item": "carbide"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "basic-assembler-module"
+}

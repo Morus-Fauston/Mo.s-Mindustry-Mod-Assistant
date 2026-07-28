@@ -1,0 +1,44 @@
+{
+    "type": "GenericCrafter",
+    "name": "大型石墨压缩机",
+    "description": "将煤炭压缩成石墨",
+    "outputItem": {
+        "item": "graphite",
+        "amount": 2
+    },
+    "size": 3,
+    "itemCapacity": 20,
+    "hasItems": true,
+    "craftTime": 30,
+    "consumes": {
+        "items": {
+            "items": [
+                {
+                    "item": "coal",
+                    "amount": 4
+                }
+            ]
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 65
+        },
+        {
+            "item": "lead",
+            "amount": 65
+        },
+        {
+            "item": "silicon",
+            "amount": 65
+        },
+                {
+            "item": "graphite",
+            "amount": 65
+        }
+    ],
+    "category": "crafting",
+    "research": "graphite-press",
+    "updateEffect": "pulverizeMedium"
+}

@@ -1,0 +1,39 @@
+{
+    "researchCostMultiplier": 0.5
+    "type": "CoreBlock",
+    "name": "泰坦级核心",
+    "description": "全面强化最终核心",
+        "details": "四代核心（狗头）",
+    "armor": 16,
+    "itemCapacity": 100000,
+    "hasItems": true,
+    "health": 40000,
+    "unitCapModifier": 256,
+    "size": 8,
+    "breakable": true,
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 16000
+        },
+        {
+            "item": "lead",
+            "amount": 16000
+        },
+                {
+            "item": "普勒合金",
+            "amount": 3000
+        },
+        {
+            "item": "蓝钢",
+            "amount": 3000
+        },
+        {
+            "item": "silicon",
+            "amount": 3000
+        }
+    ],
+    "unitType": "德尔塔",
+    "category": "effect",
+    "research": "core-nucleus"
+}

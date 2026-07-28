@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 2080,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 24,
+      "item": "beryllium"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "beryllium-wall-large"
+}

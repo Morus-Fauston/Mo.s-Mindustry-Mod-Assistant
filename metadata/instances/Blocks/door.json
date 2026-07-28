@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 400,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 6,
+      "item": "titanium"
+    },
+    {
+      "amount": 4,
+      "item": "silicon"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "door"
+}

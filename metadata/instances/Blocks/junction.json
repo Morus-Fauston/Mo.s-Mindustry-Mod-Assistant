@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 30,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 3,
+      "item": "copper"
+    }
+  ],
+  "category": "distribution",
+  "buildTime": -1.0,
+  "name": "junction"
+}

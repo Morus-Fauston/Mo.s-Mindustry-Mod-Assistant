@@ -1,0 +1,14 @@
+{
+  "name": "MappableContent",
+  "fullName": "mindustry.ctype.MappableContent",
+  "parent": "Content",
+  "fields": [
+    {
+      "name": "name",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    }
+  ]
+}

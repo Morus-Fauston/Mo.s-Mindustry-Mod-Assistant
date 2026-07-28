@@ -1,0 +1,54 @@
+{
+    "type": "PowerTurret",
+    "name": "光芒",
+    "description": "持续向敌人发射穿透性激光",
+    "targetAir": true,
+    "targetGround": true,
+    "health": 300,
+    "size": 2,
+    "heatColor": "turretHeat",
+    "shootSound": "shootLocus",
+    "shake": 0.2,
+    "inaccuracy": 3,
+    "recoil": 2,
+    "shoot": {
+        "type": "ShootAlternate",
+        "barrels": 2,
+        "spread": 5
+    },
+    "shootType": {
+        "damage": 27,
+        "width": 6,
+        "type": "ShrapnelBulletType",
+        "length": 190,
+        "serrations": 1,
+        "fromColor": "87CEEB",
+        "toColor": "87CEEB"
+    },
+    "consumes": {
+        "power": 7,
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+    "reload": 10,
+    "rotateSpeed": 4,
+    "range": 200,
+    "category": "turret",
+    "research": "arc",
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 65
+        },
+        {
+            "item": "lead",
+            "amount": 25
+        },
+        {
+            "item": "silicon",
+            "amount": 10
+        }
+    ]
+}

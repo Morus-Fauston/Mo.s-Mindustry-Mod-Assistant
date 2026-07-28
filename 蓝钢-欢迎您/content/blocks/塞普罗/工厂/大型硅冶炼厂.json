@@ -1,0 +1,56 @@
+{
+    "type": "GenericCrafter",
+    "health": 370,
+    "name": "大型硅冶炼厂",
+    "description": "将沙和煤炭精炼为硅",
+    "details": "重看我之前四个孔的贴图设计是什么答辩设计（恼）",
+    "outputItem": {
+        "item": "silicon",
+        "amount": 7
+    },
+    "itemCapacity": 40,
+    "size": 3,
+    "hasPower": true,
+    "hasLiquids": false,
+    "hasItems": true,
+    "craftTime": 35,
+    "updateEffect": "mineBig",
+    "consumes": {
+        "power": 4,
+        "items": {
+            "items": [
+                {
+                    "item": "coal",
+                    "amount": 3
+                },
+                {
+                    "item": "sand",
+                    "amount": 6
+                }
+            ]
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 105
+        },
+        {
+            "item": "lead",
+            "amount": 105
+        },
+        {
+            "item": "graphite",
+            "amount": 45
+        }
+    ],
+    "drawer": {
+        "type": "DrawMulti",
+        "drawers": [
+            "DrawDefault",
+            "DrawFlame"
+        ]
+    },
+    "category": "crafting",
+    "research": "silicon-smelter"
+}

@@ -1,0 +1,32 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 34.285713,
+  "range": 240.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 35,
+      "item": "graphite"
+    },
+    {
+      "amount": 35,
+      "item": "titanium"
+    },
+    {
+      "amount": 30,
+      "item": "silicon"
+    },
+    {
+      "amount": 45,
+      "item": "plastanium"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "swarmer"
+}

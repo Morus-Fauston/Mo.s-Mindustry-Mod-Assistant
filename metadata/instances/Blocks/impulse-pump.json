@@ -1,0 +1,32 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 80,
+      "item": "copper"
+    },
+    {
+      "amount": 90,
+      "item": "metaglass"
+    },
+    {
+      "amount": 40,
+      "item": "titanium"
+    },
+    {
+      "amount": 35,
+      "item": "thorium"
+    },
+    {
+      "amount": 30,
+      "item": "silicon"
+    }
+  ],
+  "category": "liquid",
+  "buildTime": -1.0,
+  "name": "impulse-pump"
+}

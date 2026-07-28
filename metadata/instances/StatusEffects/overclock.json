@@ -1,0 +1,10 @@
+{
+  "damageMultiplier": 1.15,
+  "healthMultiplier": 1.0,
+  "speedMultiplier": 1.15,
+  "reloadMultiplier": 1.25,
+  "buildSpeedMultiplier": 1.0,
+  "transitionDamage": 0.0,
+  "damage": 0.0,
+  "name": "overclock"
+}

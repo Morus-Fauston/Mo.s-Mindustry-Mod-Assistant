@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 2800,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 24,
+      "item": "silicon"
+    },
+    {
+      "amount": 24,
+      "item": "tungsten"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "blast-door"
+}

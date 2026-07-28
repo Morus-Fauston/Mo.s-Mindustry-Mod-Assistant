@@ -1,0 +1,32 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 30.0,
+  "range": 125.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 200,
+      "item": "graphite"
+    },
+    {
+      "amount": 200,
+      "item": "silicon"
+    },
+    {
+      "amount": 150,
+      "item": "beryllium"
+    },
+    {
+      "amount": 50,
+      "item": "tungsten"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "diffuse"
+}

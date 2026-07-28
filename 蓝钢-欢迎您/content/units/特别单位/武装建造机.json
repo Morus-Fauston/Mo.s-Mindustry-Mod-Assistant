@@ -1,0 +1,104 @@
+{
+    "type": "tether",
+    "name": "武装建造机",
+    "speed": 1,
+    "rotateSpeed": 2.5,
+    "hitSize": 45,
+    "buildBeamOffset": 11,
+    "buildSpeed": 0.5,
+    "flying": true,
+    "faceTarget": false,
+    "useUnitCap": true,
+    "health": 1050,
+    "engineOffset": 18,
+    "engineSize": 10,
+    "trailLength": 25,
+    "trailColor": "84F491FF",
+    "engineColor": "84F491FF",
+    "isEnemy": false,
+    "hidden": true,
+    "createWreck": false,
+    "defaultController": "AssemblerAI",
+    "playerControllable": false,
+    "lowAltitude": true,
+    "range": 180,
+    "weapons": [
+        {
+            "name": "修复导弹发射器",
+            "shoot": {
+                "shots": 8,
+                "shotDelay": 5,
+                "type": "ShootBarrel",
+                "barrels": [
+                    0,
+                    0,
+                    0,
+                    -5,
+                    0,
+                    0,
+                    5,
+                    0,
+                    0
+                ]
+            },
+            "mirror": false,
+            "x": 0,
+            "y": 0,
+            "top": true,
+            "rotate": true,
+            "reload": 80,
+            "shootSound": "missile",
+            "inaccuracy": 3,
+            "alternate": false,
+            "ignoreRotation": false,
+            "rotateSpeed": 2,
+            "bullet": {
+                "buildingDamageMultiplier": 0.01,
+                "collidesTeam": true,
+                "healPercent": 3,
+                "speed": 4,
+                "type": "MissileBulletType",
+                "despawnEffect": "hitMeltHeal",
+                "hitEffect": "none",
+                "weaveScale": 8,
+                "weaveMag": 2,
+                "lifetime": 45,
+                "damage": 10,
+                "splashDamageRadius": 10,
+                "splashDamage": 10,
+                "homingPower": 0.2,
+                "homingRange": 80,
+                "width": 7,
+                "shrinkY": 0,
+                "height": 12,
+                "trailColor": "62AE7FFF",
+                "backColor": "62AE7FFF",
+                "frontColor": "84F491FF",
+                "hitColor": "62AE7FFF"
+            }
+        },
+        {
+            "type": "RepairBeamWeapon",
+            "name": "修复",
+            "x": 15,
+            "y": -15,
+            "beamWidth": 1,
+            "repairSpeed": 1,
+            "shootY": 6,
+            "top": true,
+            "mirror": true,
+            "bullet": {
+                "maxRange": 90,
+                "ammoMultiplier": 1
+            }
+        }
+    ],
+    "abilities": [
+        {
+            "type": "RepairFieldAbility",
+            "range": 90,
+            "amount": 10,
+            "reload": 300
+        }
+    ]
+}

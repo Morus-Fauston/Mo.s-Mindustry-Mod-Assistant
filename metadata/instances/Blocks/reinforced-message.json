@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 100,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 10,
+      "item": "graphite"
+    },
+    {
+      "amount": 5,
+      "item": "beryllium"
+    }
+  ],
+  "category": "logic",
+  "buildTime": -1.0,
+  "name": "reinforced-message"
+}

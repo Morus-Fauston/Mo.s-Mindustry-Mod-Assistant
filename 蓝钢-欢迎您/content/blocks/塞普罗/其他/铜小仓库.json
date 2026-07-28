@@ -1,0 +1,15 @@
+
+{
+	"name":"铜小仓库",
+	"type":"StorageBlock",
+	"description":"铜制简易小仓库",
+	"itemCapacity":100,
+	"hasItems":true,
+	"health":100,
+	"size":2,
+	"requirements": [	
+ {"item":"copper","amount":100,}
+ 	],
+	"category": "effect"
+		"research":"conveyor"
+}

@@ -1,0 +1,20 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": 1000,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 6,
+      "item": "surge-alloy"
+    },
+    {
+      "amount": 2,
+      "item": "tungsten"
+    }
+  ],
+  "category": "defense",
+  "buildTime": -1.0,
+  "name": "reinforced-surge-wall"
+}

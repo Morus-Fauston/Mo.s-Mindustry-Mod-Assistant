@@ -1,0 +1,17 @@
+{
+  "speed": 3.3,
+  "rotateSpeed": 17.0,
+  "drag": 0.05,
+  "accel": 0.1,
+  "hitSize": 9.0,
+  "health": 170.0,
+  "armor": 0.0,
+  "range": -1.0,
+  "buildSpeed": 0.75,
+  "lightRadius": -1.0,
+  "flying": true,
+  "itemCapacity": 50,
+  "ammoCapacity": 1,
+  "mineSpeed": 7.0,
+  "name": "beta"
+}

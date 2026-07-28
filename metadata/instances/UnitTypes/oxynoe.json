@@ -1,0 +1,17 @@
+{
+  "speed": 0.83,
+  "rotateSpeed": 4.0,
+  "drag": 0.14,
+  "accel": 0.4,
+  "hitSize": 14.0,
+  "health": 560.0,
+  "armor": 4.0,
+  "range": -1.0,
+  "buildSpeed": 2.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "oxynoe"
+}

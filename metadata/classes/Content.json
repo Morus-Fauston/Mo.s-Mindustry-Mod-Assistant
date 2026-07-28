@@ -1,0 +1,28 @@
+{
+  "name": "Content",
+  "fullName": "mindustry.ctype.Content",
+  "parent": null,
+  "fields": [
+    {
+      "name": "id",
+      "javaType": "short",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "minfo",
+      "javaType": "ModContentInfo",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "removed",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    }
+  ]
+}

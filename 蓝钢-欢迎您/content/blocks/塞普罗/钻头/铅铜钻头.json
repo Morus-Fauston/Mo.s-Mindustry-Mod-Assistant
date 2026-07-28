@@ -1,0 +1,33 @@
+{
+    "name": "铅铜钻头",
+    "type": "Drill",
+    "description": "这是钻头用来挖矿的，可以用水加速",
+    "details": "不要问多了个铅，怎么就能挖钛了（狗头）",
+    "size": 1,
+    "health": 90,
+    "tier": 3,
+    "drillTime": 300,
+    "liquidBoostIntensity": 2,
+    "canOverdrive": true,
+    "warmupSpeed": 1,
+    "drillEffect": "none",
+    "updateEffect": "none",
+    "rotateSpeed": 1.6,
+    "drawMineItem": false,
+    "consumes": {
+        "liquid": {
+            "liquid": "water",
+            "amount": 0.07,
+            "booster": true,
+            "optional": true
+        }
+    },
+    "itemCapacity": 10,
+    "liquidCapacity": 10,
+    "requirements": [
+        "copper/10",
+        "lead/10"
+    ],
+    "category": "production",
+    "research": "pneumatic-drill"
+}

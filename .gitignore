@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ═══════════════════════════════════════════
+# Project-specific (MoMA)
+# ═══════════════════════════════════════════
+
+# Personal docs (not part of the distributed project)
+Docs/
+
+# Extractor build artifacts
+extractor/.gradle/
+extractor/build/
+extractor/libs/

@@ -1,0 +1,28 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 8,
+      "item": "lead"
+    },
+    {
+      "amount": 8,
+      "item": "metaglass"
+    },
+    {
+      "amount": 8,
+      "item": "silicon"
+    },
+    {
+      "amount": 3,
+      "item": "phase-fabric"
+    }
+  ],
+  "category": "logic",
+  "buildTime": -1.0,
+  "name": "tile-logic-display"
+}

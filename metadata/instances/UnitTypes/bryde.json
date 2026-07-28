@@ -1,0 +1,17 @@
+{
+  "speed": 0.85,
+  "rotateSpeed": 1.8,
+  "drag": 0.17,
+  "accel": 0.2,
+  "hitSize": 20.0,
+  "health": 910.0,
+  "armor": 7.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": -1,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "bryde"
+}

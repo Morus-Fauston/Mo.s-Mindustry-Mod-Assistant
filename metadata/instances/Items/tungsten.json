@@ -1,0 +1,10 @@
+{
+  "color": "#768a9aff",
+  "explosiveness": 0.0,
+  "flammability": 0.0,
+  "radioactivity": 0.0,
+  "charge": 0.0,
+  "hardness": 5,
+  "cost": 1.5,
+  "name": "tungsten"
+}

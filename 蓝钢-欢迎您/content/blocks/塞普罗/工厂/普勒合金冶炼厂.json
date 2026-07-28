@@ -1,0 +1,81 @@
+{
+    "type": "GenericCrafter",
+    "name": "普勒合金冶炼厂",
+    "description": "将巨浪合金和蓝钢融合在一起，诞生新的材料普勒合金",
+    "details": "蓝钢使用更广泛，普勒合金使用不多但会出现在高级建筑或炮塔上",
+    "health": 2500,
+    "itemCapacity": 60,
+    "outputItem": {
+        "item": "普勒合金",
+        "amount": 2
+    },
+    "size": 4,
+    "hasPower": true,
+    "hasItems": true,
+    "craftTime": 60,
+    "craftEffect": "formsmoke",
+    "updateEffect": "smeltsmoke",
+    "consumes": {
+        "power": 34,
+        "items": {
+            "items": [
+                {
+                    "item": "蓝钢",
+                    "amount": 2
+                },
+                {
+                    "item": "surge-alloy",
+                    "amount": 2
+                }
+            ]
+        }
+    },
+    "drawer": {
+        "type": "DrawMulti",
+        "drawers": [
+            {
+                "type": "drawRegion",
+                "suffix": "-bottom"
+            },
+            "DrawDefault",
+            {
+                "type": "DrawFlame",
+                "flameColor": "9CB664FF",
+                "flameRadiusIn": 2,
+                "flameRadius": 4
+            }
+        ]
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 225
+        },
+        {
+            "item": "lead",
+            "amount": 225
+        },
+        {
+            "item": "蓝钢",
+            "amount": 190
+        },
+        {
+            "item": "titanium",
+            "amount": 180
+        },
+        {
+            "item": "silicon",
+            "amount": 170
+        },
+        {
+            "item": "graphite",
+            "amount": 170
+        },
+        {
+            "item": "plastanium",
+            "amount": 170
+        }
+    ],
+    "category": "crafting",
+    "research": "磁能蓝钢工厂"
+}

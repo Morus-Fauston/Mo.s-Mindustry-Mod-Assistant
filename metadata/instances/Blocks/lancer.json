@@ -1,0 +1,32 @@
+{
+  "targetAir": false,
+  "targetGround": true,
+  "reload": 80.0,
+  "range": 165.0,
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": -1,
+  "size": 2,
+  "requirements": [
+    {
+      "amount": 60,
+      "item": "copper"
+    },
+    {
+      "amount": 70,
+      "item": "lead"
+    },
+    {
+      "amount": 30,
+      "item": "titanium"
+    },
+    {
+      "amount": 60,
+      "item": "silicon"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "lancer"
+}

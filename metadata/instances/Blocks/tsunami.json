@@ -1,0 +1,32 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 3.0,
+  "range": 190.0,
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 400,
+      "item": "lead"
+    },
+    {
+      "amount": 100,
+      "item": "metaglass"
+    },
+    {
+      "amount": 250,
+      "item": "titanium"
+    },
+    {
+      "amount": 100,
+      "item": "thorium"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "tsunami"
+}

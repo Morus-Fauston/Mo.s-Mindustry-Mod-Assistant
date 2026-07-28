@@ -1,0 +1,73 @@
+{
+    "type": "GenericCrafter",
+    "name": "大型孢子压缩机",
+    "description": "将孢子压缩成石油",
+    "outputLiquid": {
+        "liquid": "oil",
+        "amount": 0.7
+    },
+    "drawer": {
+        "type": "DrawMulti",
+        "drawers": [
+          {
+                "type": "DrawRegion",
+                "suffix": "-bottom"
+            },
+            {
+                "type": "DrawPistons",
+                "sinMag": 1
+            },
+            "DrawDefault",
+            {
+                "type": "DrawLiquidRegion",
+                "drawLiquid": "oil"
+            },
+            {
+                "type": "DrawRegion",
+                "suffix": "-top"
+            }
+        ]
+    },
+    "size": 3,
+    "hasPower": true,
+    "hasLiquids": true,
+    "hasItems": true,
+    "craftTime": 30,
+    "itemCapacity": 10,
+    "liquidCapacity": 84,
+    "consumes": {
+        "power": 9,
+        "items": {
+            "items": [
+                {
+                    "item": "spore-pod",
+                    "amount": 2
+                }
+            ]
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 45
+        },
+        {
+            "item": "lead",
+            "amount": 45
+        },
+        {
+            "item": "titanium",
+            "amount": 45
+        },
+        {
+            "item": "metaglass",
+            "amount": 45
+        },
+        {
+            "item": "silicon",
+            "amount": 45
+        }
+    ],
+    "category": "crafting",
+    "research": "spore-press"
+}

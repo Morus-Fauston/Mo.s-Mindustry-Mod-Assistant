@@ -1,0 +1,28 @@
+{
+  "targetAir": true,
+  "targetGround": true,
+  "reload": 40.0,
+  "range": 190.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 125,
+      "item": "graphite"
+    },
+    {
+      "amount": 150,
+      "item": "silicon"
+    },
+    {
+      "amount": 150,
+      "item": "beryllium"
+    }
+  ],
+  "category": "turret",
+  "buildTime": 540.0,
+  "name": "breach"
+}

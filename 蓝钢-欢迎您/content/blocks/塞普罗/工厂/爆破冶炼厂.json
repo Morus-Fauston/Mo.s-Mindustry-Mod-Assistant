@@ -1,0 +1,61 @@
+{
+    "type": "GenericCrafter",
+    "health": 600,
+    "name": "爆破冶炼厂",
+    "description": "利用爆炸混合物生产硅",
+    "outputItem": {
+        "item": "silicon",
+        "amount": 4
+    },
+    "itemCapacity": 40,
+    "size": 4,
+    "hasPower": true,
+    "hasLiquids": false,
+    "hasItems": true,
+    "craftTime": 10,
+    "updateEffect": "mineBig",
+    "consumes": {
+        "power": 10,
+        "items": {
+            "items": [
+                {
+                    "item": "sand",
+                    "amount": 4
+                },
+                {
+                    "item": "blast-compound",
+                    "amount": 1
+                }
+            ]
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 160
+        },
+        {
+            "item": "lead",
+            "amount": 160
+        },
+        {
+            "item": "silicon",
+            "amount": 160
+        },
+        {
+            "item": "graphite",
+            "amount": 160
+        },
+        {
+            "item": "蓝钢",
+            "amount": 160
+        },
+        {
+            "item": "blast-compound",
+            "amount": 30
+        }
+    ],
+    "craftEffect": "massiveExplosion",
+    "category": "crafting",
+    "research": "大型硅冶炼厂"
+}

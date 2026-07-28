@@ -1,0 +1,28 @@
+{
+  "targetAir": false,
+  "targetGround": true,
+  "reload": 120.0,
+  "range": 290.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 150,
+      "item": "copper"
+    },
+    {
+      "amount": 135,
+      "item": "graphite"
+    },
+    {
+      "amount": 60,
+      "item": "titanium"
+    }
+  ],
+  "category": "turret",
+  "buildTime": -1.0,
+  "name": "ripple"
+}

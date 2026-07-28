@@ -1,0 +1,22 @@
+{
+  "reload": 200.0,
+  "range": 40.0,
+  "hasItems": true,
+  "hasLiquids": false,
+  "hasPower": true,
+  "health": 80,
+  "size": 1,
+  "requirements": [
+    {
+      "amount": 25,
+      "item": "copper"
+    },
+    {
+      "amount": 30,
+      "item": "lead"
+    }
+  ],
+  "category": "effect",
+  "buildTime": -1.0,
+  "name": "mender"
+}

@@ -1,0 +1,17 @@
+{
+  "speed": 0.64,
+  "rotateSpeed": 1.5,
+  "drag": 0.3,
+  "accel": 0.5,
+  "hitSize": 24.0,
+  "health": 5000.0,
+  "armor": 11.0,
+  "range": -1.0,
+  "buildSpeed": -1.0,
+  "lightRadius": -1.0,
+  "flying": false,
+  "itemCapacity": 0,
+  "ammoCapacity": 1,
+  "mineSpeed": 1.0,
+  "name": "precept"
+}

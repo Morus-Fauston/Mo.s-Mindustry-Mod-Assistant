@@ -1,0 +1,36 @@
+{
+  "hasItems": false,
+  "hasLiquids": false,
+  "hasPower": false,
+  "health": -1,
+  "size": 9,
+  "requirements": [
+    {
+      "amount": 4000,
+      "item": "lead"
+    },
+    {
+      "amount": 1000,
+      "item": "thorium"
+    },
+    {
+      "amount": 3000,
+      "item": "silicon"
+    },
+    {
+      "amount": 600,
+      "item": "plastanium"
+    },
+    {
+      "amount": 600,
+      "item": "phase-fabric"
+    },
+    {
+      "amount": 800,
+      "item": "surge-alloy"
+    }
+  ],
+  "category": "units",
+  "buildTime": -1.0,
+  "name": "tetrative-reconstructor"
+}

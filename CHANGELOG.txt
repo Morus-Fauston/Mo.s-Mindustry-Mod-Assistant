@@ -1,0 +1,9 @@
+v0.1.0 (2026-07-29 03:40)
+  新增: Java 提取工具 + Python GUI 编辑器骨架 + Core 逻辑层
+  - 提取工具: 反射 Mindustry v159, 输出 12 类定义 + 570 实例
+  - GUI: IDE 式布局 (文件树/标签页编辑/预览), PySide6
+  - Core: metadata / commands / project / validator / template
+  - 编辑面板: 分组折叠 + "+"添加字段 + 中文(英文)标签
+  - 预览: 静态精灵图叠放 + 图层树 + 导入
+  - 配置驱动: 分组/分类/图层/汉化全部外置 JSON
+  架构: 深模块设计, core 层 12 方法接口, 三接缝隔离

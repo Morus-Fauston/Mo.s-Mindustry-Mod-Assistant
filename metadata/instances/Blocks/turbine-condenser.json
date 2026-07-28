@@ -1,0 +1,16 @@
+{
+  "hasItems": false,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 3,
+  "requirements": [
+    {
+      "amount": 60,
+      "item": "beryllium"
+    }
+  ],
+  "category": "power",
+  "buildTime": -1.0,
+  "name": "turbine-condenser"
+}

@@ -1,0 +1,422 @@
+{
+    "smokeEffect": {
+        "type": "ParticleEffect",
+        "particles": 16,
+        "interp": "pow5Out",
+        "sizeInterp": "pow5In",
+        "sizeFrom": 3,
+        "sizeTo": 0,
+        "length": -40,
+        "baseLength": -40,
+        "lifetime": 105,
+        "colorFrom": "73737390",
+        "colorTo": "73737390",
+        "cone": 5,
+        "layer": 49
+    },
+    "type": "ItemTurret",
+    "name": "防空导弹系统",
+    "description": "向敌人空军发射追踪导弹",
+    "details": "防空系统启动！",
+    "health": 4250,
+    "size": 7,
+    "reload": 90,
+    "range": 850,
+    "maxAmmo": 48,
+    "ammoPerShot": 12,
+    "recoil": 0.5,
+    "baseExplosiveness": 5,
+    "ammoUseEffect": "none",
+    "heatColor": "8B9BB4FF",
+    "shootCone": 45,
+    "canOverdrive": false,
+    "targetGround": false,
+    "targetAir": true,
+    "hasShadow": true,
+    "shootY": 20,
+    "shoot": {
+        "type": "ShootAlternate",
+        "barrels": 4,
+        "spread": 10
+    },
+    "consumes": {
+        "power": 28,
+        "coolant": {
+            "amount": 0.1,
+            "optional": true
+        }
+    },
+    "shootSound": "shootMissileSmall",
+    "inaccuracy": 2,
+    "shake": 6,
+    "rotateSpeed": 1,
+    "ammoTypes": {
+        "surge-alloy": {
+            "trailRotation": true,
+            "collidesGround": false,
+            "type": "FlakBulletType",
+            "lightningDamage": 15,
+            "lightning": 2,
+            "lightningLength": 10,
+            "shrinkY": 0,
+            "speed": 7,
+            "damage": 35,
+            "hitSize": 30,
+            "homingPower": 0.15,
+            "homingRange": 800,
+            "lifetime": 145,
+            "hitSound": "blockExplodeFlammable",
+            "width": 20,
+            "height": 95,
+            "ammoMultiplier": 6,
+            "hitShake": 3,
+            "sprite": "蓝钢工业-中型导弹",
+            "backColor": "EEEE00",
+            "frontColor": "E3E3E3",
+            "trailLength": 30,
+            "trailWidth": 7,
+            "trailColor": "FFFFFF80",
+            "trailChance": 1,
+            "trailInterval": 20,
+            "trailEffect": {
+                "type": "ParticleEffect",
+                "particles": 3,
+                "length": 16,
+                "baseLength": 9,
+                "lifetime": 45,
+                "cone": 360,
+                "colorFrom": "E3E3E380",
+                "colorTo": "E3E3E380",
+                "sizeFrom": 5,
+                "sizeTo": 0
+            },
+            "shootEffect": "shootSmallFlame",
+            "hitEffect": {
+                "type": "MultiEffect",
+                "effects": [
+                    {
+                        "type": "ParticleEffect",
+                        "particles": 10,
+                        "sizeFrom": 10,
+                        "sizeTo": 0,
+                        "length": 5,
+                        "baseLength": 33,
+                        "lifetime": 35,
+                        "colorFrom": "737373FF",
+                        "colorTo": "737373FF",
+                        "cone": 360
+                    },
+                    {
+                        "type": "ParticleEffect",
+                        "particles": 12,
+                        "line": true,
+                        "sizeFrom": 9,
+                        "sizeTo": 0,
+                        "length": 13,
+                        "baseLength": 43,
+                        "lifetime": 22,
+                        "colorFrom": "EEEE00",
+                        "colorTo": "FFE176FF",
+                        "cone": 360
+                    },
+                    {
+                        "type": "WaveEffect",
+                        "lifetime": 10,
+                        "sizeFrom": 1,
+                        "sizeTo": 43,
+                        "strokeFrom": 8,
+                        "strokeTo": 0,
+                        "colorFrom": "EEEE00",
+                        "colorTo": "EEEE00"
+                    }
+                ]
+            },
+            "splashDamageRadius": 40,
+            "splashDamage": 320
+        },
+        "blast-compound": {
+            "status": "blasted",
+            "trailRotation": true,
+            "collidesGround": false,
+            "type": "FlakBulletType",
+            "shrinkY": 0,
+            "speed": 7,
+            "damage": 25,
+            "hitSize": 30,
+            "homingPower": 0.15,
+            "homingRange": 800,
+            "lifetime": 145,
+            "hitSound": "blockExplodeFlammable",
+            "width": 20,
+            "height": 95,
+            "ammoMultiplier": 8,
+            "hitShake": 3,
+            "sprite": "蓝钢工业-中型导弹",
+            "backColor": "FF795EFF",
+            "frontColor": "E3E3E3",
+            "trailLength": 30,
+            "trailWidth": 7,
+            "trailColor": "FF795E80",
+            "trailChance": 1,
+            "trailInterval": 20,
+            "trailEffect": {
+                "type": "ParticleEffect",
+                "particles": 3,
+                "length": 16,
+                "baseLength": 9,
+                "lifetime": 45,
+                "cone": 360,
+                "colorFrom": "FF795E80",
+                "colorTo": "FF795E80",
+                "sizeFrom": 5,
+                "sizeTo": 0
+            },
+            "shootEffect": "shootSmallFlame",
+            "hitEffect": {
+                "type": "MultiEffect",
+                "effects": [
+                    {
+                        "type": "ParticleEffect",
+                        "particles": 11,
+                        "sizeFrom": 14,
+                        "sizeTo": 0,
+                        "length": 15,
+                        "baseLength": 50,
+                        "lifetime": 35,
+                        "colorFrom": "737373FF",
+                        "colorTo": "737373FF",
+                        "cone": 360
+                    },
+                    {
+                        "type": "ParticleEffect",
+                        "particles": 18,
+                        "line": true,
+                        "sizeFrom": 11,
+                        "sizeTo": 0,
+                        "length": 35,
+                        "baseLength": 60,
+                        "lifetime": 22,
+                        "colorFrom": "C85C51FF",
+                        "colorTo": "FF795EFF",
+                        "cone": 360
+                    },
+                    {
+                        "type": "WaveEffect",
+                        "lifetime": 20,
+                        "sizeFrom": 1,
+                        "sizeTo": 70,
+                        "strokeFrom": 8,
+                        "strokeTo": 0,
+                        "colorFrom": "C85C51FF",
+                        "colorTo": "FF795EFF"
+                    }
+                ]
+            },
+            "splashDamageRadius": 70,
+            "splashDamage": 545,
+            "reloadMultiplier": 0.7
+        },
+        "普勒合金": {
+            "trailRotation": true,
+            "collidesGround": false,
+            "type": "FlakBulletType",
+            "lightningDamage": 10,
+            "lightning": 3,
+            "lightningLength": 8,
+            "shrinkY": 0,
+            "speed": 7,
+            "damage": 45,
+            "hitSize": 30,
+            "homingPower": 0.15,
+            "homingRange": 800,
+            "lifetime": 145,
+            "hitSound": "blockExplodeFlammable",
+            "width": 20,
+            "height": 95,
+            "ammoMultiplier": 10,
+            "hitShake": 3,
+            "sprite": "蓝钢工业-中型导弹",
+            "backColor": "ABB67CFF",
+            "frontColor": "E3E3E3",
+            "trailLength": 30,
+            "trailWidth": 7,
+            "trailColor": "ABB67C80",
+            "trailChance": 1,
+            "trailInterval": 20,
+            "trailEffect": {
+                "type": "WaveEffect",
+                "lifetime": 20,
+                "sizeFrom": 0,
+                "sizeTo": 5,
+                "strokeFrom": 15,
+                "sides": 5,
+                "strokeTo": 0,
+                "colorFrom": "ABB67CFF",
+                "colorTo": "ABB67C80"
+            },
+            "shootEffect": "shootSmallFlame",
+            "hitEffect": {
+                "type": "ParticleEffect",
+                "particles": 22,
+                "line": true,
+                "strokeFrom": 3,
+                "strokeTo": 0,
+                "lenFrom": 8,
+                "lenTo": 0,
+                "length": 50,
+                "baseLength": 50,
+                "lifetime": 20,
+                "colorFrom": "ABB67CFF",
+                "colorTo": "ABB67C80",
+                "cone": 30
+            },
+            "splashDamageRadius": 60,
+            "splashDamage": 645,
+            "reloadMultiplier": 0.5
+        }
+    },
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 360
+        },
+        {
+            "item": "silicon",
+            "amount": 260
+        },
+        "graphite/180",
+        "titanium/160",
+        {
+            "item": "蓝钢",
+            "amount": 160
+        },
+        {
+            "item": "plastanium",
+            "amount": 160
+        },
+        {
+            "item": "surge-alloy",
+            "amount": 80
+        }
+    ],
+    "category": "turret",
+    "research": "喷剃",
+    "recoils": 4,
+    "drawer": {
+        "type": "DrawTurret",
+        "parts": [
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "x": 0,
+                "y": 0,
+                "suffix": "-主",
+                "layer": 50,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -1
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "x": 0,
+                "y": 0,
+                "moveY": -3.5,
+                "suffix": "-上盖",
+                "layer": 50,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -1
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": true,
+                "x": 0,
+                "y": 5,
+                "suffix": "-后",
+                "layer": 49.99,
+                "moveX": -3,
+                "moveY": -20,
+                "moveRot": -22.5
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 0,
+                "x": -16,
+                "y": -10,
+                "suffix": "-导弹",
+                "layer": 49.98,
+                "moveX": 0,
+                "moveY": 10,
+                "under": false,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -15
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 1,
+                "x": -6,
+                "y": -10,
+                "suffix": "-导弹",
+                "layer": 49.97,
+                "moveX": 0,
+                "moveY": 10,
+                "under": false,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -10
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 2,
+                "x": 6,
+                "y": -10,
+                "suffix": "-导弹",
+                "layer": 49.96,
+                "moveX": 0,
+                "moveY": 10,
+                "under": false,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -10
+                    }
+                ]
+            },
+            {
+                "type": "RegionPart",
+                "mirror": false,
+                "recoilIndex": 3,
+                "x": 16,
+                "y": -10,
+                "suffix": "-导弹",
+                "layer": 49.95,
+                "moveX": 0,
+                "moveY": 10,
+                "under": false,
+                "moves": [
+                    {
+                        "progress": "recoil",
+                        "y": -10
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,24 @@
+{
+  "hasItems": true,
+  "hasLiquids": true,
+  "hasPower": true,
+  "health": -1,
+  "size": 4,
+  "requirements": [
+    {
+      "amount": 60,
+      "item": "graphite"
+    },
+    {
+      "amount": 70,
+      "item": "silicon"
+    },
+    {
+      "amount": 90,
+      "item": "beryllium"
+    }
+  ],
+  "category": "production",
+  "buildTime": -1.0,
+  "name": "impact-drill"
+}

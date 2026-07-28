@@ -1,0 +1,96 @@
+{
+    "type": "ImpactReactor",
+    "name": "聚合双混动反应堆",
+    "description": "将钍和爆炸混合物聚合在一起然后产电\n产能高，消耗慢",
+    "details": "科技巨大的突破？",
+    "size": 6,
+    "health": 3200,
+    "liquidCapacity": 120,
+    "itemCapacity": 40,
+    "warmupSpeed": 0.001,
+    "hasItems": true,
+    "hasLiquids": true,
+    "outputsPower": true,
+    "powerProduction": 2000,
+    "itemDuration": 3000,
+    "lightColor": "FFFFFF",
+    "drawer": {
+        "type": "DrawMulti",
+        "drawers": [
+            {
+                "type": "DrawRegion",
+                "suffix": "-bottom"
+            },
+            {
+                "type": "DrawPlasma",
+                "suffix": "-plasma-"
+            },
+            {
+                "type": "DrawDefault"
+            },
+            {
+                "type": "DrawGlowRegion",
+                "suffix": "-qwq",
+                "color": "8B9BB4F"
+            },
+            {
+                "type": "DrawLiquidRegion",
+                "drawLiquid": "cryofluid"
+            }
+        ]
+    },
+    "consumes": {
+        "power": 40,
+        "liquid": {
+            "liquid": "cryofluid",
+            "amount": 1
+        },
+        "items": {
+            "items": [
+                {
+                    "item": "thorium",
+                    "amount": 20
+                },
+                {
+                    "item": "blast-compound",
+                    "amount": 20
+                }
+            ]
+        }
+    },
+    "requirements": [
+        {
+            "item": "lead",
+            "amount": 2000
+        },
+        {
+            "item": "graphite",
+            "amount": 1600
+        },
+        {
+            "item": "metaglass",
+            "amount": 1500
+        },
+        "普勒合金/1800",
+        {
+            "item": "蓝钢",
+            "amount": 1950
+        },
+        {
+            "item": "silicon",
+            "amount": 1750
+        },
+        {
+            "item": "titanium",
+            "amount": 750
+        },
+        {
+            "item": "surge-alloy",
+            "amount": 400
+        }
+    ],
+    "ambientSound": "shootEnergyField",
+    "ambientSoundVolume": 1,
+    "category": "power",
+    "research": "impact-reactor"
+}

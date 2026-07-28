@@ -1,0 +1,178 @@
+{
+    "itemCapacity": 80,
+    "type": "UnitFactory",
+    "name": "数增单位工厂",
+    "description": "直接造数增级单位",
+    "health": 360,
+    "size": 3,
+    "consumes": {
+        "power": 3
+    },
+    "plans": [
+        {
+            "unit": "pulsar",
+            "time": 600,
+            "requirements": [
+                {
+                    "item": "silicon",
+                    "amount": 40
+                },
+                {
+                    "item": "graphite",
+                    "amount": 40
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 40
+                }
+            ]
+        },
+        {
+            "unit": "mace",
+            "time": 600,
+            "requirements": [
+                {
+                    "item": "silicon",
+                    "amount": 40
+                },
+                {
+                    "item": "graphite",
+                    "amount": 40
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 40
+                }
+            ]
+        },
+        {
+            "unit": "atrax",
+            "time": 600,
+            "requirements": [
+                {
+                    "item": "silicon",
+                    "amount": 40
+                },
+                {
+                    "item": "graphite",
+                    "amount": 40
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 40
+                }
+            ]
+        },
+        {
+            "unit": "horizon",
+            "time": 600,
+            "requirements": [
+                {
+                    "item": "silicon",
+                    "amount": 40
+                },
+                {
+                    "item": "graphite",
+                    "amount": 40
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 40
+                }
+            ]
+        },
+        {
+            "unit": "poly",
+            "time": 600,
+            "requirements": [
+                {
+                    "item": "silicon",
+                    "amount": 40
+                },
+                {
+                    "item": "graphite",
+                    "amount": 40
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 40
+                }
+            ]
+        },
+        {
+            "unit": "risso",
+            "time": 600,
+            "requirements": [
+                {
+                    "item": "silicon",
+                    "amount": 40
+                },
+                {
+                    "item": "graphite",
+                    "amount": 40
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 40
+                }
+            ]
+        },
+        {
+            "unit": "oxynoe",
+            "time": 600,
+            "requirements": [
+                {
+                    "item": "silicon",
+                    "amount": 40
+                },
+                {
+                    "item": "graphite",
+                    "amount": 40
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 40
+                }
+            ]
+        },
+                {
+            "unit": "坦士",
+            "time": 600,
+            "requirements": [
+                {
+                    "item": "silicon",
+                    "amount": 40
+                },
+                {
+                    "item": "graphite",
+                    "amount": 40
+                },
+                {
+                    "item": "蓝钢",
+                    "amount": 40
+                }
+            ]
+        }
+    ],
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 200
+        },
+        {
+            "item": "lead",
+            "amount": 120
+        },
+        {
+            "item": "silicon",
+            "amount": 90
+        },
+        {
+            "item": "蓝钢",
+            "amount": 200
+        }
+    ],
+    "category": "units",
+    "buildVisibility": "shown",
+    "research": "additive-reconstructor"
+}

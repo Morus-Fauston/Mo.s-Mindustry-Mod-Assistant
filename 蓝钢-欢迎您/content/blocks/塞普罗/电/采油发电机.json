@@ -1,0 +1,60 @@
+{
+    "type": "ThermalGenerator",
+    "name": "采油发电机",
+    "description": "挖取地下石油，燃烧并且发电",
+    "details": "都科幻游戏了，石油？我直接挖出来发电！",
+    "size": 3,
+    "health": 600,
+    "hasPower": true,
+    "hasItems": true,
+    "liquidCapacity": 60,
+    "generateEffect": {
+        "type": "ParticleEffect",
+        "particles": 1,
+        "sizeFrom": 4,
+        "sizeTo": 2,
+        "length": 5,
+        "baseLength": 5,
+        "lifetime": 200,
+        "colorFrom": "B28768ff",
+        "colorTo": "B2876880"
+    },
+    "attribute": "oil",
+    "powerProduction": 2,
+    "requirements": [
+        {
+            "item": "copper",
+            "amount": 35
+        },
+        {
+            "item": "lead",
+            "amount": 35
+        },
+        {
+            "item": "metaglass",
+            "amount": 45
+        },
+        {
+            "item": "graphite",
+            "amount": 35
+        },
+        {
+            "item": "silicon",
+            "amount": 35
+        },
+        "titanium/35"
+    ],
+    "category": "power",
+    "research": "冷冻发电机",
+    "drawer": {
+        "type": "DrawMulti",
+        "drawers": [
+            "DrawDefault",
+            {
+                "type": "DrawFade",
+                "scale": 20,
+                "suffix": "-qwq"
+            }
+        ]
+    }
+}

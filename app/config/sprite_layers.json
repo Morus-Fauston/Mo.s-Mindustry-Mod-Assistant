@@ -4,19 +4,30 @@
     { "suffix": "-cell", "label": "核心", "required": false },
     { "suffix": "-full", "label": "完整图", "required": false },
     { "suffix": "-outline", "label": "轮廓", "required": false, "autoGenerable": true },
-    { "suffix": "-shadow", "label": "阴影", "required": false, "autoGenerable": true }
+    { "suffix": "-shadow", "label": "阴影", "required": false, "autoGenerable": true },
+    { "suffix": "-leg", "label": "腿 (多足)", "required": false },
+    { "suffix": "-treads", "label": "履带 (坦克)", "required": false }
   ],
   "ItemTurret": [
     { "suffix": "-base", "label": "底座", "required": true },
     { "suffix": "", "label": "炮管", "required": true },
     { "suffix": "-top", "label": "顶层", "required": false },
-    { "suffix": "-heat", "label": "热发光", "required": false }
+    { "suffix": "-heat", "label": "热发光", "required": false },
+    { "suffix": "-outline", "label": "轮廓", "required": false, "autoGenerable": true }
+  ],
+  "PowerTurret": [
+    { "suffix": "-base", "label": "底座", "required": true },
+    { "suffix": "", "label": "炮管", "required": true },
+    { "suffix": "-heat", "label": "热发光", "required": false },
+    { "suffix": "-outline", "label": "轮廓", "required": false, "autoGenerable": true }
   ],
   "Wall": [
-    { "suffix": "", "label": "主体", "required": true }
+    { "suffix": "", "label": "主体", "required": true },
+    { "suffix": "-team", "label": "队伍色", "required": false }
   ],
   "Weapon": [
     { "suffix": "", "label": "主体", "required": true },
-    { "suffix": "-outline", "label": "轮廓", "required": false, "autoGenerable": true }
+    { "suffix": "-outline", "label": "轮廓", "required": false, "autoGenerable": true },
+    { "suffix": "-heat", "label": "热发光", "required": false }
   ]
 }

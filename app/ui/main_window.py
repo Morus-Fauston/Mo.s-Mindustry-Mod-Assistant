@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
@@ -43,9 +44,12 @@ class MainWindow(QMainWindow):
         self._auto_save_timer.timeout.connect(self._auto_save)
         self._auto_save_timer.start(180_000)  # 3 minutes
 
+        self._state_file = Path(__file__).parent.parent / "config" / "editor_state.json"
+
         self._setup_ui()
         self._setup_menu()
         self._setup_toolbar()
+        self._restore_last_project()
 
         self.statusBar().showMessage(
             f"就绪 | 游戏版本: v{self._metadata.game_version}"
@@ -123,6 +127,7 @@ class MainWindow(QMainWindow):
             path, mod_id, name = dlg.get_result()
             self._project = Project.create(path, mod_id, name)
             self._file_tree.set_project(self._project)
+            self._save_state()
             self.statusBar().showMessage(f"已创建工程: {mod_id}")
 
     def _open_project(self) -> None:
@@ -132,6 +137,7 @@ class MainWindow(QMainWindow):
         try:
             self._project = Project.open(path)
             self._file_tree.set_project(self._project)
+            self._save_state()
             self.statusBar().showMessage(f"已打开: {self._project.mod_info.display_name}")
         except FileNotFoundError as e:
             QMessageBox.warning(self, "打开失败", str(e))
@@ -152,6 +158,37 @@ class MainWindow(QMainWindow):
             self._save()
             self.statusBar().showMessage("自动保存完成")
 
+    # ── state persistence ───────────────────────────────────────────────
+
+    def _save_state(self) -> None:
+        """Remember last opened project path."""
+        if self._project is None:
+            return
+        state = {"last_project": str(self._project.root)}
+        try:
+            self._state_file.parent.mkdir(parents=True, exist_ok=True)
+            self._state_file.write_text(
+                json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+        except OSError:
+            pass
+
+    def _restore_last_project(self) -> None:
+        """Auto-open the last project on startup."""
+        if not self._state_file.exists():
+            return
+        try:
+            state = json.loads(self._state_file.read_text(encoding="utf-8"))
+            last_path = state.get("last_project", "")
+            if last_path and Path(last_path).exists():
+                self._project = Project.open(last_path)
+                self._file_tree.set_project(self._project)
+                self.statusBar().showMessage(
+                    f"已恢复上次工程: {self._project.mod_info.display_name}"
+                )
+        except (OSError, json.JSONDecodeError, FileNotFoundError):
+            pass
+
     def _undo(self) -> None:
         self._command_stack.undo()
 
@@ -159,29 +196,35 @@ class MainWindow(QMainWindow):
         self._command_stack.redo()
 
     def _new_unit(self) -> None:
-        self._create_content("UnitType", "units")
-
-    def _new_block(self) -> None:
-        from .dialogs.new_content import NewBlockDialog
         if self._project is None:
             QMessageBox.information(self, "提示", "请先打开或新建一个工程")
             return
+        from .dialogs.new_content import NewUnitDialog
+        dlg = NewUnitDialog(self)
+        if dlg.exec():
+            unit_kind, name = dlg.get_result()
+            if name:
+                self._do_create_content(unit_kind, name, "units")
+
+    def _new_block(self) -> None:
+        if self._project is None:
+            QMessageBox.information(self, "提示", "请先打开或新建一个工程")
+            return
+        from .dialogs.new_content import NewBlockDialog
         dlg = NewBlockDialog(self)
         if dlg.exec():
             block_type, name = dlg.get_result()
-            self._do_create_content(block_type, name, "blocks")
+            if name:
+                self._do_create_content(block_type, name, "blocks")
 
     def _new_weapon(self) -> None:
-        self._create_content("Weapon", "weapons")
-
-    def _create_content(self, kind: str, category: str) -> None:
         if self._project is None:
             QMessageBox.information(self, "提示", "请先打开或新建一个工程")
             return
         from PySide6.QtWidgets import QInputDialog
-        name, ok = QInputDialog.getText(self, f"新建 {kind}", "名称 (英文, 小写+连字符):")
+        name, ok = QInputDialog.getText(self, "新建武器", "名称 (英文, 小写+连字符):")
         if ok and name:
-            self._do_create_content(kind, name, category)
+            self._do_create_content("Weapon", name, "weapons")
 
     def _do_create_content(self, kind: str, name: str, category: str) -> None:
         if self._project is None:

@@ -50,9 +50,33 @@ class EditorPanel(QWidget):
         "basic": "基础属性",
         "movement": "移动属性",
         "combat": "战斗属性",
+        "mining": "采矿",
+        "building": "建造",
+        "capacity": "容量",
+        "boost": "加速",
+        "tank": "坦克/履带",
+        "flying_engine": "飞行引擎",
+        "legs": "腿部",
+        "mech": "机甲",
+        "segment": "节段",
+        "abilities": "技能",
         "appearance": "外观设置",
+        "sound": "音效",
+        "death": "死亡与残骸",
+        "ai": "AI与控制",
+        "physics": "物理与碰撞",
+        "env": "环境",
+        "meta": "研究树与说明",
         "defense": "防御属性",
+        "visual": "视觉",
+        "build": "建造需求",
+        "shooting": "射击模式",
+        "targeting": "目标选择",
+        "continuous": "持续射击",
+        "consumption": "消耗",
         "behavior": "行为",
+        "effects": "音效与特效",
+        "rendering": "渲染",
         "bullet": "子弹",
     }
 
@@ -75,6 +99,7 @@ class EditorPanel(QWidget):
 
         self._field_groups = self._load_field_groups()
         self._field_names_zh = self._load_field_names_zh()
+        self._field_docs = self._load_field_docs()
         self._class_def: ClassDef | None = None
         self._form_layout: QVBoxLayout | None = None
         self._setup_ui()
@@ -117,25 +142,15 @@ class EditorPanel(QWidget):
 
         self._rebuild_form()
 
-        # User notes
-        notes_box = QGroupBox("用户备注")
-        notes_layout = QVBoxLayout(notes_box)
-        self._notes_edit = QTextEdit()
-        self._notes_edit.setMaximumHeight(60)
-        self._notes_edit.setPlaceholderText("在此添加备注...")
-        notes_layout.addWidget(self._notes_edit)
-        self._form_layout.addWidget(notes_box)
-
-        self._form_layout.addStretch()
         scroll.setWidget(scroll_widget)
         layout.addWidget(scroll)
 
     def _rebuild_form(self) -> None:
-        """Rebuild form groups. Called on init and when fields are added."""
+        """Rebuild form groups. Called on init and when fields are added/deleted."""
         if self._class_def is None or self._form_layout is None:
             return
 
-        # Clear existing widgets
+        # Clear existing widgets (groups + notes + stretch)
         while self._form_layout.count() > 0:
             item = self._form_layout.takeAt(0)
             w = item.widget()
@@ -168,6 +183,17 @@ class EditorPanel(QWidget):
             if extra:
                 self._render_group("自定义字段", "_custom", extra)
 
+        # Re-add user notes box
+        notes_box = QGroupBox("用户备注")
+        notes_layout = QVBoxLayout(notes_box)
+        self._notes_edit = QTextEdit()
+        self._notes_edit.setMaximumHeight(60)
+        self._notes_edit.setPlaceholderText("在此添加备注...")
+        notes_layout.addWidget(self._notes_edit)
+        self._form_layout.addWidget(notes_box)
+
+        self._form_layout.addStretch()
+
     def _render_group(self, label: str, group_name: str, fields: list[FieldDef]) -> None:
         """Render a group box with header (title + '+' button) and field rows."""
         group_box = QGroupBox()
@@ -191,7 +217,18 @@ class EditorPanel(QWidget):
         for f in fields:
             widget = self._create_field_widget(f)
             if widget:
-                form.addRow(self._display_name(f.name), widget)
+                label_widget = QLabel(self._display_name(f.name))
+                # Attach tooltip from field_docs.json
+                doc = self._field_docs.get(f.name, "")
+                if doc:
+                    label_widget.setToolTip(doc)
+                    widget.setToolTip(doc)
+                # Right-click to delete field
+                widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+                widget.customContextMenuRequested.connect(
+                    lambda pos, fn=f.name, w=widget: self._show_field_context_menu(pos, fn, w)
+                )
+                form.addRow(label_widget, widget)
         group_layout.addLayout(form)
 
         self._form_layout.addWidget(group_box)
@@ -208,12 +245,17 @@ class EditorPanel(QWidget):
             shown.update(names)
 
         menu = QMenu(self)
+        menu.setToolTipsVisible(True)
         count = 0
         for f in self._class_def.fields:
             if f.name in shown or self._is_internal_field(f):
                 continue
             action = menu.addAction(self._display_name(f.name))
             action.setData(f.name)
+            # Tooltip in menu
+            doc = self._field_docs.get(f.name, "")
+            if doc:
+                action.setToolTip(doc)
             count += 1
             if count >= 60:
                 break
@@ -314,6 +356,17 @@ class EditorPanel(QWidget):
         self._field_widgets[field_def.name] = combo
         return combo
 
+    def _show_field_context_menu(self, pos, field_name: str, widget: QWidget) -> None:
+        """Right-click context menu on a field widget: delete field."""
+        menu = QMenu(self)
+        delete_action = menu.addAction(f"删除字段 \"{self._display_name(field_name)}\"")
+        chosen = menu.exec(widget.mapToGlobal(pos))
+        if chosen == delete_action:
+            if field_name in self._content.data:
+                del self._content.data[field_name]
+                self._mark_dirty()
+                self._rebuild_form()
+
     # ── data operations ─────────────────────────────────────────────────
 
     def _on_field_changed(self, field_name: str, new_value: Any) -> None:
@@ -392,6 +445,13 @@ class EditorPanel(QWidget):
     @staticmethod
     def _load_field_names_zh() -> dict[str, str]:
         config_path = Path(__file__).parent.parent / "config" / "field_names_zh.json"
+        if config_path.exists():
+            return json.loads(config_path.read_text(encoding="utf-8"))
+        return {}
+
+    @staticmethod
+    def _load_field_docs() -> dict[str, str]:
+        config_path = Path(__file__).parent.parent / "config" / "field_docs.json"
         if config_path.exists():
             return json.loads(config_path.read_text(encoding="utf-8"))
         return {}

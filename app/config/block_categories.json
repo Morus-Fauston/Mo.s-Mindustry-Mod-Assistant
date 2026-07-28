@@ -6,7 +6,8 @@
       "subCategories": [
         { "id": "item_turret", "name": "物品炮台", "types": ["ItemTurret"] },
         { "id": "power_turret", "name": "电力炮台", "types": ["PowerTurret"] },
-        { "id": "liquid_turret", "name": "液体炮台", "types": ["LiquidTurret"] }
+        { "id": "liquid_turret", "name": "液体炮台", "types": ["LiquidTurret"] },
+        { "id": "tractor_turret", "name": "牵引炮台", "types": ["TractorBeamTurret"] }
       ]
     },
     {
@@ -14,7 +15,53 @@
       "name": "防御",
       "subCategories": [
         { "id": "wall", "name": "墙", "types": ["Wall"] },
-        { "id": "door", "name": "门", "types": ["Door"] }
+        { "id": "door", "name": "门", "types": ["Door"] },
+        { "id": "mend", "name": "修复", "types": ["MendProjector"] },
+        { "id": "overdrive", "name": "超速", "types": ["OverdriveProjector"] }
+      ]
+    },
+    {
+      "id": "production",
+      "name": "生产",
+      "subCategories": [
+        { "id": "drill", "name": "矿机", "types": ["Drill", "BeamDrill"] },
+        { "id": "crafter", "name": "工厂", "types": ["GenericCrafter", "AttributeCrafter"] },
+        { "id": "pump", "name": "泵", "types": ["Pump"] }
+      ]
+    },
+    {
+      "id": "distribution",
+      "name": "分配",
+      "subCategories": [
+        { "id": "conveyor", "name": "传送带", "types": ["Conveyor", "ArmoredConveyor"] },
+        { "id": "router", "name": "路由器", "types": ["Router", "OverflowGate", "UnderflowGate"] },
+        { "id": "junction", "name": "交叉器", "types": ["Junction"] }
+      ]
+    },
+    {
+      "id": "power",
+      "name": "电力",
+      "subCategories": [
+        { "id": "generator", "name": "发电机", "types": ["SolarGenerator", "ThermalGenerator", "ConsumeGenerator"] },
+        { "id": "battery", "name": "电池", "types": ["Battery"] },
+        { "id": "power_node", "name": "电力节点", "types": ["PowerNode"] }
+      ]
+    },
+    {
+      "id": "liquid",
+      "name": "液体",
+      "subCategories": [
+        { "id": "conduit", "name": "导管", "types": ["Conduit", "ArmoredConduit"] },
+        { "id": "liquid_tank", "name": "液体罐", "types": ["LiquidTank"] },
+        { "id": "liquid_router", "name": "液体路由", "types": ["LiquidRouter"] }
+      ]
+    },
+    {
+      "id": "units",
+      "name": "单位",
+      "subCategories": [
+        { "id": "unit_factory", "name": "单位工厂", "types": ["UnitFactory"] },
+        { "id": "reconstructor", "name": "重构厂", "types": ["Reconstructor"] }
       ]
     }
   ]

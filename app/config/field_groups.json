@@ -1,22 +1,58 @@
 {
   "UnitType": {
-    "basic": ["name", "health", "armor", "speed", "hitSize", "flying"],
-    "movement": ["rotateSpeed", "accel", "drag"],
-    "combat": ["weapons", "range", "ammoCapacity", "itemCapacity"],
-    "appearance": ["lightRadius", "lightColor"]
+    "basic": ["name", "description", "health", "armor", "speed", "hitSize", "flying", "lowAltitude", "hovering", "naval", "bounded", "useUnitCap", "coreUnitDock", "isEnemy", "hidden", "internal"],
+    "movement": ["rotateSpeed", "accel", "drag", "omniMovement", "rotateMoveFirst", "faceTarget", "strafePenalty", "floorMultiplier", "baseRotateSpeed", "riseSpeed", "descentSpeed", "fallSpeed", "weaveMag", "weaveScale", "weaveRandom"],
+    "combat": ["weapons", "range", "maxRange", "ammoCapacity", "targetAir", "targetGround", "targetFlags", "canAttack", "singleTarget", "forceMultiTarget", "autoFindTarget", "targetUnderBlocks", "alwaysShootWhenMoving", "targetPriority", "circleTarget", "circleTargetRadius", "attacks"],
+    "mining": ["mineSpeed", "mineTier", "mineHardnessScaling", "mineWalls", "mineFloor", "mineRange", "mineItems", "mineSound", "mineSoundVolume", "mineBeamOffset", "drawMineBeam"],
+    "building": ["buildSpeed", "buildRange", "buildBeamOffset", "drawBuildBeam", "buildCostMultiplier"],
+    "capacity": ["itemCapacity", "payloadCapacity"],
+    "boost": ["canBoost", "boostMultiplier", "boostWhenBuilding", "boostWhenMining"],
+    "tank": ["squareShape", "crushDamage", "crushDamageMultiplier", "crushFragile", "rippleScale", "treadFrames", "treadPullOffset", "treadRects", "treadRegion", "treadRegions", "treadEffect"],
+    "flying_engine": ["engineOffset", "engineSize", "engines", "engineColor", "engineColorInner", "engineLayer", "useEngineElevation", "trailLength", "trailColor", "trailScl"],
+    "legs": ["legCount", "legGroupSize", "legLength", "legLengthScl", "legMaxLength", "legMinLength", "legSpeed", "legMoveSpace", "legExtension", "legPairOffset", "legForwardScl", "legBaseOffset", "legStraightness", "legStraightLength", "baseLegStraightness", "legSplashDamage", "legSplashRange", "legContinuousMove", "lockLegBase", "flipBackLegs", "flipLegSide", "legBaseUnder", "allowLegStep", "legPhysicsLayer", "legRegion", "legBaseRegion", "jointRegion", "baseJointRegion", "footRegion"],
+    "mech": ["mechStride", "mechFrontSway", "mechSideSway", "mechLandShake", "mechStepParticles", "mechLegColor"],
+    "segment": ["segments", "segmentSpacing", "segmentMag", "segmentPhase", "segmentRotSpeed", "segmentRotationRange", "segmentMaxRot", "segmentScl", "segmentLayerOrder", "segmentRegions", "segmentOutlineRegions", "segmentCellRegions", "segmentUnit", "segmentUnits", "segmentEndUnit"],
+    "abilities": ["abilities", "immunities"],
+    "appearance": ["lightRadius", "lightColor", "lightOpacity", "parts", "outlineColor", "outlineRadius", "shadowElevation", "shadowElevationScl", "drawCell", "drawItems", "drawShields", "drawBody", "drawSoftShadow", "drawMinimap", "alwaysCreateOutline", "wobble", "healFlash", "healColor", "shieldColor"],
+    "sound": ["deathSound", "deathSoundVolume", "loopSound", "loopSoundVolume", "stepSound", "stepSoundVolume", "stepSoundPitch", "stepSoundPitchRange", "moveSound", "moveSoundVolume", "moveSoundPitchMin", "moveSoundPitchMax", "wreckSound", "wreckSoundVolume", "tankMoveSound", "tankMoveVolume"],
+    "death": ["deathExplosionEffect", "deathShake", "createWreck", "createScorch", "wreckHealthMultiplier", "wreckRegions", "fallEffect", "fallEngineEffect"],
+    "ai": ["aiController", "controller", "logicControllable", "playerControllable", "controlSelectGlobal", "commandable", "commands", "defaultCommand", "allowChangeCommands", "stances"],
+    "physics": ["physics", "canDrown", "drownTimeMultiplier", "clipSize", "stepShake", "hittable", "killable", "targetable", "vulnerableWithPayloads", "pickupUnits"],
+    "env": ["envRequired", "envEnabled", "envDisabled"],
+    "meta": ["research", "details", "credit", "allowedInPayloads", "researchCostMultiplier", "canOverdrive"]
   },
   "Wall": {
-    "basic": ["name", "health", "size"],
-    "defense": ["armor", "insulated", "absorbLasers"]
+    "basic": ["name", "description", "health", "size"],
+    "defense": ["armor", "insulated", "absorbLasers", "lightningChance", "lightningDamage", "lightningLength", "lightningColor", "lightningSound", "chanceDeflect", "flashHit", "flashColor", "deflectSound"],
+    "visual": ["variants", "autotile"],
+    "build": ["requirements", "category", "research"]
   },
   "ItemTurret": {
-    "basic": ["name", "health", "size"],
-    "combat": ["range", "reload", "ammoTypes", "targetAir", "targetGround", "inaccuracy"],
-    "appearance": []
+    "basic": ["name", "description", "health", "size"],
+    "combat": ["range", "reload", "ammoTypes", "targetAir", "targetGround", "inaccuracy", "maxAmmo", "ammoPerShot", "minRange", "trackingRange", "velocityRnd"],
+    "shooting": ["shoot", "shootCone", "rotateSpeed", "recoil", "recoilTime", "shake", "xRand", "shootX", "shootY", "minWarmup", "shootWarmupSpeed"],
+    "targeting": ["targetBlocks", "targetHealing", "targetUnderBlocks", "predictTarget", "unitSort", "unitFilter", "buildingFilter"],
+    "effects": ["shootSound", "shootSoundVolume", "shootEffect", "smokeEffect", "ammoUseEffect", "heatColor", "chargeSound", "chargeEffect"],
+    "consumption": ["consumes", "coolant", "coolantMultiplier"],
+    "build": ["requirements", "category", "research"]
+  },
+  "PowerTurret": {
+    "basic": ["name", "description", "health", "size"],
+    "combat": ["range", "reload", "shootType", "targetAir", "targetGround", "inaccuracy", "maxAmmo", "ammoPerShot", "minRange", "trackingRange", "velocityRnd"],
+    "shooting": ["shoot", "shootCone", "rotateSpeed", "recoil", "recoilTime", "shake", "xRand", "shootX", "shootY", "minWarmup", "shootWarmupSpeed"],
+    "targeting": ["targetBlocks", "targetHealing", "targetUnderBlocks", "predictTarget", "unitSort", "unitFilter", "buildingFilter"],
+    "effects": ["shootSound", "shootSoundVolume", "shootEffect", "smokeEffect", "ammoUseEffect", "heatColor", "chargeSound", "chargeEffect"],
+    "consumption": ["consumes", "coolant", "coolantMultiplier"],
+    "build": ["requirements", "category", "research"]
   },
   "Weapon": {
-    "basic": ["name", "reload", "x", "y"],
-    "behavior": ["mirror", "alternate", "rotate", "shootCone"],
+    "basic": ["name", "reload", "x", "y", "shootX", "shootY", "display"],
+    "behavior": ["mirror", "alternate", "rotate", "rotateSpeed", "top", "shootCone", "inaccuracy", "controllable", "aiControllable", "ignoreRotation", "baseRotation"],
+    "shooting": ["shoot", "shots", "shotDelay", "recoil", "recoils", "recoilTime", "recoilPow", "shake", "velocityRnd", "minWarmup", "shootWarmupSpeed", "linearWarmup", "cooldownTime"],
+    "targeting": ["autoTarget", "predictTarget", "targetInterval", "targetSwitchInterval", "useAttackRange", "noAttack", "alwaysShooting", "aimChangeSpeed"],
+    "continuous": ["continuous", "alwaysContinuous"],
+    "effects": ["shootSound", "shootSoundVolume", "ejectEffect", "shootEffect", "heatColor", "heatRegion", "chargeSound", "activeSound", "activeSoundVolume"],
+    "rendering": ["region", "outlineRegion", "cellRegion", "layerOffset", "shadow", "flipSprite", "showStatSprite", "parentizeEffects"],
     "bullet": ["bullet"]
   }
 }

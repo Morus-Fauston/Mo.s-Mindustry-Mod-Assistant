@@ -198,5 +198,215 @@
       "required": ["bullet"],
       "optional": []
     }
+  },
+
+  "BasicBulletType": {
+    "basic": {
+      "required": ["damage", "speed", "lifetime"],
+      "optional": ["hitSize", "drawSize", "drag", "accel", "inaccuracy", "ammoMultiplier", "reloadMultiplier"],
+      "defaults": { "damage": 10, "speed": 3, "lifetime": 40, "hitSize": 4 }
+    },
+    "pierce": {
+      "required": [],
+      "optional": ["pierce", "pierceBuilding", "pierceCap", "pierceDamageFactor", "removeAfterPierce", "laserAbsorb", "maxDamageFraction"],
+      "defaults": { "pierce": true, "pierceCap": 3 }
+    },
+    "splash": {
+      "required": [],
+      "optional": ["splashDamage", "splashDamageRadius", "scaledSplashDamage", "knockback", "impact", "buildingDamageMultiplier", "shieldDamageMultiplier"],
+      "defaults": { "splashDamage": 15, "splashDamageRadius": 20 }
+    },
+    "status": {
+      "required": [],
+      "optional": ["status", "statusDuration"],
+      "defaults": { "statusDuration": 60 }
+    },
+    "collision": {
+      "required": [],
+      "optional": ["collidesAir", "collidesGround", "collidesTiles", "collidesTeam", "collides", "collideFloor", "collideTerrain", "hittable", "targetBlocks", "targetMissiles"],
+      "defaults": { "collidesAir": true, "collidesGround": true, "collidesTiles": true }
+    },
+    "behavior": {
+      "required": [],
+      "optional": ["reflectable", "absorbable", "keepVelocity", "scaleLife", "scaleKeepVelocity", "homingPower", "homingRange", "homingDelay", "optimalLifeFract", "killShooter", "instantDisappear", "ignoreSpawnAngle"],
+      "defaults": { "homingPower": 0.05, "homingRange": 50 }
+    },
+    "appearance": {
+      "required": [],
+      "optional": ["width", "height", "shrinkX", "shrinkY", "shrinkInterp", "spin", "rotationOffset", "frontColor", "backColor", "mixColorFrom", "mixColorTo", "sprite", "layer"],
+      "defaults": { "width": 7, "height": 10 }
+    },
+    "effects": {
+      "required": [],
+      "optional": ["hitEffect", "despawnEffect", "shootEffect", "smokeEffect", "chargeEffect", "hitSound", "despawnSound", "shootSound", "hitShake", "hitSoundPitch", "hitSoundPitchRange", "hitSoundVolume", "despawnHit", "recoil"],
+      "defaults": { "hitShake": 1 }
+    }
+  },
+
+  "LaserBulletType": {
+    "basic": {
+      "required": ["damage", "length", "width"],
+      "optional": ["lifetime", "hitSize", "drawSize", "colors"],
+      "defaults": { "damage": 20, "length": 120, "width": 10, "lifetime": 20 }
+    },
+    "laser": {
+      "required": [],
+      "optional": ["lengthFalloff", "sideLength", "sideWidth", "sideAngle", "largeHit", "incendAmount", "incendSpread", "incendChance"],
+      "defaults": { "sideLength": 0, "sideWidth": 0, "sideAngle": 0 }
+    },
+    "lightning": {
+      "required": [],
+      "optional": ["lightningSpacing", "lightningDelay", "lightningAngleRand", "lightningLength", "lightningLengthRand", "lightningDamage", "lightningColor", "lightningType"],
+      "defaults": { "lightningLength": 5, "lightningDamage": 5 }
+    },
+    "pierce": {
+      "required": [],
+      "optional": ["pierce", "pierceBuilding", "pierceCap", "pierceDamageFactor", "removeAfterPierce", "laserAbsorb"],
+      "defaults": { "pierce": true }
+    },
+    "status": {
+      "required": [],
+      "optional": ["status", "statusDuration"],
+      "defaults": { "statusDuration": 60 }
+    },
+    "collision": {
+      "required": [],
+      "optional": ["collidesAir", "collidesGround", "collidesTiles", "collidesTeam", "collides", "hittable", "targetBlocks"],
+      "defaults": { "collidesAir": true, "collidesGround": true, "collidesTiles": true }
+    },
+    "effects": {
+      "required": [],
+      "optional": ["hitEffect", "despawnEffect", "shootEffect", "smokeEffect", "hitSound", "despawnSound", "shootSound", "hitShake", "hitSoundVolume", "laserEffect"],
+      "defaults": { "hitShake": 2 }
+    }
+  },
+
+  "MissileBulletType": {
+    "basic": {
+      "required": ["damage", "speed", "lifetime"],
+      "optional": ["hitSize", "drawSize", "drag", "accel", "inaccuracy", "ammoMultiplier", "reloadMultiplier"],
+      "defaults": { "damage": 12, "speed": 4, "lifetime": 50, "hitSize": 5 }
+    },
+    "homing": {
+      "required": [],
+      "optional": ["homingPower", "homingRange", "homingDelay", "homingLag"],
+      "defaults": { "homingPower": 0.08, "homingRange": 60, "homingDelay": 10 }
+    },
+    "pierce": {
+      "required": [],
+      "optional": ["pierce", "pierceBuilding", "pierceCap", "pierceDamageFactor", "removeAfterPierce"],
+      "defaults": {}
+    },
+    "splash": {
+      "required": [],
+      "optional": ["splashDamage", "splashDamageRadius", "scaledSplashDamage", "knockback", "impact", "buildingDamageMultiplier"],
+      "defaults": { "splashDamage": 10, "splashDamageRadius": 15 }
+    },
+    "status": {
+      "required": [],
+      "optional": ["status", "statusDuration"],
+      "defaults": { "statusDuration": 60 }
+    },
+    "collision": {
+      "required": [],
+      "optional": ["collidesAir", "collidesGround", "collidesTiles", "collidesTeam", "collides", "hittable", "targetBlocks", "targetMissiles"],
+      "defaults": { "collidesAir": true, "collidesGround": true, "collidesTiles": true }
+    },
+    "appearance": {
+      "required": [],
+      "optional": ["width", "height", "shrinkX", "shrinkY", "spin", "frontColor", "backColor", "mixColorFrom", "mixColorTo", "sprite", "trailColor", "trailLength", "trailWidth", "trailChance", "trailInterval"],
+      "defaults": { "width": 8, "height": 12, "trailLength": 8 }
+    },
+    "effects": {
+      "required": [],
+      "optional": ["hitEffect", "despawnEffect", "shootEffect", "smokeEffect", "hitSound", "despawnSound", "shootSound", "hitShake", "hitSoundVolume", "despawnHit"],
+      "defaults": { "hitShake": 1 }
+    }
+  },
+
+  "ArtilleryBulletType": {
+    "basic": {
+      "required": ["damage", "speed", "lifetime"],
+      "optional": ["hitSize", "drawSize", "drag", "accel", "inaccuracy", "ammoMultiplier"],
+      "defaults": { "damage": 20, "speed": 2, "lifetime": 80, "hitSize": 8 }
+    },
+    "splash": {
+      "required": [],
+      "optional": ["splashDamage", "splashDamageRadius", "scaledSplashDamage", "knockback", "impact", "buildingDamageMultiplier"],
+      "defaults": { "splashDamage": 25, "splashDamageRadius": 30 }
+    },
+    "trail": {
+      "required": [],
+      "optional": ["trailMult", "trailSize", "trailColor", "trailLength", "trailWidth", "trailChance", "trailInterval", "trailEffect"],
+      "defaults": { "trailMult": 1, "trailSize": 3 }
+    },
+    "pierce": {
+      "required": [],
+      "optional": ["pierce", "pierceBuilding", "pierceCap", "pierceDamageFactor", "removeAfterPierce"],
+      "defaults": {}
+    },
+    "status": {
+      "required": [],
+      "optional": ["status", "statusDuration"],
+      "defaults": { "statusDuration": 60 }
+    },
+    "collision": {
+      "required": [],
+      "optional": ["collidesAir", "collidesGround", "collidesTiles", "collidesTeam", "collides", "collideFloor", "collideTerrain", "hittable", "targetBlocks"],
+      "defaults": { "collidesGround": true, "collidesTiles": true, "collideFloor": true }
+    },
+    "appearance": {
+      "required": [],
+      "optional": ["width", "height", "shrinkX", "shrinkY", "spin", "frontColor", "backColor", "sprite"],
+      "defaults": { "width": 11, "height": 11 }
+    },
+    "effects": {
+      "required": [],
+      "optional": ["hitEffect", "despawnEffect", "shootEffect", "smokeEffect", "hitSound", "despawnSound", "shootSound", "hitShake", "hitSoundVolume", "despawnHit"],
+      "defaults": { "hitShake": 3 }
+    }
+  },
+
+  "FlakBulletType": {
+    "basic": {
+      "required": ["damage", "speed", "lifetime"],
+      "optional": ["hitSize", "drawSize", "drag", "accel", "inaccuracy", "ammoMultiplier"],
+      "defaults": { "damage": 8, "speed": 4, "lifetime": 45, "hitSize": 6 }
+    },
+    "flak": {
+      "required": [],
+      "optional": ["explodeRange", "explodeDelay", "flakDelay", "flakInterval", "fragBullets", "fragBullet", "fragVelocityMin", "fragVelocityMax", "fragLifeMin", "fragLifeMax", "fragSpread"],
+      "defaults": { "explodeRange": 30, "explodeDelay": 5, "flakInterval": 3 }
+    },
+    "splash": {
+      "required": [],
+      "optional": ["splashDamage", "splashDamageRadius", "scaledSplashDamage", "knockback", "buildingDamageMultiplier"],
+      "defaults": { "splashDamage": 12, "splashDamageRadius": 25 }
+    },
+    "pierce": {
+      "required": [],
+      "optional": ["pierce", "pierceBuilding", "pierceCap", "pierceDamageFactor", "removeAfterPierce"],
+      "defaults": {}
+    },
+    "status": {
+      "required": [],
+      "optional": ["status", "statusDuration"],
+      "defaults": { "statusDuration": 60 }
+    },
+    "collision": {
+      "required": [],
+      "optional": ["collidesAir", "collidesGround", "collidesTiles", "collidesTeam", "collides", "hittable", "targetBlocks", "targetMissiles"],
+      "defaults": { "collidesAir": true, "collidesGround": true, "collidesTiles": true }
+    },
+    "appearance": {
+      "required": [],
+      "optional": ["width", "height", "shrinkX", "shrinkY", "spin", "frontColor", "backColor", "sprite"],
+      "defaults": { "width": 6, "height": 8 }
+    },
+    "effects": {
+      "required": [],
+      "optional": ["hitEffect", "despawnEffect", "shootEffect", "smokeEffect", "hitSound", "despawnSound", "shootSound", "hitShake", "hitSoundVolume", "despawnHit"],
+      "defaults": { "hitShake": 1 }
+    }
   }
 }

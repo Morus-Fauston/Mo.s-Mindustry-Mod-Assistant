@@ -6,8 +6,6 @@ vanilla reference instance. Shows: field, my value, reference value, diff.
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt
@@ -26,31 +24,24 @@ from PySide6.QtWidgets import (
 )
 
 from ...core.metadata import Metadata
+from ...core.config_loader import (
+    display_name as _display_name_fn,
+    get_category_names_zh,
+    get_field_names_zh,
+    get_vanilla_weapon_names_zh,
+)
 
-# ── Chinese translations ─────────────────────────────────────────────────
+# ── Chinese translations (from centralized config) ───────────────────────
 
-CATEGORY_NAMES_ZH: dict[str, str] = {
-    "Liquids": "液体",
-    "Blocks": "方块",
-    "StatusEffects": "状态效果",
-    "UnitTypes": "单位",
-    "Items": "物品",
-    "Weapons": "武器",
-}
+CATEGORY_NAMES_ZH = get_category_names_zh()
 
 
 def _load_field_names_zh() -> dict[str, str]:
-    path = Path(__file__).parent.parent.parent / "config" / "field_names_zh.json"
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
+    return get_field_names_zh()
 
 
 def _display_name(field_name: str, names_zh: dict[str, str]) -> str:
-    zh = names_zh.get(field_name)
-    if zh:
-        return f"{zh} ({field_name})"
-    return field_name
+    return _display_name_fn(field_name, names_zh)
 
 
 class ReferencePanel(QWidget):
@@ -167,14 +158,10 @@ class _ReferencePicker(QDialog):
     def _instance_display(self, name: str, category: str) -> str:
         """Show instance with Chinese name where available."""
         if category == "Weapons":
-            # Import here to avoid circular dependency on VANILLA_WEAPON_NAMES_ZH
-            try:
-                from .weapon_array_editor import VANILLA_WEAPON_NAMES_ZH
-                zh = VANILLA_WEAPON_NAMES_ZH.get(name)
-                if zh:
-                    return f"{zh} ({name})"
-            except Exception:
-                pass
+            vanilla_names = get_vanilla_weapon_names_zh()
+            zh = vanilla_names.get(name)
+            if zh:
+                return f"{zh} ({name})"
         return name
 
     def _instance_original(self, display_name: str) -> str:

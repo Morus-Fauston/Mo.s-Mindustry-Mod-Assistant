@@ -1,0 +1,128 @@
+"""Centralized configuration loading for the MoMA editor.
+
+All JSON config files in app/config/ are loaded through this module.
+No Qt imports here — this is a core module.
+
+Usage:
+    from ..core.config_loader import get_config
+
+    names_zh = get_config("field_names_zh")
+    docs = get_config("field_docs")
+    groups = get_config("field_groups")
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+_CONFIG_DIR = Path(__file__).parent.parent / "config"
+
+# Module-level cache: loaded once per process lifetime.
+_cache: dict[str, Any] = {}
+
+
+def get_config(name: str) -> Any:
+    """Load and cache a JSON config file by name (without .json extension).
+
+    Returns an empty dict if the file does not exist or is invalid JSON.
+    """
+    if name in _cache:
+        return _cache[name]
+
+    path = _CONFIG_DIR / f"{name}.json"
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            data = {}
+    else:
+        data = {}
+
+    _cache[name] = data
+    return data
+
+
+def reload_config(name: str) -> Any:
+    """Force-reload a config file (bypasses cache)."""
+    _cache.pop(name, None)
+    return get_config(name)
+
+
+def clear_cache() -> None:
+    """Clear all cached configs. Useful for testing."""
+    _cache.clear()
+
+
+# ── Convenience accessors ────────────────────────────────────────────────
+
+
+def get_field_names_zh() -> dict[str, str]:
+    """Chinese field name translations: {english_name: chinese_name}."""
+    return get_config("field_names_zh")
+
+
+def get_field_docs() -> dict[str, str]:
+    """Field tooltip documentation: {field_name: doc_string}."""
+    return get_config("field_docs")
+
+
+def get_field_groups() -> dict:
+    """Field grouping configuration per content type."""
+    return get_config("field_groups")
+
+
+def get_vanilla_weapon_names_zh() -> dict[str, str]:
+    """Vanilla weapon Chinese name translations."""
+    return get_config("vanilla_weapon_names_zh")
+
+
+def get_category_names_zh() -> dict[str, str]:
+    """Instance category Chinese name translations."""
+    return get_config("category_names_zh")
+
+
+# ── Display name formatting ──────────────────────────────────────────────
+
+# The four display name modes:
+#   zh_en  → "中文 (english)"   (default)
+#   en_zh  → "english (中文)"
+#   zh     → "中文"
+#   en     → "english"
+
+_current_mode: str = "zh_en"
+
+
+def set_display_mode(mode: str) -> None:
+    """Set the global display name mode. One of: zh_en, en_zh, zh, en."""
+    global _current_mode
+    if mode in ("zh_en", "en_zh", "zh", "en"):
+        _current_mode = mode
+
+
+def get_display_mode() -> str:
+    """Get the current display name mode."""
+    return _current_mode
+
+
+def display_name(field_name: str, names_zh: dict[str, str] | None = None) -> str:
+    """Format a field name according to the current display mode.
+
+    Args:
+        field_name: The English field name (always used as fallback).
+        names_zh: Optional pre-loaded zh names dict. If None, loads from config.
+    """
+    if names_zh is None:
+        names_zh = get_field_names_zh()
+
+    zh = names_zh.get(field_name)
+
+    if _current_mode == "zh_en":
+        return f"{zh} ({field_name})" if zh else field_name
+    elif _current_mode == "en_zh":
+        return f"{field_name} ({zh})" if zh else field_name
+    elif _current_mode == "zh":
+        return zh if zh else field_name
+    else:  # "en"
+        return field_name

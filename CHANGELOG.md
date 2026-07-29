@@ -1,5 +1,70 @@
 # Changelog
 
+## v0.2.0 (2026-07-30 18:45)
+
+### 架构改进
+
+- **集中式配置加载（config_loader）**：新增 `app/core/config_loader.py`，统一管理所有 JSON 配置文件的加载、缓存和访问
+  - 消除 `editor_panel.py`、`bullet_editor.py`、`weapon_array_editor.py`、`reference_panel.py` 四处重复的 `_load_field_names_zh` / `_load_field_docs` / `_display_name` 函数
+  - 模块级缓存，配置文件只读一次
+  - 提供 `reload_config()` / `clear_cache()` 用于测试和热更新
+- **多态编辑器统一抽象（ADR-006）**：新增 `app/ui/widgets/polymorphic_editor.py`
+  - 通用交互模式：类型下拉框 → 从 `field_groups.json` 读取字段组 → 渲染表单
+  - 子弹、能力（v0.2.2）、单位子类型共用此组件
+  - 新增多态类型只改 JSON 配置，不动代码
+- **汉化数据外置**：`VANILLA_WEAPON_NAMES_ZH`（54 条）和 `CATEGORY_NAMES_ZH`（6 条）从 Python 代码迁移到 `app/config/vanilla_weapon_names_zh.json` 和 `app/config/category_names_zh.json`
+
+### 新增
+
+- **显示名模式四位一体**：`config_loader.display_name()` 支持 zh_en / en_zh / zh / en 四种模式，全局切换
+- **子类型字段过滤（visible_for）**：`field_groups.json` 分组支持 `visible_for` 条件，坦克只显示坦克组，飞行只显示飞行组
+- **字段默认值配置（defaults）**：分组内 `defaults` 键提供编辑器级默认值，添加字段不再全是 0
+- **Color 字段调色盘**：颜色字段使用色块按钮 + QColorDialog，替代普通文本输入框
+- **5 种 BulletType 子类完整分组**：`field_groups.json` 新增 BasicBulletType / LaserBulletType / MissileBulletType / ArtilleryBulletType / FlakBulletType 的字段分组（含 required / optional / defaults）
+- **资源/科技控件接口**：新增 `app/ui/widgets/resource_editors.py`，定义 ResourceListEditor / ResourceSlotEditor / TechRefEditor 接口（v0.2.2 实现）
+- **核心层测试**：新增 `tests/` 目录，49 个 pytest 测试覆盖 commands / config_loader / template
+
+### 重构
+
+- **BulletEditor 薄包装化**：从 200 行硬编码实现 → 80 行委托 `PolymorphicTypeEditor`，字段显示完全由 `field_groups.json` 驱动
+- **WeaponCard 内联字段配置驱动**：移除硬编码的 14 个 `inline_fields`，改为从 Weapon 分组配置读取
+- **WeaponCard 子弹子表单**：移除硬编码的 4 字段 + 类型下拉，改为嵌入 `BulletEditor`（→ `PolymorphicTypeEditor`）
+- **reference_panel.py 去循环导入**：不再从 `weapon_array_editor` 导入 `VANILLA_WEAPON_NAMES_ZH`，改为直接调用 `config_loader`
+
+### 文档
+
+- 新增 ADR-006：多态编辑器统一抽象
+- PRD 更新至 v1.1：P1 拆为 v0.2.0 / v0.2.1 / v0.2.2 三段（F-31~F-54）
+- 设计规格文档更新至 v1.1：新增子类型过滤、默认值、字段删除规则、多态编辑器、视觉规范、验收标准 53 项
+- CONTEXT.md 新增 7 个术语（Ability、保留字段、子类型、多态编辑器、资源列表、资源槽、字段类型着色、锁定组）
+- 新增 `Docs/v021-UI设计需求书.md`：B 阶段 UI 设计完整需求
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/core/config_loader.py` | **新增** — 集中配置加载 + 显示名模式 |
+| `app/ui/widgets/polymorphic_editor.py` | **新增** — 多态编辑器通用组件 |
+| `app/ui/widgets/resource_editors.py` | **新增** — 资源/科技控件接口 |
+| `app/config/vanilla_weapon_names_zh.json` | **新增** — 原版武器汉化 |
+| `app/config/category_names_zh.json` | **新增** — 分类汉化 |
+| `tests/test_commands.py` | **新增** — 命令系统测试（19 项） |
+| `tests/test_config_loader.py` | **新增** — 配置加载测试（20 项） |
+| `tests/test_template.py` | **新增** — 模板引擎测试（10 项） |
+| `app/ui/editor_panel.py` | 配置驱动 + visible_for + defaults + Color 调色盘 |
+| `app/ui/widgets/bullet_editor.py` | 重写为 PolymorphicTypeEditor 薄包装 |
+| `app/ui/widgets/weapon_array_editor.py` | 内联字段/子弹子表单配置驱动，汉化外置 |
+| `app/ui/widgets/reference_panel.py` | 去循环导入，委托 config_loader |
+| `app/config/field_groups.json` | +5 种 BulletType 子类分组 |
+| `Docs/ADR/006-多态编辑器统一抽象.md` | **新增** |
+| `Docs/v021-UI设计需求书.md` | **新增** |
+| `Docs/PRD.md` | v1.1 更新 |
+| `Docs/设计规格文档.md` | v1.1 更新 |
+| `CONTEXT.md` | +7 术语 |
+| `.gitignore` | +Nieobie icons/ |
+
+---
+
 ## v0.1.2 (2026-07-30 02:07)
 
 ### 新增

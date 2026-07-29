@@ -9,8 +9,6 @@ Design principles:
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt
@@ -33,6 +31,12 @@ from PySide6.QtWidgets import (
 )
 
 from ..core.commands import CommandStack, SetFieldCommand
+from ..core.config_loader import (
+    display_name as _format_display_name,
+    get_field_docs,
+    get_field_groups,
+    get_field_names_zh,
+)
 from ..core.content_store import ContentData
 from ..core.metadata import ClassDef, FieldDef, Metadata
 from ..core.project import Project
@@ -99,9 +103,9 @@ class EditorPanel(QWidget):
         self._field_widgets: dict[str, QWidget] = {}
         self._dirty = False
 
-        self._field_groups = self._load_field_groups()
-        self._field_names_zh = self._load_field_names_zh()
-        self._field_docs = self._load_field_docs()
+        self._field_groups = get_field_groups()
+        self._field_names_zh = get_field_names_zh()
+        self._field_docs = get_field_docs()
         self._class_def: ClassDef | None = None
         self._form_layout: QVBoxLayout | None = None
         self._setup_ui()
@@ -157,6 +161,8 @@ class EditorPanel(QWidget):
         Each group in field_groups.json now has 'required' (always shown) and
         'optional' (shown only if the field already exists in JSON data).
         The '+' button on each group reveals that group's optional fields.
+
+        Groups may have 'visible_for' to restrict visibility to specific subtypes.
         """
         if self._class_def is None or self._form_layout is None:
             return
@@ -173,18 +179,26 @@ class EditorPanel(QWidget):
         groups_config = self._field_groups.get(content_type, {})
         all_fields = {f.name: f for f in self._class_def.fields}
 
-        # Collect all field names that appear in any group (required + optional)
+        # Infer subtype for visible_for filtering
+        subtype = self._infer_subtype(content_type)
+
+        # Collect all field names that appear in any visible group
         grouped_names: set[str] = set()
         for gd in groups_config.values():
+            if not self._group_visible(gd, subtype):
+                continue
             grouped_names.update(gd.get("required", []))
             grouped_names.update(gd.get("optional", []))
 
-        # Fields already in JSON but not in any group → "其他"
+        # Fields already in JSON but not in any visible group → "其他"
         json_fields = set(self._content.data.keys()) - {"type"}
         extra_names = json_fields - grouped_names
 
         # Render configured groups: required always, optional only if in data
         for group_name, group_def in groups_config.items():
+            if not self._group_visible(group_def, subtype):
+                continue
+
             label = self.GROUP_LABELS.get(group_name, group_name)
             required = group_def.get("required", [])
             optional = group_def.get("optional", [])
@@ -255,6 +269,50 @@ class EditorPanel(QWidget):
 
         self._form_layout.addWidget(group_box)
 
+    # ── visible_for / subtype helpers ────────────────────────────────────
+
+    def _infer_subtype(self, content_type: str) -> str:
+        """Infer the subtype key for visible_for filtering.
+
+        For UnitType, checks data flags (flying, legCount, squareShape, etc.)
+        to determine which subtype template was used.
+        Returns e.g. 'UnitType-tank', 'UnitType-flying', 'UnitType-legs', 'UnitType'.
+        """
+        if content_type != "UnitType":
+            return content_type
+
+        data = self._content.data
+        if data.get("squareShape") or data.get("crushDamage") is not None:
+            return "UnitType-tank"
+        if data.get("legCount"):
+            return "UnitType-legs"
+        if data.get("flying"):
+            return "UnitType-flying"
+        return "UnitType"
+
+    @staticmethod
+    def _group_visible(group_def: dict, subtype: str) -> bool:
+        """Check if a group should be visible for the given subtype.
+
+        A group with no 'visible_for' key is always visible.
+        A group with 'visible_for' is visible only if subtype is in the list.
+        """
+        visible_for = group_def.get("visible_for")
+        if visible_for is None:
+            return True
+        return subtype in visible_for
+
+    def _get_group_default(self, group_name: str, field_name: str) -> Any:
+        """Look up a configured default value for a field in a group.
+
+        Returns None if no default is configured.
+        """
+        content_type = self._content.data.get("type", "")
+        groups_config = self._field_groups.get(content_type, {})
+        group_def = groups_config.get(group_name, {})
+        defaults = group_def.get("defaults", {})
+        return defaults.get(field_name)
+
     def _show_add_field_menu(self, group_name: str) -> None:
         """Popup menu listing available optional fields for this group.
 
@@ -321,7 +379,12 @@ class EditorPanel(QWidget):
                 (f for f in self._class_def.fields if f.name == field_name), None
             )
             if field_def:
-                self._content.data[field_name] = self._type_default(field_def)
+                # Use configured default if available, else type zero value
+                default_val = self._get_group_default(group_name, field_name)
+                if default_val is not None:
+                    self._content.data[field_name] = default_val
+                else:
+                    self._content.data[field_name] = self._type_default(field_def)
                 self._mark_dirty()
                 self._rebuild_form()
 
@@ -381,6 +444,9 @@ class EditorPanel(QWidget):
             self._field_widgets[field_def.name] = spin
             return spin
 
+        if java_type == "Color":
+            return self._create_color_widget(field_def, value)
+
         # String or fallback
         edit = QLineEdit()
         edit.setText(str(value) if value is not None else "")
@@ -410,6 +476,81 @@ class EditorPanel(QWidget):
         )
         self._field_widgets[field_def.name] = combo
         return combo
+
+    def _create_color_widget(self, field_def: FieldDef, value: Any) -> QWidget:
+        """Create a color picker button for Color fields.
+
+        Mindustry stores colors as hex strings (e.g. 'ff7700') or
+        rgba objects {'r': 1, 'g': 0.5, 'b': 0, 'a': 1}.
+        We display a clickable color swatch button that opens QColorDialog.
+        """
+        from PySide6.QtGui import QColor
+        from PySide6.QtWidgets import QColorDialog
+
+        container = QWidget()
+        h_layout = QHBoxLayout(container)
+        h_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Parse current color value
+        color = QColor(255, 255, 255)
+        display_text = ""
+        if isinstance(value, str) and value:
+            display_text = value
+            hex_str = value.lstrip("#")
+            if len(hex_str) == 6:
+                color = QColor(f"#{hex_str}")
+            elif len(hex_str) == 8:
+                color = QColor(f"#{hex_str[:6]}")
+        elif isinstance(value, dict):
+            r = int(value.get("r", 1) * 255)
+            g = int(value.get("g", 1) * 255)
+            b = int(value.get("b", 1) * 255)
+            color = QColor(r, g, b)
+            display_text = f"{r:02x}{g:02x}{b:02x}"
+
+        # Color swatch button
+        swatch = QPushButton()
+        swatch.setFixedSize(48, 24)
+        swatch.setStyleSheet(
+            f"background-color: {color.name()}; border: 1px solid #999; border-radius: 3px;"
+        )
+
+        # Text label showing the hex value
+        hex_label = QLineEdit(display_text)
+        hex_label.setMaximumWidth(100)
+
+        def on_swatch_click():
+            chosen = QColorDialog.getColor(color, self, "选择颜色")
+            if chosen.isValid():
+                hex_val = chosen.name().lstrip("#")
+                hex_label.setText(hex_val)
+                swatch.setStyleSheet(
+                    f"background-color: {chosen.name()}; border: 1px solid #999; border-radius: 3px;"
+                )
+                self._on_field_changed(field_def.name, hex_val)
+
+        def on_text_edit(text: str):
+            text = text.strip().lstrip("#")
+            if len(text) == 6:
+                try:
+                    int(text, 16)
+                    c = QColor(f"#{text}")
+                    swatch.setStyleSheet(
+                        f"background-color: {c.name()}; border: 1px solid #999; border-radius: 3px;"
+                    )
+                    self._on_field_changed(field_def.name, text)
+                except ValueError:
+                    pass
+
+        swatch.clicked.connect(on_swatch_click)
+        hex_label.textChanged.connect(on_text_edit)
+
+        h_layout.addWidget(swatch)
+        h_layout.addWidget(hex_label)
+        h_layout.addStretch()
+
+        self._field_widgets[field_def.name] = container
+        return container
 
     def _create_weapons_widget(self) -> QWidget:
         """Create a WeaponArrayEditor for the weapons field."""
@@ -507,13 +648,10 @@ class EditorPanel(QWidget):
         )
         self._dirty = False
 
-    # ── display name: 中文 (英文) ───────────────────────────────────────
+    # ── display name: delegates to config_loader (respects display mode) ──
 
     def _display_name(self, field_name: str) -> str:
-        zh = self._field_names_zh.get(field_name)
-        if zh:
-            return f"{zh} ({field_name})"
-        return field_name
+        return _format_display_name(field_name, self._field_names_zh)
 
     # ── helpers ─────────────────────────────────────────────────────────
 
@@ -556,24 +694,3 @@ class EditorPanel(QWidget):
         if f.mode == "INLINE_OBJECT":
             return {}
         return None
-
-    @staticmethod
-    def _load_field_groups() -> dict:
-        config_path = Path(__file__).parent.parent / "config" / "field_groups.json"
-        if config_path.exists():
-            return json.loads(config_path.read_text(encoding="utf-8"))
-        return {}
-
-    @staticmethod
-    def _load_field_names_zh() -> dict[str, str]:
-        config_path = Path(__file__).parent.parent / "config" / "field_names_zh.json"
-        if config_path.exists():
-            return json.loads(config_path.read_text(encoding="utf-8"))
-        return {}
-
-    @staticmethod
-    def _load_field_docs() -> dict[str, str]:
-        config_path = Path(__file__).parent.parent / "config" / "field_docs.json"
-        if config_path.exists():
-            return json.loads(config_path.read_text(encoding="utf-8"))
-        return {}

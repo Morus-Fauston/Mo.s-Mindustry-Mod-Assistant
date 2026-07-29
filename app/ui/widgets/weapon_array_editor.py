@@ -12,8 +12,6 @@ Interface:
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Qt, Signal
@@ -56,100 +54,32 @@ BULLET_TYPE_CHOICES = [
     "FlakBulletType",
 ]
 
-# ── vanilla weapon Chinese name translations ────────────────────────────
+# ── centralized config ───────────────────────────────────────────────────
 
-VANILLA_WEAPON_NAMES_ZH: dict[str, str] = {
-    "anthicus-weapon": "蚁狮武器",
-    "artillery-mount": "火炮挂载",
-    "artillery": "火炮",
-    "atrax-weapon": "蜘蛛武器",
-    "avert-weapon": "避难武器",
-    "beam-weapon": "光束武器",
-    "build-weapon": "建造武器",
-    "cleroi-point-defense": "祭司近防",
-    "cleroi-weapon": "祭司武器",
-    "collaris-weapon": "颈环武器",
-    "conquer-weapon": "征服武器",
-    "corvus-weapon": "乌鸦武器",
-    "disrupt-weapon": "干扰武器",
-    "elude-weapon": "闪避武器",
-    "emp-cannon-mount": "EMP加农挂载",
-    "flamethrower": "火焰喷射器",
-    "heal-shotgun-weapon": "治疗霰弹武器",
-    "heal-weapon-mount": "治疗武器挂载",
-    "heal-weapon": "治疗武器",
-    "large-artillery": "大型火炮",
-    "large-bullet-mount": "大型子弹挂载",
-    "large-laser-mount": "大型激光挂载",
-    "large-purple-mount": "大型紫光挂载",
-    "large-weapon": "大型武器",
-    "locus-weapon": "轨迹武器",
-    "merui-weapon": "墨鱼武器",
-    "missiles-mount": "导弹挂载",
-    "mount-purple-weapon": "紫色挂载武器",
-    "mount-weapon": "挂载武器",
-    "omura-cannon": "巨齿加农",
-    "plasma-laser-mount": "等离子激光挂载",
-    "plasma-missile-mount": "等离子导弹挂载",
-    "plasma-mount-weapon": "等离子挂载武器",
-    "point-defense-mount": "近防挂载",
-    "poly-weapon": "多面武器",
-    "precept-weapon": "教条武器",
-    "quell-weapon": "压制武器",
-    "reign-weapon": "统治武器",
-    "repair-beam-weapon-center-large": "大型修复光束",
-    "repair-beam-weapon-center": "修复光束",
-    "retusa-weapon": "凹面武器",
-    "scepter-mount": "权杖挂载",
-    "scepter-weapon": "权杖武器",
-    "sei-launcher": "盛放发射器",
-    "small-basic-weapon": "小型基础武器",
-    "small-mount-weapon": "小型挂载武器",
-    "spiroct-weapon": "螺旋武器",
-    "stell-weapon": "恒星武器",
-    "tecta-weapon": "构造武器",
-    "toxopid-cannon": "毒蜥加农",
-    "vanquish-point-weapon": "克敌近防武器",
-    "vanquish-weapon": "克敌武器",
-    "vela-weapon": "帆船武器",
-    "zenith-missiles": "天顶导弹",
-}
+from ...core.config_loader import (
+    display_name as _display_name_fn,
+    get_category_names_zh,
+    get_field_docs,
+    get_field_groups,
+    get_field_names_zh,
+    get_vanilla_weapon_names_zh,
+)
 
-# ── instance category Chinese name translations ──────────────────────────
-
-CATEGORY_NAMES_ZH: dict[str, str] = {
-    "Liquids": "液体",
-    "Blocks": "方块",
-    "StatusEffects": "状态效果",
-    "UnitTypes": "单位",
-    "Items": "物品",
-    "Weapons": "武器",
-}
-
-# ── config path helper ──────────────────────────────────────────────────
-
-_CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
+# Backward-compatible aliases (used by reference_panel.py)
+VANILLA_WEAPON_NAMES_ZH = get_vanilla_weapon_names_zh()
+CATEGORY_NAMES_ZH = get_category_names_zh()
 
 
 def _load_field_names_zh() -> dict[str, str]:
-    path = _CONFIG_DIR / "field_names_zh.json"
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
+    return get_field_names_zh()
 
 
 def _load_field_docs() -> dict[str, str]:
-    path = _CONFIG_DIR / "field_docs.json"
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
+    return get_field_docs()
 
 
 def _display_name(field_name: str, names_zh: dict[str, str]) -> str:
-    zh = names_zh.get(field_name)
-    if zh:
-        return f"{zh} ({field_name})"
-    return field_name
+    return _display_name_fn(field_name, names_zh)
 
 
 class WeaponArrayEditor(QWidget):
@@ -307,6 +237,7 @@ class WeaponCard(QGroupBox):
         self._project = project
         self._field_names_zh = field_names_zh or {}
         self._field_docs = field_docs or {}
+        self._field_groups = get_field_groups()
 
         self._is_inline = "bullet" in weapon_data
         self._setup_ui()
@@ -394,14 +325,27 @@ class WeaponCard(QGroupBox):
         layout.addWidget(expand_btn)
 
     def _build_inline_form(self, layout: QVBoxLayout) -> None:
-        """Inline mode: full weapon fields + bullet sub-form."""
+        """Inline mode: config-driven weapon fields + bullet sub-form."""
         form = QFormLayout()
 
-        # Show key fields from weapon data
-        inline_fields = ["name", "reload", "x", "y", "shootX", "shootY",
-                         "inaccuracy", "recoil", "rotateSpeed", "top", "mirror",
-                         "alternate", "continuous", "rotate"]
-        for fname in inline_fields:
+        # Read weapon fields from field_groups.json config
+        weapon_groups = self._field_groups.get("Weapon", {})
+        shown_fields: list[str] = []
+        for group_def in weapon_groups.values():
+            if group_def is None:
+                continue
+            for fname in group_def.get("required", []):
+                if fname not in shown_fields and fname != "bullet":
+                    shown_fields.append(fname)
+            for fname in group_def.get("optional", []):
+                if fname in self._weapon_data and fname not in shown_fields and fname != "bullet":
+                    shown_fields.append(fname)
+
+        # Fallback: if no config, use a minimal set
+        if not shown_fields:
+            shown_fields = ["name", "reload", "x", "y", "mirror", "alternate"]
+
+        for fname in shown_fields:
             if fname in self._weapon_data:
                 widget = self._create_override_widget(fname)
                 if widget:
@@ -415,40 +359,15 @@ class WeaponCard(QGroupBox):
 
         layout.addLayout(form)
 
-        # Bullet sub-form
-        bullet_data = self._weapon_data.get("bullet", {})
-
-        bullet_header = QLabel("子弹")
-        bullet_header.setStyleSheet("font-weight: bold; margin-top: 4px;")
-        layout.addWidget(bullet_header)
-
-        bullet_form = QFormLayout()
-
-        # Bullet type selector
-        type_combo = QComboBox()
-        type_combo.addItems(BULLET_TYPE_CHOICES)
-        current_type = bullet_data.get("type", "BasicBulletType")
-        idx = type_combo.findText(current_type)
-        if idx >= 0:
-            type_combo.setCurrentIndex(idx)
-        type_combo.currentTextChanged.connect(
-            lambda t: self._on_bullet_type_changed(t)
+        # Bullet sub-form (delegates to BulletEditor → PolymorphicTypeEditor)
+        from .bullet_editor import BulletEditor
+        bullet_editor = BulletEditor(
+            data=self._parent_data,
+            path=self._data_path("bullet"),
+            command_stack=self._commands,
         )
-        bullet_form.addRow("类型 (type)", type_combo)
-
-        # Common bullet fields
-        for fname in ["damage", "speed", "lifetime", "pierce"]:
-            if fname in bullet_data:
-                w = self._create_primitive_widget(bullet_data, fname)
-                if w:
-                    label_text = _display_name(fname, self._field_names_zh)
-                    row_label = QLabel(label_text)
-                    doc = self._field_docs.get(fname, "")
-                    if doc:
-                        row_label.setToolTip(doc)
-                        w.setToolTip(doc)
-                    bullet_form.addRow(row_label, w)
-        layout.addLayout(bullet_form)
+        bullet_editor.valueChanged.connect(lambda: self.modified.emit())
+        layout.addWidget(bullet_editor)
 
     # ── field mutation ───────────────────────────────────────────────────
 

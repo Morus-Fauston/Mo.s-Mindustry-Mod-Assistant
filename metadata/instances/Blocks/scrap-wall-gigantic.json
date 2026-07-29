@@ -6,8 +6,8 @@
   "size": 4,
   "requirements": [
     {
-      "amount": 96,
-      "item": "scrap"
+      "item": "scrap",
+      "amount": 96
     }
   ],
   "category": "defense",

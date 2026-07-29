@@ -6,8 +6,8 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 6,
-      "item": "copper"
+      "item": "copper",
+      "amount": 6
     }
   ],
   "category": "defense",

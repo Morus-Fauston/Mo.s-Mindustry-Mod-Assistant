@@ -6,28 +6,28 @@
   "size": 7,
   "requirements": [
     {
-      "amount": 16000,
-      "item": "copper"
+      "item": "copper",
+      "amount": 16000
     },
     {
-      "amount": 12000,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 12000
     },
     {
-      "amount": 13000,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 13000
     },
     {
-      "amount": 11000,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 11000
     },
     {
-      "amount": 5000,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 5000
     },
     {
-      "amount": 6000,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 6000
     }
   ],
   "category": "effect",

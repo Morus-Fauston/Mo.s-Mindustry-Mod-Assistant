@@ -6,24 +6,24 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 70,
-      "item": "copper"
+      "item": "copper",
+      "amount": 70
     },
     {
-      "amount": 100,
-      "item": "lead"
+      "item": "lead",
+      "amount": 100
     },
     {
-      "amount": 50,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 50
     },
     {
-      "amount": 50,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 50
     },
     {
-      "amount": 65,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 65
     }
   ],
   "category": "power",

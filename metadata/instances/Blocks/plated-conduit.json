@@ -6,16 +6,16 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 1,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 1
     },
     {
-      "amount": 2,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 2
     },
     {
-      "amount": 1,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 1
     }
   ],
   "category": "liquid",

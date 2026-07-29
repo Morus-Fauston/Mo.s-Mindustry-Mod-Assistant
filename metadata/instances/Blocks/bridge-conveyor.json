@@ -7,12 +7,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 6,
-      "item": "copper"
+      "item": "copper",
+      "amount": 6
     },
     {
-      "amount": 6,
-      "item": "lead"
+      "item": "lead",
+      "amount": 6
     }
   ],
   "category": "distribution",

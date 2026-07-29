@@ -6,28 +6,28 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 250,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 250
     },
     {
-      "amount": 75,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 75
     },
     {
-      "amount": 75,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 75
     },
     {
-      "amount": 250,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 250
     },
     {
-      "amount": 150,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 150
     },
     {
-      "amount": 75,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 75
     }
   ],
   "category": "power",

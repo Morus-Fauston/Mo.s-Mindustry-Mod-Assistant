@@ -6,12 +6,12 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 35,
-      "item": "lead"
+      "item": "lead",
+      "amount": 35
     },
     {
-      "amount": 30,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 30
     }
   ],
   "category": "crafting",

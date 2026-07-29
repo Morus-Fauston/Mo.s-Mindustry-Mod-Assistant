@@ -6,20 +6,20 @@
   "size": 5,
   "requirements": [
     {
-      "amount": 250,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 250
     },
     {
-      "amount": 250,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 250
     },
     {
-      "amount": 100,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 100
     },
     {
-      "amount": 50,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 50
     }
   ],
   "category": "units",

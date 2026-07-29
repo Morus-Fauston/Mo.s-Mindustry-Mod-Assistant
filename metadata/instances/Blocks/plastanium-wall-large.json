@@ -6,12 +6,12 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 8,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 8
     },
     {
-      "amount": 20,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 20
     }
   ],
   "category": "defense",

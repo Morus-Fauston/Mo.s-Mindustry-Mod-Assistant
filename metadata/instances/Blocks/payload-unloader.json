@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 140,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 140
     },
     {
-      "amount": 220,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 220
     },
     {
-      "amount": 180,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 180
     }
   ],
   "category": "units",

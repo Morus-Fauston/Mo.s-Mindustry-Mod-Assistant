@@ -6,16 +6,16 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 1,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 1
     },
     {
-      "amount": 1,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 1
     },
     {
-      "amount": 1,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 1
     }
   ],
   "category": "distribution",

@@ -6,8 +6,8 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 60,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 60
     }
   ],
   "category": "power",

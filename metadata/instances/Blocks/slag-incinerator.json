@@ -6,8 +6,8 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 15,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 15
     }
   ],
   "category": "crafting",

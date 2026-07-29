@@ -10,16 +10,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 125,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 125
     },
     {
-      "amount": 150,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 150
     },
     {
-      "amount": 150,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 150
     }
   ],
   "category": "turret",

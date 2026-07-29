@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 8,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 8
     },
     {
-      "amount": 4,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 4
     }
   ],
   "category": "liquid",

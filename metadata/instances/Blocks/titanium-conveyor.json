@@ -6,16 +6,16 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 1,
-      "item": "copper"
+      "item": "copper",
+      "amount": 1
     },
     {
-      "amount": 1,
-      "item": "lead"
+      "item": "lead",
+      "amount": 1
     },
     {
-      "amount": 1,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 1
     }
   ],
   "category": "distribution",

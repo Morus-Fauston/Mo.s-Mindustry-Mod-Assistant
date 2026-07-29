@@ -6,16 +6,16 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 20,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 20
     },
     {
-      "amount": 12,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 12
     },
     {
-      "amount": 12,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 12
     }
   ],
   "category": "defense",

@@ -6,20 +6,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 120,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 120
     },
     {
-      "amount": 140,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 140
     },
     {
-      "amount": 40,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 40
     },
     {
-      "amount": 80,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 80
     }
   ],
   "category": "crafting",

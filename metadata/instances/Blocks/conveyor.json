@@ -6,8 +6,8 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 1,
-      "item": "copper"
+      "item": "copper",
+      "amount": 1
     }
   ],
   "category": "distribution",

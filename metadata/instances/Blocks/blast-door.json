@@ -6,12 +6,12 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 24,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 24
     },
     {
-      "amount": 24,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 24
     }
   ],
   "category": "defense",

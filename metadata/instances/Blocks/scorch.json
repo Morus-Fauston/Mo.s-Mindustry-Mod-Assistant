@@ -10,12 +10,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 25,
-      "item": "copper"
+      "item": "copper",
+      "amount": 25
     },
     {
-      "amount": 22,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 22
     }
   ],
   "category": "turret",

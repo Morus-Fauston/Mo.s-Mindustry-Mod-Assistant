@@ -6,12 +6,12 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 10,
-      "item": "copper"
+      "item": "copper",
+      "amount": 10
     },
     {
-      "amount": 15,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 15
     }
   ],
   "category": "units",

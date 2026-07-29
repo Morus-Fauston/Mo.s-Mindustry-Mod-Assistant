@@ -6,12 +6,12 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 20,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 20
     },
     {
-      "amount": 60,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 60
     }
   ],
   "category": "production",

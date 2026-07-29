@@ -177,6 +177,7 @@ class TemplateEngine:
 
     def _weapon_template(self, name: str) -> dict[str, Any]:
         return {
+            "type": "Weapon",
             "name": name,
             "reload": 30,
             "x": 0,

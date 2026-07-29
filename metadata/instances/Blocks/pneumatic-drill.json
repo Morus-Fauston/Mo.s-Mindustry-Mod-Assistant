@@ -6,12 +6,12 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 18,
-      "item": "copper"
+      "item": "copper",
+      "amount": 18
     },
     {
-      "amount": 10,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 10
     }
   ],
   "category": "production",

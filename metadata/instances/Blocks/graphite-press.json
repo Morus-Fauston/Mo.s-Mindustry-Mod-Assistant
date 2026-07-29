@@ -6,12 +6,12 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 75,
-      "item": "copper"
+      "item": "copper",
+      "amount": 75
     },
     {
-      "amount": 30,
-      "item": "lead"
+      "item": "lead",
+      "amount": 30
     }
   ],
   "category": "crafting",

@@ -1,3 +1,18 @@
+v0.1.2 (2026-07-30 02:07)
+  新增: 武器数组编辑器 + 子弹编辑器 + 参考对比面板 + 实时字段验证
+  - WeaponArrayEditor: 引用/内联双模式, [+]添加 [×]删除, 展开为内联
+  - BulletEditor: 5种子弹类型下拉, 常用字段显示, CommandStack撤销
+  - 参考面板: 分类→实例选择, 并排对比表格, 差异黄色高亮
+  - 撤销/重做: 工具栏按钮接线, 状态跟随can_undo/can_redo
+  - 实时验证: 红边框+tooltip, 保存时状态栏错误计数
+  - ArrayInsertCommand / ArrayRemoveCommand (精确单元素撤销)
+  提取工具v1.1: +5个BulletType子类 +54个原版武器实例(含嵌套bullet)
+  修复: 武器模板缺type字段 / PowerTurret类型别名映射 / 覆盖字段KeyError
+       _get_nested_NOT_FOUND哨兵 / _rebuild_card Qt布局安全
+  类型别名: PowerTurret→Turret, payload→UnitType 等10项
+  文档: ADR-005 / 设计规格更新 / CONTEXT.md术语细化
+  .gitignore: +Mindustry-master/ +run.bat
+
 v0.1.1 (2026-07-29 04:14)
   新增: 4种单位子类型模板 + 电力炮台模板 + 7大类22小类方块分组
   - 单位模板: 地面/飞行/坦克/多足, 各含特有字段

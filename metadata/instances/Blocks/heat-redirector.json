@@ -6,12 +6,12 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 10,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 10
     },
     {
-      "amount": 10,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 10
     }
   ],
   "category": "crafting",

@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 15,
-      "item": "lead"
+      "item": "lead",
+      "amount": 15
     },
     {
-      "amount": 5,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 5
     }
   ],
   "category": "crafting",

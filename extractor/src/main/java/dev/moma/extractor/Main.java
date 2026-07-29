@@ -15,7 +15,7 @@ import java.nio.file.Paths;
 public class Main {
 
     public static final String GAME_VERSION = "159";
-    public static final String EXTRACTOR_VERSION = "1.0";
+    public static final String EXTRACTOR_VERSION = "1.1";
 
     public static void main(String[] args) {
         Path outputDir = parseOutputDir(args);

@@ -6,24 +6,24 @@
   "size": 5,
   "requirements": [
     {
-      "amount": 400,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 400
     },
     {
-      "amount": 900,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 900
     },
     {
-      "amount": 550,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 550
     },
     {
-      "amount": 200,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 200
     },
     {
-      "amount": 100,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 100
     }
   ],
   "category": "units",

@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 6,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 6
     },
     {
-      "amount": 4,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 4
     }
   ],
   "category": "defense",

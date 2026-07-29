@@ -7,16 +7,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 60,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 60
     },
     {
-      "amount": 150,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 150
     },
     {
-      "amount": 40,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 40
     }
   ],
   "category": "effect",

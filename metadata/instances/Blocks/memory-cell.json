@@ -6,16 +6,16 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 30,
-      "item": "copper"
+      "item": "copper",
+      "amount": 30
     },
     {
-      "amount": 30,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 30
     },
     {
-      "amount": 30,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 30
     }
   ],
   "category": "logic",

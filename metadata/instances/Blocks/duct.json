@@ -6,8 +6,8 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 1,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 1
     }
   ],
   "category": "distribution",

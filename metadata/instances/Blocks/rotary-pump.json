@@ -6,20 +6,20 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 70,
-      "item": "copper"
+      "item": "copper",
+      "amount": 70
     },
     {
-      "amount": 50,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 50
     },
     {
-      "amount": 35,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 35
     },
     {
-      "amount": 20,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 20
     }
   ],
   "category": "liquid",

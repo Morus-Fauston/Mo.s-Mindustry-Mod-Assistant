@@ -7,20 +7,20 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 10,
-      "item": "lead"
+      "item": "lead",
+      "amount": 10
     },
     {
-      "amount": 10,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 10
     },
     {
-      "amount": 7,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 7
     },
     {
-      "amount": 5,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 5
     }
   ],
   "category": "distribution",

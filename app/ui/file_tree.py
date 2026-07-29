@@ -5,8 +5,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem, QWidget, QVBoxLayout
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QMenu,
+    QMessageBox,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..core.project import Project
 from ..core.content_store import ContentRef
@@ -28,6 +35,8 @@ class FileTreePanel(QWidget):
         self._tree = QTreeWidget()
         self._tree.setHeaderHidden(True)
         self._tree.itemDoubleClicked.connect(self._on_item_clicked)
+        self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._tree.customContextMenuRequested.connect(self._show_context_menu)
         layout.addWidget(self._tree)
 
     def set_project(self, project: Project) -> None:
@@ -135,6 +144,44 @@ class FileTreePanel(QWidget):
         name = item.data(0, 256)
         if name:
             self.content_opened.emit(name)
+
+    def _show_context_menu(self, pos) -> None:
+        """Right-click context menu on tree items."""
+        item = self._tree.itemAt(pos)
+        if item is None:
+            return
+
+        name = item.data(0, 256)
+        if not name:
+            return  # Not a content item (e.g. category header)
+
+        menu = QMenu(self)
+        delete_action = menu.addAction("删除")
+        chosen = menu.exec(self._tree.viewport().mapToGlobal(pos))
+
+        if chosen == delete_action:
+            self._delete_content(name)
+
+    def _delete_content(self, name: str) -> None:
+        """Delete a content file after confirmation."""
+        if self._project is None:
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "确认删除",
+            f"确定要删除 '{name}' 吗？\n\n此操作不可撤销，文件将从磁盘删除。",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            self._project.contents.delete(name)
+            self.refresh()
+        except FileNotFoundError:
+            QMessageBox.warning(self, "删除失败", f"找不到文件: {name}")
 
     @staticmethod
     def _load_block_categories() -> dict:

@@ -1,0 +1,21 @@
+{
+  "name": "ArtilleryBulletType",
+  "fullName": "mindustry.entities.bullet.ArtilleryBulletType",
+  "parent": "BasicBulletType",
+  "fields": [
+    {
+      "name": "trailMult",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "trailSize",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

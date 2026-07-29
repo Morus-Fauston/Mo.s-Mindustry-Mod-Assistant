@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 150,
-      "item": "copper"
+      "item": "copper",
+      "amount": 150
     },
     {
-      "amount": 130,
-      "item": "lead"
+      "item": "lead",
+      "amount": 130
     },
     {
-      "amount": 120,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 120
     }
   ],
   "category": "units",

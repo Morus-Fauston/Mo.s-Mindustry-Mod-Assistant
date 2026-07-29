@@ -6,8 +6,8 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 6,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 6
     }
   ],
   "category": "defense",

@@ -6,8 +6,8 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 24,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 24
     }
   ],
   "category": "defense",

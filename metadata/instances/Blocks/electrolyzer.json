@@ -6,20 +6,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 40,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 40
     },
     {
-      "amount": 50,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 50
     },
     {
-      "amount": 130,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 130
     },
     {
-      "amount": 80,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 80
     }
   ],
   "category": "crafting",

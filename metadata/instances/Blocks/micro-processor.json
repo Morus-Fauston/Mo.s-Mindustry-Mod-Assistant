@@ -7,16 +7,16 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 90,
-      "item": "copper"
+      "item": "copper",
+      "amount": 90
     },
     {
-      "amount": 50,
-      "item": "lead"
+      "item": "lead",
+      "amount": 50
     },
     {
-      "amount": 50,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 50
     }
   ],
   "category": "logic",

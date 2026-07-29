@@ -10,24 +10,24 @@
   "size": 4,
   "requirements": [
     {
-      "amount": 400,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 400
     },
     {
-      "amount": 450,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 450
     },
     {
-      "amount": 500,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 500
     },
     {
-      "amount": 100,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 100
     },
     {
-      "amount": 200,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 200
     }
   ],
   "category": "turret",

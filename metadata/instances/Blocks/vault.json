@@ -6,12 +6,12 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 250,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 250
     },
     {
-      "amount": 125,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 125
     }
   ],
   "category": "effect",

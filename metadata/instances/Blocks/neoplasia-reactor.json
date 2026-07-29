@@ -6,28 +6,28 @@
   "size": 5,
   "requirements": [
     {
-      "amount": 500,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 500
     },
     {
-      "amount": 150,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 150
     },
     {
-      "amount": 200,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 200
     },
     {
-      "amount": 750,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 750
     },
     {
-      "amount": 150,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 150
     },
     {
-      "amount": 300,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 300
     }
   ],
   "category": "power",

@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 20,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 20
     },
     {
-      "amount": 50,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 50
     },
     {
-      "amount": 20,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 20
     }
   ],
   "category": "crafting",

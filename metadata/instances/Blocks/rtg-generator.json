@@ -6,24 +6,24 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 100,
-      "item": "lead"
+      "item": "lead",
+      "amount": 100
     },
     {
-      "amount": 50,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 50
     },
     {
-      "amount": 75,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 75
     },
     {
-      "amount": 75,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 75
     },
     {
-      "amount": 25,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 25
     }
   ],
   "category": "power",

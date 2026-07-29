@@ -10,24 +10,24 @@
   "size": 4,
   "requirements": [
     {
-      "amount": 1200,
-      "item": "copper"
+      "item": "copper",
+      "amount": 1200
     },
     {
-      "amount": 350,
-      "item": "lead"
+      "item": "lead",
+      "amount": 350
     },
     {
-      "amount": 300,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 300
     },
     {
-      "amount": 325,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 325
     },
     {
-      "amount": 325,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 325
     }
   ],
   "category": "turret",

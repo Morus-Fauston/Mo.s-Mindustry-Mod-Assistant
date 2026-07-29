@@ -6,28 +6,28 @@
   "size": 7,
   "requirements": [
     {
-      "amount": 2000,
-      "item": "lead"
+      "item": "lead",
+      "amount": 2000
     },
     {
-      "amount": 2000,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 2000
     },
     {
-      "amount": 750,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 750
     },
     {
-      "amount": 1000,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 1000
     },
     {
-      "amount": 450,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 450
     },
     {
-      "amount": 600,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 600
     }
   ],
   "category": "units",

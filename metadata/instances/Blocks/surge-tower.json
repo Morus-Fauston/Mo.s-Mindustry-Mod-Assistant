@@ -6,20 +6,20 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 10,
-      "item": "lead"
+      "item": "lead",
+      "amount": 10
     },
     {
-      "amount": 7,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 7
     },
     {
-      "amount": 15,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 15
     },
     {
-      "amount": 15,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 15
     }
   ],
   "category": "power",

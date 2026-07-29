@@ -10,24 +10,24 @@
   "size": 5,
   "requirements": [
     {
-      "amount": 800,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 800
     },
     {
-      "amount": 300,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 300
     },
     {
-      "amount": 400,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 400
     },
     {
-      "amount": 200,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 200
     },
     {
-      "amount": 500,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 500
     }
   ],
   "category": "turret",

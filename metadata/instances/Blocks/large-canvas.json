@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 15,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 15
     },
     {
-      "amount": 5,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 5
     },
     {
-      "amount": 15,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 15
     }
   ],
   "category": "logic",

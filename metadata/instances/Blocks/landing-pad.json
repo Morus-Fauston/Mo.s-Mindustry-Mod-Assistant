@@ -6,16 +6,16 @@
   "size": 4,
   "requirements": [
     {
-      "amount": 200,
-      "item": "copper"
+      "item": "copper",
+      "amount": 200
     },
     {
-      "amount": 100,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 100
     },
     {
-      "amount": 100,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 100
     }
   ],
   "category": "effect",

@@ -1,5 +1,59 @@
 # Changelog
 
+## v0.1.2 (2026-07-30 02:07)
+
+### 新增
+
+- **武器数组编辑器（WeaponArrayEditor）**：单位表单中 `weapons` 字段的专用编辑组件
+  - 每个武器显示为折叠卡片，支持 [+] 添加、[×] 删除
+  - 引用/内联双模式，隐式判断（有 `bullet` 键 = 内联，否则 = 引用）
+  - 引用模式：名称输入 + 可选覆盖字段（x/y/reload/top/rotate/mirror）+ [展开为内联]
+  - 内联模式：武器字段 + 子弹子表单预览
+  - 添加武器弹窗支持"引用已有"和"内联新建"两种方式
+  - "展开为内联"自动从工程文件或原版元数据加载完整武器数据
+- **子弹编辑器（BulletEditor）**：武器表单中 `bullet` 字段的内联编辑组件
+  - 类型下拉选择（5 种：Basic / Laser / Missile / Artillery / Flak）
+  - 显示常用子弹字段（damage / speed / lifetime 等）
+  - 所有变更通过 CommandStack 支持撤销/重做
+- **参考对比面板（ReferencePanel）**：工具 → 导入参考 → 选分类 → 选实例 → 并排对比表格
+  - 表格列：字段 / 我的值 / 参考值，差异行黄色高亮
+  - 数据源：`metadata/instances/`（含新增的 Weapons/ 分类）
+- **撤销/重做 UI 接线**：工具栏新增撤销/重做按钮，状态跟随 `can_undo` / `can_redo`；菜单 Ctrl+Z / Ctrl+Y 同步更新
+- **实时字段验证**：修改字段时即时检查类型，非法输入显示红色边框 + tooltip 错误信息；保存时状态栏显示错误计数
+- **类型别名映射**：`PowerTurret`、`payload`、`tank`、`Liquid` 等 10 种无独立元数据类的 type 值自动映射到最近的父类
+- **快速启动入口**：`run.bat` 双击启动，自动检测 venv
+- **数组操作命令**：新增 `ArrayInsertCommand` / `ArrayRemoveCommand`，精确到单元素撤销
+
+### 优化
+
+- **字段分组更贴近 Mindustry 语义**：补充武器、子弹、移动方式、视觉与音效等默认分组规则，减少常见字段被归入“自定义字段”
+- **编辑器交互体验提升**：武器/子弹子表单在同一界面内支持更自然的展开、收起、引用/内联切换，减少上下文切换
+- **参考数据与实例覆盖更完整**：扩充 Weapons / BulletType 相关实例与分类数据，便于对比面板和类型解析更稳定地工作
+
+### 提取工具 v1.1
+
+- `ClassExtractor` 新增 5 个 BulletType 子类提取（Basic / Laser / Missile / Artillery / Flak）
+- `InstanceExtractor` 新增原版武器实例提取（遍历所有 UnitType 的 weapons，递归序列化 Weapon + BulletType）
+- 处理匿名子类（`getConcreteClassName` 向上遍历找到非匿名类名）
+- 输出：17 个类定义（+5）、624 个实例（+54 Weapons）、6 个分类（+Weapons）
+
+### 修复
+
+- 武器模板缺少 `type` 字段，导致编辑面板无法加载类型定义
+- 电力炮台（PowerTurret）无法加载类型定义（无独立元数据类）
+- 武器引用模式下添加覆盖字段导致 KeyError（`_get_nested` 访问不存在键时崩溃）
+- Undo 删除覆盖字段后键未被清理（新增 `_del_nested` + `_NOT_FOUND` 哨兵）
+- 武器卡片 UI 重建时 Qt 布局清理不安全（改为临时 widget 托管旧布局）
+
+### 文档
+
+- 新增 ADR-005：武器编辑组件架构（专用组件 + 隐式引用/内联判断）
+- 设计规格文档更新：武器编辑章节细化、元数据章节补充 Weapons 分类、ADR 表格新增 005
+- CONTEXT.md 术语表更新：细化引用/内联定义，新增"覆盖字段"术语
+- `.gitignore` 新增 `Mindustry-master/` 和 `run.bat`
+
+---
+
 ## v0.1.1 (2026-07-29)
 
 ### 新增

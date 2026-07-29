@@ -6,8 +6,8 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 2,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 2
     }
   ],
   "category": "liquid",

@@ -6,24 +6,24 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 40,
-      "item": "copper"
+      "item": "copper",
+      "amount": 40
     },
     {
-      "amount": 50,
-      "item": "lead"
+      "item": "lead",
+      "amount": 50
     },
     {
-      "amount": 40,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 40
     },
     {
-      "amount": 35,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 35
     },
     {
-      "amount": 35,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 35
     }
   ],
   "category": "power",

@@ -6,24 +6,24 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 150,
-      "item": "copper"
+      "item": "copper",
+      "amount": 150
     },
     {
-      "amount": 115,
-      "item": "lead"
+      "item": "lead",
+      "amount": 115
     },
     {
-      "amount": 175,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 175
     },
     {
-      "amount": 115,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 115
     },
     {
-      "amount": 75,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 75
     }
   ],
   "category": "production",

@@ -37,6 +37,8 @@ from ..core.content_store import ContentData
 from ..core.metadata import ClassDef, FieldDef, Metadata
 from ..core.project import Project
 from ..core.validator import Validator
+from .widgets.weapon_array_editor import WeaponArrayEditor
+from .widgets.bullet_editor import BulletEditor
 
 
 class EditorPanel(QWidget):
@@ -112,6 +114,10 @@ class EditorPanel(QWidget):
     def is_dirty(self) -> bool:
         return self._dirty
 
+    def refresh_from_data(self) -> None:
+        """Rebuild the form from current data. Called after undo/redo."""
+        self._rebuild_form()
+
     # ── UI setup ────────────────────────────────────────────────────────
 
     def _setup_ui(self) -> None:
@@ -146,7 +152,12 @@ class EditorPanel(QWidget):
         layout.addWidget(scroll)
 
     def _rebuild_form(self) -> None:
-        """Rebuild form groups. Called on init and when fields are added/deleted."""
+        """Rebuild form groups. Called on init and when fields are added/deleted.
+
+        Each group in field_groups.json now has 'required' (always shown) and
+        'optional' (shown only if the field already exists in JSON data).
+        The '+' button on each group reveals that group's optional fields.
+        """
         if self._class_def is None or self._form_layout is None:
             return
 
@@ -162,26 +173,37 @@ class EditorPanel(QWidget):
         groups_config = self._field_groups.get(content_type, {})
         all_fields = {f.name: f for f in self._class_def.fields}
 
-        # Fields in configured groups
+        # Collect all field names that appear in any group (required + optional)
         grouped_names: set[str] = set()
-        for field_names in groups_config.values():
-            grouped_names.update(field_names)
+        for gd in groups_config.values():
+            grouped_names.update(gd.get("required", []))
+            grouped_names.update(gd.get("optional", []))
 
-        # Fields already in JSON but not in any group → "自定义字段"
+        # Fields already in JSON but not in any group → "其他"
         json_fields = set(self._content.data.keys()) - {"type"}
         extra_names = json_fields - grouped_names
 
-        # Render configured groups
-        for group_name, field_names in groups_config.items():
+        # Render configured groups: required always, optional only if in data
+        for group_name, group_def in groups_config.items():
             label = self.GROUP_LABELS.get(group_name, group_name)
-            visible = [all_fields[n] for n in field_names if n in all_fields]
-            self._render_group(label, group_name, visible)
+            required = group_def.get("required", [])
+            optional = group_def.get("optional", [])
 
-        # Render extra fields from JSON
+            visible_names = list(required)
+            for n in optional:
+                if n in self._content.data:
+                    visible_names.append(n)
+
+            visible = [all_fields[n] for n in visible_names if n in all_fields]
+            # Only render if there's at least one visible field or the group has optional fields
+            if visible or optional:
+                self._render_group(label, group_name, visible)
+
+        # Render extra fields from JSON (not in any group) → "其他"
         if extra_names:
             extra = [all_fields[n] for n in sorted(extra_names) if n in all_fields]
             if extra:
-                self._render_group("自定义字段", "_custom", extra)
+                self._render_group("其他", "_other", extra)
 
         # Re-add user notes box
         notes_box = QGroupBox("用户备注")
@@ -234,22 +256,44 @@ class EditorPanel(QWidget):
         self._form_layout.addWidget(group_box)
 
     def _show_add_field_menu(self, group_name: str) -> None:
-        """Popup menu listing available fields to add."""
+        """Popup menu listing available optional fields for this group.
+
+        Each group's '+' only shows optional fields from that group.
+        The '_other' group shows fields not in any group at all.
+        """
         if self._class_def is None:
             return
 
-        # Already shown fields
-        shown = set(self._content.data.keys())
         content_type = self._content.data.get("type", "")
-        for names in self._field_groups.get(content_type, {}).values():
-            shown.update(names)
+        groups_config = self._field_groups.get(content_type, {})
+        data_keys = set(self._content.data.keys())
+
+        if group_name == "_other":
+            # "其他" group: show all class fields not in any group at all
+            all_grouped = set()
+            for gd in groups_config.values():
+                all_grouped.update(gd.get("required", []))
+                all_grouped.update(gd.get("optional", []))
+            candidates = [
+                f for f in self._class_def.fields
+                if f.name not in all_grouped
+                and f.name not in data_keys
+                and not self._is_internal_field(f)
+            ]
+        else:
+            group_def = groups_config.get(group_name, {})
+            optional_names = set(group_def.get("optional", []))
+            candidates = [
+                f for f in self._class_def.fields
+                if f.name in optional_names
+                and f.name not in data_keys
+                and not self._is_internal_field(f)
+            ]
 
         menu = QMenu(self)
         menu.setToolTipsVisible(True)
         count = 0
-        for f in self._class_def.fields:
-            if f.name in shown or self._is_internal_field(f):
-                continue
+        for f in candidates:
             action = menu.addAction(self._display_name(f.name))
             action.setData(f.name)
             # Tooltip in menu
@@ -263,7 +307,14 @@ class EditorPanel(QWidget):
         if count == 0:
             menu.addAction("(无更多可用字段)").setEnabled(False)
 
-        chosen = menu.exec(self.mapToGlobal(self.rect().center()))
+        # Position the menu near the '+' button that was clicked
+        sender = self.sender()
+        if sender and isinstance(sender, QPushButton):
+            pos = sender.mapToGlobal(sender.rect().bottomLeft())
+        else:
+            pos = self.mapToGlobal(self.rect().center())
+
+        chosen = menu.exec(pos)
         if chosen and chosen.data():
             field_name = chosen.data()
             field_def = next(
@@ -284,10 +335,14 @@ class EditorPanel(QWidget):
         elif field_def.mode == "STRING_REF":
             return self._create_ref_widget(field_def, current_value)
         elif field_def.mode == "ARRAY":
+            if field_def.name == "weapons":
+                return self._create_weapons_widget()
             label = QLabel(f"[{field_def.element_type or 'list'}] (编辑功能开发中)")
             label.setStyleSheet("color: gray;")
             return label
         elif field_def.mode == "INLINE_OBJECT":
+            if field_def.name == "bullet":
+                return self._create_bullet_editor()
             label = QLabel(f"[{field_def.inline_type or 'object'}] (编辑功能开发中)")
             label.setStyleSheet("color: gray;")
             return label
@@ -356,6 +411,34 @@ class EditorPanel(QWidget):
         self._field_widgets[field_def.name] = combo
         return combo
 
+    def _create_weapons_widget(self) -> QWidget:
+        """Create a WeaponArrayEditor for the weapons field."""
+        # Ensure the weapons array exists
+        if "weapons" not in self._content.data:
+            self._content.data["weapons"] = []
+
+        editor = WeaponArrayEditor(
+            data=self._content.data,
+            path="weapons",
+            command_stack=self._commands,
+            metadata=self._metadata,
+            project=self._project,
+        )
+        editor.valueChanged.connect(self._mark_dirty)
+        self._field_widgets["weapons"] = editor
+        return editor
+
+    def _create_bullet_editor(self) -> QWidget:
+        """Create a BulletEditor for the bullet field."""
+        editor = BulletEditor(
+            data=self._content.data,
+            path="bullet",
+            command_stack=self._commands,
+        )
+        editor.valueChanged.connect(self._mark_dirty)
+        self._field_widgets["bullet"] = editor
+        return editor
+
     def _show_field_context_menu(self, pos, field_name: str, widget: QWidget) -> None:
         """Right-click context menu on a field widget: delete field."""
         menu = QMenu(self)
@@ -377,6 +460,40 @@ class EditorPanel(QWidget):
             on_change=self._mark_dirty,
         )
         self._commands.execute(cmd)
+
+        # Real-time validation: red border + tooltip on error
+        self._validate_field_widget(field_name, new_value)
+
+    def _validate_field_widget(self, field_name: str, value: Any) -> None:
+        """Apply validation styling to the widget for a specific field."""
+        widget = self._field_widgets.get(field_name)
+        if widget is None or self._class_def is None:
+            return
+
+        # Find field definition
+        field_def = self._find_field_def(field_name)
+        if field_def is None:
+            return
+
+        issue = self._validator.validate_field_value(field_def, value)
+        if issue is not None:
+            widget.setStyleSheet("border: 2px solid red; border-radius: 3px;")
+            widget.setToolTip(issue.message)
+        else:
+            widget.setStyleSheet("")  # Clear
+            # Restore original tooltip from field_docs
+            doc = self._field_docs.get(field_name, "")
+            if doc:
+                widget.setToolTip(doc)
+
+    def _find_field_def(self, field_name: str) -> FieldDef | None:
+        """Find a field definition by name in the current class."""
+        if self._class_def is None:
+            return None
+        for f in self._class_def.fields:
+            if f.name == field_name:
+                return f
+        return None
 
     def _mark_dirty(self) -> None:
         self._dirty = True
@@ -405,11 +522,16 @@ class EditorPanel(QWidget):
         """Fields users would almost never edit in a mod."""
         internal_suffixes = ("Region", "Sound", "Effect", "Controller")
         internal_names = {
-            "id", "minfo", "stats", "localizedName", "description",
-            "details", "credit", "alwaysUnlocked", "removed",
+            "id", "minfo", "stats", "localizedName",
+            "alwaysUnlocked", "removed",
             "uiIcon", "fullIcon", "fullOverride", "shownPlanets",
-            "databaseTabs", "techNodes", "constructor",
+            "databaseTabs", "allDatabaseTabs", "techNodes", "techNode",
+            "constructor", "firstRequirements",
             "engineColorInner", "engineColor", "healColor",
+            "generateIcons", "generateFullIcon", "internalGenerateSprites",
+            "cachedRequirements", "totalRequirements",
+            "dpsEstimate", "sample", "unlocked",
+            "hideDatabase", "databaseCategory", "databaseTag",
         }
         if f.name in internal_names:
             return True

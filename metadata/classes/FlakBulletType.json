@@ -1,0 +1,35 @@
+{
+  "name": "FlakBulletType",
+  "fullName": "mindustry.entities.bullet.FlakBulletType",
+  "parent": "BasicBulletType",
+  "fields": [
+    {
+      "name": "explodeRange",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "explodeDelay",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "flakDelay",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "flakInterval",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

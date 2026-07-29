@@ -6,20 +6,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 100,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 100
     },
     {
-      "amount": 100,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 100
     },
     {
-      "amount": 200,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 200
     },
     {
-      "amount": 90,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 90
     }
   ],
   "category": "crafting",

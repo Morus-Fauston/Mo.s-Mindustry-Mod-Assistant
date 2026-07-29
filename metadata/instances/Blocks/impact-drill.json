@@ -6,16 +6,16 @@
   "size": 4,
   "requirements": [
     {
-      "amount": 60,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 60
     },
     {
-      "amount": 70,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 70
     },
     {
-      "amount": 90,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 90
     }
   ],
   "category": "production",

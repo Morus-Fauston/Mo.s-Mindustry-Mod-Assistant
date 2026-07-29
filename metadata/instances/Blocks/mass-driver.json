@@ -8,20 +8,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 125,
-      "item": "lead"
+      "item": "lead",
+      "amount": 125
     },
     {
-      "amount": 125,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 125
     },
     {
-      "amount": 50,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 50
     },
     {
-      "amount": 75,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 75
     }
   ],
   "category": "distribution",

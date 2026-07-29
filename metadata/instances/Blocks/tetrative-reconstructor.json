@@ -6,28 +6,28 @@
   "size": 9,
   "requirements": [
     {
-      "amount": 4000,
-      "item": "lead"
+      "item": "lead",
+      "amount": 4000
     },
     {
-      "amount": 1000,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 1000
     },
     {
-      "amount": 3000,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 3000
     },
     {
-      "amount": 600,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 600
     },
     {
-      "amount": 600,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 600
     },
     {
-      "amount": 800,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 800
     }
   ],
   "category": "units",

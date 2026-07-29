@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 200,
-      "item": "copper"
+      "item": "copper",
+      "amount": 200
     },
     {
-      "amount": 120,
-      "item": "lead"
+      "item": "lead",
+      "amount": 120
     },
     {
-      "amount": 90,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 90
     }
   ],
   "category": "units",

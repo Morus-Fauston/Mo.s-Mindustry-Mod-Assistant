@@ -8,24 +8,24 @@
   "size": 5,
   "requirements": [
     {
-      "amount": 100,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 100
     },
     {
-      "amount": 200,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 200
     },
     {
-      "amount": 20,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 20
     },
     {
-      "amount": 200,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 200
     },
     {
-      "amount": 30,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 30
     }
   ],
   "category": "units",

@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 25,
-      "item": "lead"
+      "item": "lead",
+      "amount": 25
     },
     {
-      "amount": 12,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 12
     }
   ],
   "category": "effect",

@@ -6,8 +6,8 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 24,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 24
     }
   ],
   "category": "defense",

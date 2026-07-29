@@ -6,12 +6,12 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 1000,
-      "item": "copper"
+      "item": "copper",
+      "amount": 1000
     },
     {
-      "amount": 800,
-      "item": "lead"
+      "item": "lead",
+      "amount": 800
     }
   ],
   "category": "effect",

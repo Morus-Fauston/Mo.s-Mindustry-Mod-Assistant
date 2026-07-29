@@ -1,0 +1,6 @@
+{
+  "name": "MissileBulletType",
+  "fullName": "mindustry.entities.bullet.MissileBulletType",
+  "parent": "BasicBulletType",
+  "fields": []
+}

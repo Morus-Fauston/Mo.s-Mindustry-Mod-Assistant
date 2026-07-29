@@ -49,7 +49,10 @@ class SetFieldCommand(Command):
             self._on_change()
 
     def undo(self) -> None:
-        _set_nested(self._data, self._path, self._old)
+        if self._old is _NOT_FOUND:
+            _del_nested(self._data, self._path)
+        else:
+            _set_nested(self._data, self._path, self._old)
         if self._on_change:
             self._on_change()
 
@@ -65,6 +68,73 @@ class SetFieldCommand(Command):
             merged._old = self._old
             return merged
         return None
+
+
+class ArrayInsertCommand(Command):
+    """Insert an element into an array at specific index."""
+
+    def __init__(
+        self,
+        data: dict,
+        path: str,  # e.g. "weapons" (parent array path)
+        index: int,
+        element: dict,
+        on_change: Callable[[], None] | None = None,
+    ) -> None:
+        self._data = data
+        self._path = path
+        self._index = index
+        self._element = element
+        self._on_change = on_change
+
+    def execute(self) -> None:
+        arr = _get_nested(self._data, self._path)
+        if not isinstance(arr, list):
+            return
+        arr.insert(self._index, self._element)
+        if self._on_change:
+            self._on_change()
+
+    def undo(self) -> None:
+        arr = _get_nested(self._data, self._path)
+        if not isinstance(arr, list):
+            return
+        del arr[self._index]
+        if self._on_change:
+            self._on_change()
+
+
+class ArrayRemoveCommand(Command):
+    """Remove an element from an array at specific index."""
+
+    def __init__(
+        self,
+        data: dict,
+        path: str,
+        index: int,
+        on_change: Callable[[], None] | None = None,
+    ) -> None:
+        self._data = data
+        self._path = path
+        self._index = index
+        self._removed: object = None
+        self._on_change = on_change
+
+    def execute(self) -> None:
+        arr = _get_nested(self._data, self._path)
+        if not isinstance(arr, list):
+            return
+        self._removed = arr.pop(self._index)
+        if self._on_change:
+            self._on_change()
+
+    def undo(self) -> None:
+        arr = _get_nested(self._data, self._path)
+        if not isinstance(arr, list):
+            return
+        arr.insert(self._index, self._removed)
+        if self._on_change:
+            self._on_change()
 
 
 class CommandStack:
@@ -132,15 +202,24 @@ class CommandStack:
 
 # ── nested dict helpers ─────────────────────────────────────────────────
 
+_NOT_FOUND = object()  # sentinel: key did not exist in dict
+
+
 def _get_nested(data: dict, path: str) -> object:
-    """Get value at dotted path like 'weapons[0].bullet.damage'."""
+    """Get value at dotted path like 'weapons[0].bullet.damage'.
+
+    Returns _NOT_FOUND if any key in the path does not exist.
+    """
     keys = _parse_path(path)
     current: object = data
     for key in keys:
-        if isinstance(key, int):
-            current = current[key]  # type: ignore[index]
-        else:
-            current = current[key]  # type: ignore[index]
+        try:
+            if isinstance(key, int):
+                current = current[key]  # type: ignore[index]
+            else:
+                current = current[key]  # type: ignore[index]
+        except (KeyError, IndexError, TypeError):
+            return _NOT_FOUND
     return current
 
 
@@ -157,6 +236,28 @@ def _set_nested(data: dict, path: str, value: object) -> None:
         current[last] = value  # type: ignore[index]
     else:
         current[last] = value  # type: ignore[index]
+
+
+def _del_nested(data: dict, path: str) -> None:
+    """Delete a key at dotted path. Silently ignores missing keys."""
+    keys = _parse_path(path)
+    current: object = data
+    for key in keys[:-1]:
+        try:
+            if isinstance(key, int):
+                current = current[key]  # type: ignore[index]
+            else:
+                current = current[key]  # type: ignore[index]
+        except (KeyError, IndexError, TypeError):
+            return
+    last = keys[-1]
+    try:
+        if isinstance(last, int):
+            current.pop(last)  # type: ignore[index]
+        else:
+            current.pop(last, None)  # type: ignore[index]
+    except (KeyError, IndexError, TypeError):
+        pass
 
 
 def _parse_path(path: str) -> list[str | int]:

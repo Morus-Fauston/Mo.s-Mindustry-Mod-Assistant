@@ -6,20 +6,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 80,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 80
     },
     {
-      "amount": 100,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 100
     },
     {
-      "amount": 100,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 100
     },
     {
-      "amount": 40,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 40
     }
   ],
   "category": "units",

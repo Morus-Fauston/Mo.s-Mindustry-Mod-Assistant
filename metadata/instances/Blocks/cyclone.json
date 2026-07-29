@@ -10,16 +10,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 200,
-      "item": "copper"
+      "item": "copper",
+      "amount": 200
     },
     {
-      "amount": 125,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 125
     },
     {
-      "amount": 80,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 80
     }
   ],
   "category": "turret",

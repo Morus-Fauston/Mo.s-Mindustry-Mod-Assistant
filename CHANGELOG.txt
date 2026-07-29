@@ -1,3 +1,16 @@
+v0.2.0 (2026-07-30 18:45)
+  架构: 集中配置加载(config_loader) + 多态编辑器抽象(ADR-006) + 汉化外置JSON
+  - config_loader.py: 统一加载/缓存/显示名模式(zh_en/en_zh/zh/en)
+  - polymorphic_editor.py: 类型下拉→配置字段组→表单, 子弹/能力/子类型共用
+  - BulletEditor: 200行硬编码→80行薄包装, 字段由field_groups.json驱动
+  - WeaponCard: 内联14字段+子弹4字段硬编码→配置驱动
+  - 消除4处重复的_load_field_names_zh/_load_field_docs/_display_name
+  新增: visible_for子类型过滤 / defaults字段默认值 / Color调色盘控件
+       5种BulletType子类完整分组 / 资源科技控件接口(v0.2.2实现)
+  测试: 49个pytest全绿 (commands 19 / config_loader 20 / template 10)
+  文档: ADR-006 / PRD v1.1 / 设计规格v1.1 / CONTEXT.md+7术语 / UI设计需求书
+  .gitignore: +Nieobie icons/
+
 v0.1.2 (2026-07-30 02:07)
   新增: 武器数组编辑器 + 子弹编辑器 + 参考对比面板 + 实时字段验证
   - WeaponArrayEditor: 引用/内联双模式, [+]添加 [×]删除, 展开为内联

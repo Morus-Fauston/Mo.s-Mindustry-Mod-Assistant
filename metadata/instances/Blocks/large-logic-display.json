@@ -6,20 +6,20 @@
   "size": 6,
   "requirements": [
     {
-      "amount": 200,
-      "item": "lead"
+      "item": "lead",
+      "amount": 200
     },
     {
-      "amount": 100,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 100
     },
     {
-      "amount": 150,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 150
     },
     {
-      "amount": 75,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 75
     }
   ],
   "category": "logic",

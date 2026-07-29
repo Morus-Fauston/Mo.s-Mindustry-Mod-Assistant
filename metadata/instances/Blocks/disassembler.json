@@ -6,20 +6,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 100,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 100
     },
     {
-      "amount": 80,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 80
     },
     {
-      "amount": 150,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 150
     },
     {
-      "amount": 40,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 40
     }
   ],
   "category": "crafting",

@@ -6,8 +6,8 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 24,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 24
     }
   ],
   "category": "defense",

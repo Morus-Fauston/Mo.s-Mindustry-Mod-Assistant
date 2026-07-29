@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 10,
-      "item": "lead"
+      "item": "lead",
+      "amount": 10
     },
     {
-      "amount": 8,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 8
     }
   ],
   "category": "power",

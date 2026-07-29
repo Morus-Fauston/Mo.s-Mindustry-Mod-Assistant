@@ -6,12 +6,12 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 8,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 8
     },
     {
-      "amount": 3,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 3
     }
   ],
   "category": "crafting",

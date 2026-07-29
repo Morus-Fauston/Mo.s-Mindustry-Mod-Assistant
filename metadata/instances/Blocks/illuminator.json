@@ -6,16 +6,16 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 8,
-      "item": "lead"
+      "item": "lead",
+      "amount": 8
     },
     {
-      "amount": 12,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 12
     },
     {
-      "amount": 8,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 8
     }
   ],
   "category": "effect",

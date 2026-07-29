@@ -6,20 +6,20 @@
   "size": 5,
   "requirements": [
     {
-      "amount": 8000,
-      "item": "copper"
+      "item": "copper",
+      "amount": 8000
     },
     {
-      "amount": 8000,
-      "item": "lead"
+      "item": "lead",
+      "amount": 8000
     },
     {
-      "amount": 4000,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 4000
     },
     {
-      "amount": 5000,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 5000
     }
   ],
   "category": "effect",

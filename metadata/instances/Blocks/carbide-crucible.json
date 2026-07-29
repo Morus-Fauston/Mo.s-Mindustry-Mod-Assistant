@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 150,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 150
     },
     {
-      "amount": 110,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 110
     },
     {
-      "amount": 60,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 60
     }
   ],
   "category": "crafting",

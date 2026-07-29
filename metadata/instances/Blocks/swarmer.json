@@ -10,20 +10,20 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 35,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 35
     },
     {
-      "amount": 35,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 35
     },
     {
-      "amount": 30,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 30
     },
     {
-      "amount": 45,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 45
     }
   ],
   "category": "turret",

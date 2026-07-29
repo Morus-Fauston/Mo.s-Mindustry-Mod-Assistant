@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 100,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 100
     },
     {
-      "amount": 200,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 200
     },
     {
-      "amount": 80,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 80
     }
   ],
   "category": "units",

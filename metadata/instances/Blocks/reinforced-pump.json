@@ -6,16 +6,16 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 20,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 20
     },
     {
-      "amount": 40,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 40
     },
     {
-      "amount": 30,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 30
     }
   ],
   "category": "liquid",

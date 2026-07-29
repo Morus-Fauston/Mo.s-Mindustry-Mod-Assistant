@@ -7,20 +7,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 450,
-      "item": "lead"
+      "item": "lead",
+      "amount": 450
     },
     {
-      "amount": 75,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 75
     },
     {
-      "amount": 150,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 150
     },
     {
-      "amount": 50,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 50
     }
   ],
   "category": "logic",

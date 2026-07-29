@@ -227,6 +227,9 @@ Docs/
 # Reference mods (for learning, not distributed)
 蓝钢-欢迎您/
 
+# Local Mindustry source checkout (reference only)
+Mindustry-master/
+
 # Extractor build artifacts
 extractor/.gradle/
 extractor/build/

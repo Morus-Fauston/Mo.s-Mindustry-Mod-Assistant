@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 10,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 10
     },
     {
-      "amount": 5,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 5
     }
   ],
   "category": "logic",

@@ -6,20 +6,20 @@
   "size": 5,
   "requirements": [
     {
-      "amount": 4000,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 4000
     },
     {
-      "amount": 4000,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 4000
     },
     {
-      "amount": 3000,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 3000
     },
     {
-      "amount": 1000,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 1000
     }
   ],
   "category": "effect",

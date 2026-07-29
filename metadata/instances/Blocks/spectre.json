@@ -10,24 +10,24 @@
   "size": 4,
   "requirements": [
     {
-      "amount": 900,
-      "item": "copper"
+      "item": "copper",
+      "amount": 900
     },
     {
-      "amount": 300,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 300
     },
     {
-      "amount": 250,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 250
     },
     {
-      "amount": 175,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 175
     },
     {
-      "amount": 250,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 250
     }
   ],
   "category": "turret",

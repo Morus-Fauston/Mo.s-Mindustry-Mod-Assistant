@@ -10,20 +10,20 @@
   "size": 4,
   "requirements": [
     {
-      "amount": 50,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 50
     },
     {
-      "amount": 200,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 200
     },
     {
-      "amount": 350,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 350
     },
     {
-      "amount": 50,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 50
     }
   ],
   "category": "turret",

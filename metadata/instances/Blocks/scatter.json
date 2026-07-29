@@ -10,12 +10,12 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 85,
-      "item": "copper"
+      "item": "copper",
+      "amount": 85
     },
     {
-      "amount": 45,
-      "item": "lead"
+      "item": "lead",
+      "amount": 45
     }
   ],
   "category": "turret",

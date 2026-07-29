@@ -6,8 +6,8 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 1,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 1
     }
   ],
   "category": "liquid",

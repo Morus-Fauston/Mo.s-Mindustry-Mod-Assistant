@@ -6,20 +6,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 80,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 80
     },
     {
-      "amount": 120,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 120
     },
     {
-      "amount": 60,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 60
     },
     {
-      "amount": 35,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 35
     }
   ],
   "category": "crafting",

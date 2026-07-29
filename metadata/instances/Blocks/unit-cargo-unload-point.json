@@ -6,12 +6,12 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 60,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 60
     },
     {
-      "amount": 60,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 60
     }
   ],
   "category": "distribution",

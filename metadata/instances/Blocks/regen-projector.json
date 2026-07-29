@@ -7,20 +7,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 80,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 80
     },
     {
-      "amount": 80,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 80
     },
     {
-      "amount": 60,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 60
     },
     {
-      "amount": 40,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 40
     }
   ],
   "category": "effect",

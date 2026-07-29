@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 6,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 6
     },
     {
-      "amount": 2,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 2
     }
   ],
   "category": "defense",

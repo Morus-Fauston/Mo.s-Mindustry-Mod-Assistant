@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 5,
-      "item": "copper"
+      "item": "copper",
+      "amount": 5
     },
     {
-      "amount": 20,
-      "item": "lead"
+      "item": "lead",
+      "amount": 20
     }
   ],
   "category": "power",

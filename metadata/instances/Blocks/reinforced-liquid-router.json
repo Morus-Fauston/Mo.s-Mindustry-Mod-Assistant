@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 8,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 8
     },
     {
-      "amount": 4,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 4
     }
   ],
   "category": "liquid",

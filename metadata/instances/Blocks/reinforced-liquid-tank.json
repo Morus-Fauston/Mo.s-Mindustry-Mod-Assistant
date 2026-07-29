@@ -6,12 +6,12 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 50,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 50
     },
     {
-      "amount": 40,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 40
     }
   ],
   "category": "liquid",

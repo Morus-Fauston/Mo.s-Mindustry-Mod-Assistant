@@ -10,16 +10,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 225,
-      "item": "copper"
+      "item": "copper",
+      "amount": 225
     },
     {
-      "amount": 225,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 225
     },
     {
-      "amount": 100,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 100
     }
   ],
   "category": "turret",

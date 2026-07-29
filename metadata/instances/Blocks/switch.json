@@ -6,12 +6,12 @@
   "size": 1,
   "requirements": [
     {
-      "amount": 5,
-      "item": "copper"
+      "item": "copper",
+      "amount": 5
     },
     {
-      "amount": 5,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 5
     }
   ],
   "category": "logic",

@@ -1,0 +1,112 @@
+{
+  "name": "BasicBulletType",
+  "fullName": "mindustry.entities.bullet.BasicBulletType",
+  "parent": "BulletType",
+  "fields": [
+    {
+      "name": "backColor",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "frontColor",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "mixColorFrom",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "mixColorTo",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "width",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "height",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "shrinkX",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "shrinkY",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "shrinkInterp",
+      "javaType": "Interp",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "spin",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "rotationOffset",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "sprite",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "backSprite",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "backRegion",
+      "javaType": "TextureRegion",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "frontRegion",
+      "javaType": "TextureRegion",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    }
+  ]
+}

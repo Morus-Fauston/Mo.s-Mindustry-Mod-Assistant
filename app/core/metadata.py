@@ -40,6 +40,20 @@ class ClassDef:
 class Metadata:
     """Lazy-loading accessor for extracted Mindustry metadata."""
 
+    # Types that don't have dedicated metadata classes but are used in mods.
+    # Mapped to the closest parent class with metadata.
+    _TYPE_ALIASES: dict[str, str] = {
+        "PowerTurret": "Turret",
+        "payload": "UnitType",
+        "tank": "UnitType",
+        "naval": "UnitType",
+        "crawler": "UnitType",
+        "mech": "UnitType",
+        "legs": "UnitType",
+        "hover": "UnitType",
+        "Liquid": "UnlockableContent",
+    }
+
     def __init__(self, metadata_dir: Path | str) -> None:
         self._dir = Path(metadata_dir)
         self._manifest: dict[str, Any] | None = None
@@ -55,6 +69,10 @@ class Metadata:
 
         raw = self._load_class_file(name)
         if raw is None:
+            # Try type alias fallback (e.g. PowerTurret → Turret, payload → UnitType)
+            alias = self._TYPE_ALIASES.get(name)
+            if alias is not None:
+                return self.get_class(alias)
             raise KeyError(f"Unknown class: {name}")
 
         # Build own fields
@@ -99,6 +117,10 @@ class Metadata:
         names = sorted(p.stem for p in cat_dir.glob("*.json"))
         self._instance_list_cache[category] = names
         return names
+
+    def list_instance_categories(self) -> list[str]:
+        """Return all instance category names."""
+        return self.manifest.get("instanceCategories", [])
 
     # ── helpers ─────────────────────────────────────────────────────────
 

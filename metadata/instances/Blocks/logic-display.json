@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 100,
-      "item": "lead"
+      "item": "lead",
+      "amount": 100
     },
     {
-      "amount": 50,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 50
     },
     {
-      "amount": 50,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 50
     }
   ],
   "category": "logic",

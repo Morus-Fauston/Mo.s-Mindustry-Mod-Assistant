@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 100,
-      "item": "lead"
+      "item": "lead",
+      "amount": 100
     },
     {
-      "amount": 75,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 75
     },
     {
-      "amount": 125,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 125
     }
   ],
   "category": "effect",

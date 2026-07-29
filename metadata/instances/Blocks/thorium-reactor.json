@@ -6,24 +6,24 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 300,
-      "item": "lead"
+      "item": "lead",
+      "amount": 300
     },
     {
-      "amount": 50,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 50
     },
     {
-      "amount": 150,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 150
     },
     {
-      "amount": 150,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 150
     },
     {
-      "amount": 200,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 200
     }
   ],
   "category": "power",

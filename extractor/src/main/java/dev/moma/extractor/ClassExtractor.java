@@ -3,7 +3,7 @@ package dev.moma.extractor;
 import arc.struct.Seq;
 import mindustry.ctype.Content;
 import mindustry.ctype.UnlockableContent;
-import mindustry.entities.bullet.BulletType;
+import mindustry.entities.bullet.*;
 import mindustry.type.UnitType;
 import mindustry.type.Weapon;
 import mindustry.world.Block;
@@ -34,6 +34,15 @@ public class ClassExtractor {
             mindustry.world.blocks.defense.turrets.ItemTurret.class
     );
 
+    /** BulletType subclasses for inline bullet editing (v1.1) */
+    private static final List<Class<?>> BULLET_SUBCLASSES = List.of(
+            BasicBulletType.class,
+            LaserBulletType.class,
+            MissileBulletType.class,
+            ArtilleryBulletType.class,
+            FlakBulletType.class
+    );
+
     public Map<String, ClassDef> extract() {
         Map<String, ClassDef> result = new LinkedHashMap<>();
 
@@ -41,6 +50,9 @@ public class ClassExtractor {
             extractClass(clazz, result);
         }
         for (Class<?> clazz : BLOCK_SUBCLASSES) {
+            extractClass(clazz, result);
+        }
+        for (Class<?> clazz : BULLET_SUBCLASSES) {
             extractClass(clazz, result);
         }
 

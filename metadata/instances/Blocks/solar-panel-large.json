@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 60,
-      "item": "lead"
+      "item": "lead",
+      "amount": 60
     },
     {
-      "amount": 70,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 70
     },
     {
-      "amount": 15,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 15
     }
   ],
   "category": "power",

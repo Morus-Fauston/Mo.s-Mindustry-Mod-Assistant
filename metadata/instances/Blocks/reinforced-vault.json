@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 70,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 70
     },
     {
-      "amount": 100,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 100
     },
     {
-      "amount": 125,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 125
     }
   ],
   "category": "effect",

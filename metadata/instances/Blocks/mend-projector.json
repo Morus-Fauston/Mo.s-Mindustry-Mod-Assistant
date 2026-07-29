@@ -8,20 +8,20 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 50,
-      "item": "copper"
+      "item": "copper",
+      "amount": 50
     },
     {
-      "amount": 100,
-      "item": "lead"
+      "item": "lead",
+      "amount": 100
     },
     {
-      "amount": 25,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 25
     },
     {
-      "amount": 40,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 40
     }
   ],
   "category": "effect",

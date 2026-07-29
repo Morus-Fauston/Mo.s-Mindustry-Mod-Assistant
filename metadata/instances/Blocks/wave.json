@@ -10,16 +10,16 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 25,
-      "item": "copper"
+      "item": "copper",
+      "amount": 25
     },
     {
-      "amount": 75,
-      "item": "lead"
+      "item": "lead",
+      "amount": 75
     },
     {
-      "amount": 45,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 45
     }
   ],
   "category": "turret",

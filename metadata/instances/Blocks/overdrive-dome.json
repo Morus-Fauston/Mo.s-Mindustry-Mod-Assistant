@@ -8,24 +8,24 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 200,
-      "item": "lead"
+      "item": "lead",
+      "amount": 200
     },
     {
-      "amount": 130,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 130
     },
     {
-      "amount": 130,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 130
     },
     {
-      "amount": 80,
-      "item": "plastanium"
+      "item": "plastanium",
+      "amount": 80
     },
     {
-      "amount": 120,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 120
     }
   ],
   "category": "effect",

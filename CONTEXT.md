@@ -12,8 +12,9 @@
 | **Weapon / 武器** | 可独立存在的 content 类型，也可内联在单位中。与单位、方块同级 |
 | **BulletType / 子弹** | 武器发射的实体。第一版只作为武器的内联子对象，不独立存在 |
 | **字段（field）** | Content 的一个可编辑属性（如 health、speed） |
-| **引用（reference）** | 字段值为一个名字字符串，指向游戏内已有对象（如 `"ammoType": "copper"`） |
-| **内联（inline）** | 字段值为一个完整的嵌套对象定义（如 `"bullet": { "type": ..., "damage": ... }`） |
+jin| **引用（reference）** | 通过名字指向游戏内已有对象。简单引用为字符串（如 `"ammoType": "copper"`）；武器引用为含 `name` 的对象，可附带覆盖字段 |
+| **内联（inline）** | 字段值为一个完整的嵌套对象定义（如 `"bullet": { "type": ..., "damage": ... }`）。武器条目中存在 `bullet` 键即视为内联 |
+| **覆盖字段（override field）** | 引用模式下，引用方可覆盖被引用对象的部分属性（如单位引用武器时覆盖 x、y、reload）。不改变被引用对象本身 |
 | **精灵图（sprite）** | 单位/方块的 PNG 图片素材 |
 | **图层（layer）** | 精灵图的变体文件（主体、-cell、-outline、-shadow 等），渲染时按顺序叠放 |
 

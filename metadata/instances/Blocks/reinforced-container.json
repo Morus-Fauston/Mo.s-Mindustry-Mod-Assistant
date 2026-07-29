@@ -6,12 +6,12 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 40,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 40
     },
     {
-      "amount": 30,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 30
     }
   ],
   "category": "effect",

@@ -6,8 +6,8 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 24,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 24
     }
   ],
   "category": "defense",

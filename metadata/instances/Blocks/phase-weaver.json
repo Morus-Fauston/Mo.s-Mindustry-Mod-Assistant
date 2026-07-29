@@ -6,16 +6,16 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 120,
-      "item": "lead"
+      "item": "lead",
+      "amount": 120
     },
     {
-      "amount": 75,
-      "item": "thorium"
+      "item": "thorium",
+      "amount": 75
     },
     {
-      "amount": 130,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 130
     }
   ],
   "category": "crafting",

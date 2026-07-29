@@ -24,6 +24,7 @@ from ..core.validator import Validator
 from .file_tree import FileTreePanel
 from .editor_panel import EditorPanel
 from .preview_panel import PreviewPanel
+from .widgets.reference_panel import ReferencePanel, _ReferencePicker
 
 
 class MainWindow(QMainWindow):
@@ -43,6 +44,9 @@ class MainWindow(QMainWindow):
         self._auto_save_timer = QTimer(self)
         self._auto_save_timer.timeout.connect(self._auto_save)
         self._auto_save_timer.start(180_000)  # 3 minutes
+
+        # Wire undo/redo change notification
+        self._command_stack.set_on_change(self._on_command_stack_changed)
 
         self._state_file = Path(__file__).parent.parent / "config" / "editor_state.json"
 
@@ -117,6 +121,11 @@ class MainWindow(QMainWindow):
         self._add_toolbar_button(toolbar, "+ 武器", self._new_weapon)
         toolbar.addSeparator()
         self._add_toolbar_button(toolbar, "保存", self._save)
+        toolbar.addSeparator()
+        self._undo_tb = self._add_toolbar_button(toolbar, "撤销", self._undo)
+        self._redo_tb = self._add_toolbar_button(toolbar, "重做", self._redo)
+        self._undo_tb.setEnabled(False)
+        self._redo_tb.setEnabled(False)
 
     # ── actions ─────────────────────────────────────────────────────────
 
@@ -146,12 +155,20 @@ class MainWindow(QMainWindow):
         if self._project is None:
             return
         # Save all open tabs
+        error_count = 0
         for i in range(self._tabs.count()):
             panel = self._tabs.widget(i)
             if isinstance(panel, EditorPanel):
                 panel.save()
+                # Content-level validation
+                issues = self._validator.validate(panel.content.data, "content")
+                errs = [iss for iss in issues if iss.severity == "error"]
+                error_count += len(errs)
         self._project.is_dirty = False
-        self.statusBar().showMessage("已保存")
+        if error_count > 0:
+            self.statusBar().showMessage(f"已保存 ({error_count} 个验证错误)")
+        else:
+            self.statusBar().showMessage("已保存")
 
     def _auto_save(self) -> None:
         if self._project and self._project.is_dirty:
@@ -191,9 +208,31 @@ class MainWindow(QMainWindow):
 
     def _undo(self) -> None:
         self._command_stack.undo()
+        self._refresh_active_editor()
 
     def _redo(self) -> None:
         self._command_stack.redo()
+        self._refresh_active_editor()
+
+    def _on_command_stack_changed(self) -> None:
+        """Update undo/redo button states after command stack changes."""
+        if hasattr(self, '_undo_tb'):
+            self._undo_tb.setEnabled(self._command_stack.can_undo)
+        if hasattr(self, '_redo_tb'):
+            self._redo_tb.setEnabled(self._command_stack.can_redo)
+        if hasattr(self, '_undo_action'):
+            self._undo_action.setEnabled(self._command_stack.can_undo)
+        if hasattr(self, '_redo_action'):
+            self._redo_action.setEnabled(self._command_stack.can_redo)
+
+    def _refresh_active_editor(self) -> None:
+        """Refresh the currently active editor panel after undo/redo."""
+        idx = self._tabs.currentIndex()
+        if idx < 0:
+            return
+        panel = self._tabs.widget(idx)
+        if isinstance(panel, EditorPanel):
+            panel.refresh_from_data()
 
     def _new_unit(self) -> None:
         if self._project is None:
@@ -284,7 +323,40 @@ class MainWindow(QMainWindow):
             self._preview.show_content(panel.content, self._project)
 
     def _import_reference(self) -> None:
-        QMessageBox.information(self, "参考", "参考功能将在后续版本实现")
+        dlg = _ReferencePicker(self._metadata, self)
+        if dlg.exec():
+            category = dlg.selected_category
+            name = dlg.selected_name
+            if category and name:
+                self._show_reference_comparison(category, name)
+
+    def _show_reference_comparison(self, category: str, name: str) -> None:
+        """Show comparison between current content and a reference instance."""
+        idx = self._tabs.currentIndex()
+        if idx < 0:
+            QMessageBox.information(self, "提示", "请先打开一个内容文件")
+            return
+        panel = self._tabs.widget(idx)
+        if not isinstance(panel, EditorPanel):
+            return
+
+        try:
+            ref_data = self._metadata.get_instance(category, name)
+        except KeyError:
+            QMessageBox.warning(self, "错误", f"找不到参考实例: {category}/{name}")
+            return
+
+        # Create or reuse reference panel in right dock
+        if not hasattr(self, '_ref_panel'):
+            self._ref_panel = ReferencePanel(self._metadata)
+            self._ref_dock = QDockWidget("参考对比", self)
+            self._ref_dock.setWidget(self._ref_panel)
+            self._ref_dock.setFeatures(QDockWidget.DockWidgetFeature.NoDockWidgetFeatures)
+            self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._ref_dock)
+        else:
+            self._ref_dock.show()
+
+        self._ref_panel.set_comparison(panel.content.data, ref_data)
 
     def _open_settings(self) -> None:
         QMessageBox.information(self, "设置", "设置面板将在后续版本实现")
@@ -307,10 +379,11 @@ class MainWindow(QMainWindow):
         menu.addAction(action)
         return action
 
-    def _add_toolbar_button(self, toolbar: QToolBar, text: str, slot) -> None:
+    def _add_toolbar_button(self, toolbar: QToolBar, text: str, slot) -> QAction:
         action = QAction(text, self)
         action.triggered.connect(slot)
         toolbar.addAction(action)
+        return action
 
     def closeEvent(self, event) -> None:
         # Check for unsaved changes

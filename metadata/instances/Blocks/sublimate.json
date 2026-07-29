@@ -10,20 +10,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 200,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 200
     },
     {
-      "amount": 400,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 400
     },
     {
-      "amount": 150,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 150
     },
     {
-      "amount": 40,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 40
     }
   ],
   "category": "turret",

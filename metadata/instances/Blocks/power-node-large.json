@@ -6,16 +6,16 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 10,
-      "item": "lead"
+      "item": "lead",
+      "amount": 10
     },
     {
-      "amount": 5,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 5
     },
     {
-      "amount": 3,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 3
     }
   ],
   "category": "power",

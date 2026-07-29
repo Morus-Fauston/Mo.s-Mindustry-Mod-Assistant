@@ -1,7 +1,7 @@
 {
   "gameVersion": "159",
-  "extractorVersion": "1.0",
-  "generatedAt": "2026-07-28T18:52:08.545036800Z",
+  "extractorVersion": "1.1",
+  "generatedAt": "2026-07-29T06:19:37.813742300Z",
   "classes": [
     "Content",
     "MappableContent",
@@ -14,20 +14,27 @@
     "BaseTurret",
     "ReloadTurret",
     "Turret",
-    "ItemTurret"
+    "ItemTurret",
+    "BasicBulletType",
+    "LaserBulletType",
+    "MissileBulletType",
+    "ArtilleryBulletType",
+    "FlakBulletType"
   ],
   "instanceCategories": [
-    "Items",
-    "UnitTypes",
-    "StatusEffects",
+    "Liquids",
     "Blocks",
-    "Liquids"
+    "StatusEffects",
+    "UnitTypes",
+    "Items",
+    "Weapons"
   ],
   "instanceCounts": {
-    "Items": 22,
-    "UnitTypes": 68,
-    "StatusEffects": 23,
+    "Liquids": 11,
     "Blocks": 446,
-    "Liquids": 11
+    "StatusEffects": 23,
+    "UnitTypes": 68,
+    "Items": 22,
+    "Weapons": 54
   }
 }

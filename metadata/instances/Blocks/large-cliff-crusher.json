@@ -6,20 +6,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 80,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 80
     },
     {
-      "amount": 15,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 15
     },
     {
-      "amount": 100,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 100
     },
     {
-      "amount": 50,
-      "item": "tungsten"
+      "item": "tungsten",
+      "amount": 50
     }
   ],
   "category": "production",

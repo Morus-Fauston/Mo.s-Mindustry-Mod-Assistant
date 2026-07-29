@@ -6,12 +6,12 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 40,
-      "item": "metaglass"
+      "item": "metaglass",
+      "amount": 40
     },
     {
-      "amount": 30,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 30
     }
   ],
   "category": "liquid",

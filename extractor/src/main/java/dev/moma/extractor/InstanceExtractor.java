@@ -5,6 +5,7 @@ import mindustry.Vars;
 import mindustry.ctype.Content;
 import mindustry.ctype.ContentType;
 import mindustry.ctype.UnlockableContent;
+import mindustry.entities.bullet.*;
 import mindustry.type.*;
 import mindustry.world.Block;
 
@@ -54,6 +55,55 @@ public class InstanceExtractor {
             )
     );
 
+    /** Weapon fields to serialize (v1.1) — excludes complex types (Sound, Effect) */
+    private static final Set<String> WEAPON_WHITELIST = Set.of(
+            "name", "x", "y", "reload", "top", "rotate", "mirror",
+            "alternate", "flipSprite", "display", "showStatSprite",
+            "baseRotation", "continuous", "alwaysContinuous",
+            "aimChangeSpeed", "controllable", "aiControllable",
+            "alwaysShooting", "autoTarget", "predictTarget", "useAttackRange",
+            "targetInterval", "targetSwitchInterval", "rotateSpeed",
+            "inaccuracy", "shake", "recoil", "recoils", "recoilTime", "recoilPow",
+            "cooldownTime", "shootX", "shootY", "xRand", "yRand", "shadow",
+            "velocityRnd", "extraVelocity", "shootCone", "rotationLimit",
+            "minWarmup", "shootWarmupSpeed", "smoothReloadSpeed", "linearWarmup",
+            "soundPitchMin", "soundPitchMax", "ignoreRotation", "noAttack",
+            "minShootVelocity", "parentizeEffects", "otherSide", "layerOffset",
+            "activeSoundVolume", "shootSoundVolume", "shootStatusDuration",
+            "shootOnDeath"
+    );
+
+    /** BulletType base fields to serialize (v1.1) */
+    private static final Set<String> BULLET_WHITELIST = Set.of(
+            "speed", "damage", "lifetime", "pierce", "pierceCap",
+            "pierceBuilding", "knockback", "status", "statusDuration",
+            "hitEffect", "despawnEffect", "shootEffect", "smokeEffect",
+            "hitSound", "hitSoundVolume", "hitSoundPitch",
+            "despawnHit", "incendAmount", "incendSpread", "incendChance",
+            "ammoMultiplier", "reloadMultiplier", "recoilMultiplier",
+            "damageMultiplier", "speedMultiplier", "dragMultiplier",
+            "homingPower", "homingRange", "splashDamage", "splashDamageRadius",
+            "lightning", "lightningLength", "lightningLengthRand",
+            "lightningDamage", "lightningAngleRand", "lightningCone",
+            "weaveScale", "weaveRandom", "weaveMag", "collides", "collidesAir",
+            "collidesGround", "collidesTeam", "collidesTiles",
+            "absorbable", "hittable", "reflectable", "keepVelocity",
+            "hitShake", "hitSquares", "shootOnDeath", "suppression",
+            "fragBullet", "fragBullets", "fragVelocityMin", "fragVelocityMax",
+            "fragAngle", "fragSpread", "fragRandomAngle", "fragRandomSpread",
+            "trailEffect", "trailParam", "trailLength", "trailWidth",
+            "trailColor", "trailInterp", "frontTrail", "backTrail",
+            "width", "height", "shrinkX", "shrinkY", "spin", "casingSplashes",
+            "casingDespawnEffect", "casingShootEffect", "casingWidth",
+            "casingHeight", "drawSize", "hitColor", "despawnShake",
+            "lightColor", "lightOpacity", "puddleAmount", "puddleLiquid",
+            "puddleRange", "orbiting", "buildingDamageMultiplier",
+            "scaleLife", "scaleVelocity", "drag", "maxRange",
+            "resetLength", "healPercent", "healAmount", "collisionRadius",
+            "casingDespawnShake", "bulletSprite", "backSprite", "frontSprite",
+            "casingSprite", "sprite"
+    );
+
     /**
      * Extract all instances.
      * Note: Requires Mindustry's content system to be initialized.
@@ -88,7 +138,136 @@ public class InstanceExtractor {
             result.put(categoryName, instances);
         }
 
+        // v1.1: Extract weapons from all UnitTypes
+        System.out.println("      Extracting weapons from UnitTypes...");
+        Map<String, Object> weapons = extractWeapons();
+        result.put("Weapons", weapons);
+        System.out.println("      Found " + weapons.size() + " unique weapons.");
+
         return result;
+    }
+
+    /**
+     * Extract all weapons from UnitType instances (v1.1).
+     * Deduplicates by weapon name — first occurrence wins.
+     */
+    private Map<String, Object> extractWeapons() {
+        Map<String, Object> weapons = new LinkedHashMap<>();
+
+        Seq<Content> units = Vars.content.getBy(ContentType.unit);
+        if (units == null) return weapons;
+
+        for (Content content : units) {
+            if (!(content instanceof UnitType unitType)) continue;
+
+            // Access the weapons Seq via reflection
+            try {
+                Field weaponsField = UnitType.class.getDeclaredField("weapons");
+                weaponsField.setAccessible(true);
+                Object weaponsObj = weaponsField.get(unitType);
+
+                if (weaponsObj instanceof Seq<?> weaponSeq) {
+                    for (Object w : weaponSeq) {
+                        if (!(w instanceof Weapon weapon)) continue;
+                        String name = weapon.name;
+                        if (name == null || name.isEmpty() || weapons.containsKey(name)) continue;
+
+                        Map<String, Object> weaponData = serializeWeapon(weapon);
+                        weapons.put(name, weaponData);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("      WARNING: Failed to extract weapons from "
+                        + getContentName(content) + ": " + e.getMessage());
+            }
+        }
+
+        return weapons;
+    }
+
+    /**
+     * Serialize a Weapon instance to a flat field map, with nested bullet.
+     */
+    private Map<String, Object> serializeWeapon(Weapon weapon) {
+        Map<String, Object> data = new LinkedHashMap<>();
+
+        // Serialize whitelisted primitive fields
+        for (Field field : Weapon.class.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers())) continue;
+            if (!WEAPON_WHITELIST.contains(field.getName())) continue;
+
+            try {
+                field.setAccessible(true);
+                Object value = field.get(weapon);
+                Object serialized = serializeValue(value);
+                if (serialized != null) {
+                    data.put(field.getName(), serialized);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        // Also walk parent class fields (none currently, but for robustness)
+        Class<?> parent = Weapon.class.getSuperclass();
+        while (parent != null && parent != Object.class) {
+            for (Field field : parent.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers())) continue;
+                if (!WEAPON_WHITELIST.contains(field.getName())) continue;
+                if (data.containsKey(field.getName())) continue;
+
+                try {
+                    field.setAccessible(true);
+                    Object value = field.get(weapon);
+                    Object serialized = serializeValue(value);
+                    if (serialized != null) {
+                        data.put(field.getName(), serialized);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            parent = parent.getSuperclass();
+        }
+
+        // Serialize bullet
+        if (weapon.bullet != null) {
+            data.put("bullet", serializeBullet(weapon.bullet));
+        }
+
+        return data;
+    }
+
+    /**
+     * Serialize a BulletType instance, including its concrete type name.
+     */
+    private Map<String, Object> serializeBullet(BulletType bullet) {
+        Map<String, Object> data = new LinkedHashMap<>();
+
+        // Record the concrete type (handle anonymous subclasses)
+        String typeName = getConcreteClassName(bullet);
+        data.put("type", typeName);
+
+        // Walk the class hierarchy to collect all whitelisted fields
+        Class<?> clazz = bullet.getClass();
+        while (clazz != null && clazz != Object.class && Content.class.isAssignableFrom(clazz)) {
+            for (Field field : clazz.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers())) continue;
+                if (!BULLET_WHITELIST.contains(field.getName())) continue;
+                if (data.containsKey(field.getName())) continue;
+
+                try {
+                    field.setAccessible(true);
+                    Object value = field.get(bullet);
+                    Object serialized = serializeValue(value);
+                    if (serialized != null) {
+                        data.put(field.getName(), serialized);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
+
+        return data;
     }
 
     private void initHeadless() {
@@ -124,6 +303,18 @@ public class InstanceExtractor {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * Get the concrete class name, handling anonymous subclasses
+     * (e.g. new BasicBulletType(2.5f, 9){{...}} → "BasicBulletType").
+     */
+    private String getConcreteClassName(Object obj) {
+        Class<?> clazz = obj.getClass();
+        while (clazz.isAnonymousClass() && clazz.getSuperclass() != null) {
+            clazz = clazz.getSuperclass();
+        }
+        return clazz.getSimpleName();
     }
 
     private Map<String, Object> serializeContent(Content content, Set<String> whitelist) {

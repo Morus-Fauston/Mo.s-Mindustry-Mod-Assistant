@@ -6,20 +6,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 100,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 100
     },
     {
-      "amount": 100,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 100
     },
     {
-      "amount": 60,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 60
     },
     {
-      "amount": 60,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 60
     }
   ],
   "category": "power",

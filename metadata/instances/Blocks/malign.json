@@ -10,24 +10,24 @@
   "size": 5,
   "requirements": [
     {
-      "amount": 500,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 500
     },
     {
-      "amount": 500,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 500
     },
     {
-      "amount": 200,
-      "item": "phase-fabric"
+      "item": "phase-fabric",
+      "amount": 200
     },
     {
-      "amount": 1000,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 1000
     },
     {
-      "amount": 200,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 200
     }
   ],
   "category": "turret",

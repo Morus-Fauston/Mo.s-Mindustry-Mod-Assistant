@@ -6,12 +6,12 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 200,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 200
     },
     {
-      "amount": 150,
-      "item": "beryllium"
+      "item": "beryllium",
+      "amount": 150
     }
   ],
   "category": "units",

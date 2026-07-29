@@ -6,8 +6,8 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 100,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 100
     }
   ],
   "category": "effect",

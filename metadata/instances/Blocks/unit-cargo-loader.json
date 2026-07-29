@@ -6,16 +6,16 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 80,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 80
     },
     {
-      "amount": 50,
-      "item": "surge-alloy"
+      "item": "surge-alloy",
+      "amount": 50
     },
     {
-      "amount": 20,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 20
     }
   ],
   "category": "distribution",

@@ -6,20 +6,20 @@
   "size": 2,
   "requirements": [
     {
-      "amount": 115,
-      "item": "lead"
+      "item": "lead",
+      "amount": 115
     },
     {
-      "amount": 60,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 60
     },
     {
-      "amount": 80,
-      "item": "titanium"
+      "item": "titanium",
+      "amount": 80
     },
     {
-      "amount": 80,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 80
     }
   ],
   "category": "crafting",

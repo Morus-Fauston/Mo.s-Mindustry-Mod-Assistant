@@ -6,20 +6,20 @@
   "size": 3,
   "requirements": [
     {
-      "amount": 60,
-      "item": "graphite"
+      "item": "graphite",
+      "amount": 60
     },
     {
-      "amount": 40,
-      "item": "silicon"
+      "item": "silicon",
+      "amount": 40
     },
     {
-      "amount": 40,
-      "item": "oxide"
+      "item": "oxide",
+      "amount": 40
     },
     {
-      "amount": 70,
-      "item": "carbide"
+      "item": "carbide",
+      "amount": 70
     }
   ],
   "category": "crafting",

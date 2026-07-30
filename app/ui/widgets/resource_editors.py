@@ -18,9 +18,10 @@ from __future__ import annotations
 from typing import Any
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from ...core.commands import CommandStack
+from .reserved_panel import ReservedPanel
 
 
 class ResourceListEditor(QWidget):
@@ -58,9 +59,7 @@ class ResourceListEditor(QWidget):
         # item/liquid dropdowns, amount spinboxes, booster checkboxes.
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        placeholder = QLabel(f"[资源列表: {resource_type}] (v0.2.2 实现)")
-        placeholder.setStyleSheet("color: gray; font-style: italic;")
-        layout.addWidget(placeholder)
+        layout.addWidget(ReservedPanel("资源列表"))
 
     @property
     def value(self) -> list[dict]:
@@ -104,9 +103,7 @@ class ResourceSlotEditor(QWidget):
         # TODO(v0.2.2): Full implementation with item/liquid dropdown + amount.
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        placeholder = QLabel(f"[资源槽: {resource_type}] (v0.2.2 实现)")
-        placeholder.setStyleSheet("color: gray; font-style: italic;")
-        layout.addWidget(placeholder)
+        layout.addWidget(ReservedPanel("资源槽"))
 
     @property
     def value(self) -> dict:
@@ -150,10 +147,7 @@ class TechRefEditor(QWidget):
         # TODO(v0.2.2): Full implementation with searchable dropdown(s).
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        mode_text = "多选" if multi else "单选"
-        placeholder = QLabel(f"[科技引用: {mode_text}] (v0.2.2 实现)")
-        placeholder.setStyleSheet("color: gray; font-style: italic;")
-        layout.addWidget(placeholder)
+        layout.addWidget(ReservedPanel("科技引用"))
 
     @property
     def value(self) -> Any:

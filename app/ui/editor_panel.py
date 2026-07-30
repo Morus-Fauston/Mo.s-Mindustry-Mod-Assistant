@@ -13,10 +13,8 @@ from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
-    QDoubleSpinBox,
-    QFormLayout,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -24,13 +22,12 @@ from PySide6.QtWidgets import (
     QMenu,
     QPushButton,
     QScrollArea,
-    QSpinBox,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
-from ..core.commands import CommandStack, SetFieldCommand
+from ..core.commands import CommandStack, DeleteFieldCommand, SetFieldCommand
 from ..core.config_loader import (
     display_name as _format_display_name,
     get_field_docs,
@@ -43,6 +40,19 @@ from ..core.project import Project
 from ..core.validator import Validator
 from .widgets.weapon_array_editor import WeaponArrayEditor
 from .widgets.bullet_editor import BulletEditor
+from .widgets.check_toggle import CheckToggle
+from .widgets.collapsible_group import CollapsibleGroup
+from .widgets.field_row import FieldRow
+from .widgets.reserved_panel import ReservedPanel
+from .widgets.num_spin import NumSpinBox, NumDoubleSpinBox
+from .widgets.auto_width_edit import AutoWidthEdit
+from .widgets.label_helper import rich_label
+from .theme import field_type_property, get_tokens
+
+
+# 展开状态记忆：{content_name: {group_name: bool}}，跨标签页切换保持。
+# 默认只展开 basic 组（见 _is_group_expanded）。
+_EXPANDED_STATE: dict[str, dict[str, bool]] = {}
 
 
 class EditorPanel(QWidget):
@@ -130,15 +140,21 @@ class EditorPanel(QWidget):
 
         # Title
         title = QLabel(f"{self._content.name}  ({self._content.data.get('type', '?')})")
-        title.setStyleSheet("font-size: 16px; font-weight: bold; margin-bottom: 8px;")
+        title.setObjectName("editorTitle")
         layout.addWidget(title)
 
         # Scrollable form area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        # QSS background 不传播到 viewport，且 QWidget 默认不渲染 QSS background
+        scroll.viewport().setObjectName("editorViewport")
+        scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         scroll_widget = QWidget()
+        scroll_widget.setObjectName("editorViewport")
+        scroll_widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._form_layout = QVBoxLayout(scroll_widget)
-        self._form_layout.setContentsMargins(4, 4, 4, 4)
+        self._form_layout.setContentsMargins(8, 8, 8, 8)
+        self._form_layout.setSpacing(12)  # 组间 12px（对齐 HTML .group margin-bottom）
 
         # Get class definition
         content_type = self._content.data.get("type", "")
@@ -231,43 +247,137 @@ class EditorPanel(QWidget):
         self._form_layout.addStretch()
 
     def _render_group(self, label: str, group_name: str, fields: list[FieldDef]) -> None:
-        """Render a group box with header (title + '+' button) and field rows."""
-        group_box = QGroupBox()
-        group_layout = QVBoxLayout(group_box)
-        group_layout.setContentsMargins(8, 4, 8, 8)
+        """Render a collapsible group with header and field rows."""
+        content_type = self._content.data.get("type", "")
+        groups_config = self._field_groups.get(content_type, {})
+        group_def = groups_config.get(group_name, {})
 
-        # Header: label + add button
-        header = QHBoxLayout()
-        header.addWidget(QLabel(f"<b>{label}</b>"))
-        header.addStretch()
-        add_btn = QPushButton("+")
-        add_btn.setFixedSize(24, 24)
-        add_btn.setToolTip("添加字段")
-        add_btn.setStyleSheet("font-size: 14px; font-weight: bold;")
-        add_btn.clicked.connect(lambda _, gn=group_name: self._show_add_field_menu(gn))
-        header.addWidget(add_btn)
-        group_layout.addLayout(header)
+        locked = self._is_group_locked(group_name, group_def)
+        expanded = self._is_group_expanded(group_name)
 
-        # Field rows
-        form = QFormLayout()
+        group = CollapsibleGroup(
+            group_name=group_name,
+            title=label,
+            english=group_name if group_name != "_other" else "",
+            locked=locked,
+            expanded=expanded,
+        )
+        group.add_field_requested.connect(self._show_add_field_menu)
+        group.delete_group_requested.connect(self._delete_group)
+        # 折叠状态变化时记忆
+        group._chevron.clicked.connect(  # noqa: SLF001
+            lambda gn=group_name, g=group: self._remember_expanded(gn, g.expanded)
+        )
+
+        # required 字段不可删除
+        required_names = set(group_def.get("required", []))
+
+        # Field rows — 逐行 VBox 布局（替代 QFormLayout 网格）
+        rows_layout = QVBoxLayout()
+        rows_layout.setContentsMargins(0, 0, 0, 0)
+        rows_layout.setSpacing(4)
+
         for f in fields:
             widget = self._create_field_widget(f)
-            if widget:
-                label_widget = QLabel(self._display_name(f.name))
-                # Attach tooltip from field_docs.json
-                doc = self._field_docs.get(f.name, "")
-                if doc:
-                    label_widget.setToolTip(doc)
-                    widget.setToolTip(doc)
-                # Right-click to delete field
-                widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-                widget.customContextMenuRequested.connect(
-                    lambda pos, fn=f.name, w=widget: self._show_field_context_menu(pos, fn, w)
-                )
-                form.addRow(label_widget, widget)
-        group_layout.addLayout(form)
+            if widget is None:
+                continue
 
-        self._form_layout.addWidget(group_box)
+            # 富文本标签
+            zh = self._field_names_zh.get(f.name, "")
+            label_widget = rich_label(zh, f.name)
+            doc = self._field_docs.get(f.name, "")
+            if doc:
+                label_widget.setToolTip(doc)
+                widget.setToolTip(doc)
+
+            # 右键菜单
+            widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            widget.customContextMenuRequested.connect(
+                lambda pos, fn=f.name, w=widget: self._show_field_context_menu(pos, fn, w)
+            )
+
+            # 描述档（方案 Y）：标签独占一行，控件撑满下一行
+            if f.name == "description":
+                rows_layout.addWidget(label_widget)
+                rows_layout.addWidget(widget)
+                continue
+
+            # 普通行：标签固定宽 + 控件在右
+            row_h = QHBoxLayout()
+            row_h.setSpacing(8)
+            label_widget.setFixedWidth(150)
+            row_h.addWidget(label_widget)
+
+            if f.mode in ("PRIMITIVE", "STRING_REF"):
+                ft = field_type_property(f.mode, f.java_type)
+                deletable = f.name not in required_names
+                field_row = FieldRow(widget, ft, deletable=deletable)
+                if deletable:
+                    field_row.deleteRequested.connect(
+                        lambda fn=f.name: self._delete_field(fn)
+                    )
+                row_h.addWidget(field_row)
+            else:
+                row_h.addWidget(widget)
+            row_h.addStretch()
+            row_container = QWidget()
+            row_container.setLayout(row_h)
+            row_h.setContentsMargins(0, 0, 0, 0)  # 去掉 QWidget 默认 margin
+            rows_layout.addWidget(row_container)
+
+        group.body_layout.addLayout(rows_layout)
+
+        self._form_layout.addWidget(group)
+    def _add_group_separator(self) -> None:
+        """在 _form_layout 末尾插入一条 1px 分隔线（组间/块间）。"""
+        sep = QFrame()
+        sep.setObjectName("groupSeparator")
+        sep.setFixedHeight(1)
+        sep.setAutoFillBackground(True)  # QFrame 默认不填充背景→QSS background 不可见
+        self._form_layout.addWidget(sep)
+    # ── 折叠状态 / 锁定 辅助 ─────────────────────────────────────────────
+
+    def _is_group_expanded(self, group_name: str) -> bool:
+        """查询记忆中的展开状态，默认只展开 basic 组。"""
+        per_content = _EXPANDED_STATE.get(self._content.name)
+        if per_content is not None and group_name in per_content:
+            return per_content[group_name]
+        return group_name == "basic"
+
+    def _remember_expanded(self, group_name: str, expanded: bool) -> None:
+        _EXPANDED_STATE.setdefault(self._content.name, {})[group_name] = expanded
+
+    def _is_group_locked(self, group_name: str, group_def: dict) -> bool:
+        """basic 组永远锁定；子类型特征组按 locked_for 锁定。"""
+        if group_name == "basic":
+            return True
+        if group_def.get("locked"):
+            return True
+        locked_for = group_def.get("locked_for")
+        if locked_for:
+            subtype = self._infer_subtype(self._content.data.get("type", ""))
+            if subtype in locked_for:
+                return True
+        return False
+
+    def _delete_group(self, group_name: str) -> None:
+        """删除整组字段（通过 CommandStack 可撤销）。"""
+        content_type = self._content.data.get("type", "")
+        groups_config = self._field_groups.get(content_type, {})
+        group_def = groups_config.get(group_name, {})
+        names = list(group_def.get("required", [])) + list(group_def.get("optional", []))
+        deleted = False
+        for name in names:
+            if name in self._content.data:
+                cmd = DeleteFieldCommand(
+                    data=self._content.data,
+                    path=name,
+                    on_change=self._mark_dirty,
+                )
+                self._commands.execute(cmd)
+                deleted = True
+        if deleted:
+            self._rebuild_form()
 
     # ── visible_for / subtype helpers ────────────────────────────────────
 
@@ -400,22 +510,18 @@ class EditorPanel(QWidget):
         elif field_def.mode == "ARRAY":
             if field_def.name == "weapons":
                 return self._create_weapons_widget()
-            label = QLabel(f"[{field_def.element_type or 'list'}] (编辑功能开发中)")
-            label.setStyleSheet("color: gray;")
-            return label
+            return ReservedPanel("数组字段")
         elif field_def.mode == "INLINE_OBJECT":
             if field_def.name == "bullet":
                 return self._create_bullet_editor()
-            label = QLabel(f"[{field_def.inline_type or 'object'}] (编辑功能开发中)")
-            label.setStyleSheet("color: gray;")
-            return label
+            return ReservedPanel("内联对象")
         return None
 
     def _create_primitive_widget(self, field_def: FieldDef, value: Any) -> QWidget:
         java_type = field_def.java_type
 
         if java_type == "boolean":
-            cb = QCheckBox()
+            cb = CheckToggle()
             cb.setChecked(bool(value) if value is not None else False)
             cb.toggled.connect(
                 lambda checked, n=field_def.name: self._on_field_changed(n, checked)
@@ -424,8 +530,9 @@ class EditorPanel(QWidget):
             return cb
 
         if java_type in ("int", "long", "short"):
-            spin = QSpinBox()
+            spin = NumSpinBox()
             spin.setRange(-999999, 999999)
+            spin.setFixedWidth(70)  # 短值档
             spin.setValue(int(value) if value is not None else 0)
             spin.valueChanged.connect(
                 lambda v, n=field_def.name: self._on_field_changed(n, v)
@@ -434,9 +541,10 @@ class EditorPanel(QWidget):
             return spin
 
         if java_type in ("float", "double"):
-            spin = QDoubleSpinBox()
+            spin = NumDoubleSpinBox()
             spin.setRange(-999999.0, 999999.0)
             spin.setDecimals(3)
+            spin.setFixedWidth(70)  # 短值档
             spin.setValue(float(value) if value is not None else 0.0)
             spin.valueChanged.connect(
                 lambda v, n=field_def.name: self._on_field_changed(n, v)
@@ -447,8 +555,21 @@ class EditorPanel(QWidget):
         if java_type == "Color":
             return self._create_color_widget(field_def, value)
 
-        # String or fallback
-        edit = QLineEdit()
+        # 描述档：多行文本框，撑满整列
+        if field_def.name == "description":
+            desc = QTextEdit()
+            desc.setFixedHeight(70)  # 初始 3 行
+            desc.setPlainText(str(value) if value else "")
+            desc.textChanged.connect(
+                lambda n=field_def.name: self._on_field_changed(
+                    n, desc.toPlainText()
+                )
+            )
+            self._field_widgets[field_def.name] = desc
+            return desc
+
+        # 名称档：自动撑宽
+        edit = AutoWidthEdit()
         edit.setText(str(value) if value is not None else "")
         edit.textChanged.connect(
             lambda t, n=field_def.name: self._on_field_changed(n, t)
@@ -458,6 +579,7 @@ class EditorPanel(QWidget):
 
     def _create_ref_widget(self, field_def: FieldDef, value: Any) -> QWidget:
         combo = QComboBox()
+        combo.setFixedWidth(150)  # 名称档（引用下拉略宽于数字）
         combo.setEditable(True)
         if field_def.ref_source:
             try:
@@ -586,10 +708,18 @@ class EditorPanel(QWidget):
         delete_action = menu.addAction(f"删除字段 \"{self._display_name(field_name)}\"")
         chosen = menu.exec(widget.mapToGlobal(pos))
         if chosen == delete_action:
-            if field_name in self._content.data:
-                del self._content.data[field_name]
-                self._mark_dirty()
-                self._rebuild_form()
+            self._delete_field(field_name)
+
+    def _delete_field(self, field_name: str) -> None:
+        """删除单个字段（可撤销），红 X 按钮与右键菜单共用。"""
+        if field_name in self._content.data:
+            cmd = DeleteFieldCommand(
+                data=self._content.data,
+                path=field_name,
+                on_change=self._mark_dirty,
+            )
+            self._commands.execute(cmd)
+            self._rebuild_form()
 
     # ── data operations ─────────────────────────────────────────────────
 
@@ -617,12 +747,14 @@ class EditorPanel(QWidget):
             return
 
         issue = self._validator.validate_field_value(field_def, value)
-        if issue is not None:
-            widget.setStyleSheet("border: 2px solid red; border-radius: 3px;")
+        has_error = issue is not None
+        # 走 QSS 属性选择器 [error="true"]，不写内联 setStyleSheet
+        widget.setProperty("error", "true" if has_error else "")
+        widget.style().unpolish(widget)
+        widget.style().polish(widget)
+        if has_error:
             widget.setToolTip(issue.message)
         else:
-            widget.setStyleSheet("")  # Clear
-            # Restore original tooltip from field_docs
             doc = self._field_docs.get(field_name, "")
             if doc:
                 widget.setToolTip(doc)
@@ -647,6 +779,45 @@ class EditorPanel(QWidget):
             self._content.category,
         )
         self._dirty = False
+
+    def error_count(self) -> int:
+        """返回当前内容的验证错误数量。"""
+        issues = self._validator.validate(self._content.data, "content")
+        return sum(1 for iss in issues if iss.severity == "error")
+
+    def jump_to_first_error(self) -> bool:
+        """滚动并高亮第一个错误字段。返回是否找到错误。"""
+        issues = self._validator.validate(self._content.data, "content")
+        err_fields = [iss.path.split("[")[0].split(".")[0]
+                      for iss in issues if iss.severity == "error"]
+        for fname in err_fields:
+            widget = self._field_widgets.get(fname)
+            if widget is not None:
+                widget.setFocus()
+                # 滚动到控件可见
+                self._scroll_to_widget(widget)
+                # 短暂高亮
+                widget.setProperty("error", "true")
+                widget.style().unpolish(widget)
+                widget.style().polish(widget)
+                return True
+        return False
+
+    def _scroll_to_widget(self, widget: QWidget) -> None:
+        """把控件滚动到编辑区可见范围。"""
+        scroll = self._find_scroll_area()
+        if scroll is not None:
+            scroll.ensureWidgetVisible(widget, 50, 50)
+
+    def _find_scroll_area(self):
+        """向上查找包裹表单的 QScrollArea。"""
+        from PySide6.QtWidgets import QScrollArea
+        parent = self.parent()
+        while parent is not None:
+            if isinstance(parent, QScrollArea):
+                return parent
+            parent = parent.parent()
+        return None
 
     # ── display name: delegates to config_loader (respects display mode) ──
 

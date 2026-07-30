@@ -16,7 +16,6 @@ from typing import Any
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -27,15 +26,23 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QLabel,
     QLineEdit,
+    QMenu,
     QMessageBox,
     QPushButton,
+    QRadioButton,
     QSpinBox,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
 
+from .check_toggle import CheckToggle
+from .num_spin import NumSpinBox, NumDoubleSpinBox
+from .auto_width_edit import AutoWidthEdit
+from .label_helper import rich_label
+
 # NOTE: These are imported lazily or at module level depending on need
-from ...core.commands import ArrayInsertCommand, ArrayRemoveCommand, CommandStack
+from ...core.commands import ArrayInsertCommand, ArrayMoveCommand, ArrayRemoveCommand, CommandStack
 from ...core.metadata import Metadata
 from ...core.project import Project
 
@@ -53,6 +60,36 @@ BULLET_TYPE_CHOICES = [
     "ArtilleryBulletType",
     "FlakBulletType",
 ]
+
+# ── 武器覆盖字段分组标签（二级菜单用） ────────────────────────────────────
+
+_WEAPON_GROUP_LABELS = {
+    "basic": "基础",
+    "behavior": "行为",
+    "shooting": "射击",
+    "targeting": "目标",
+    "continuous": "持续射击",
+    "effects": "音效与特效",
+    "rendering": "渲染",
+}
+
+# 覆盖字段的默认值（按分组推断类型）
+_OVERRIDE_DEFAULTS = {
+    "x": 0.0, "y": 0.0, "shootX": 0.0, "shootY": 0.0, "reload": 1.0,
+    "top": True, "rotate": False, "mirror": True, "alternate": True,
+    "rotateSpeed": 5.0, "shootCone": 15.0, "inaccuracy": 0.0,
+    "controllable": True, "aiControllable": True,
+    "shots": 1, "shotDelay": 5.0, "recoil": 1.0, "recoilTime": 20.0,
+    "shake": 0.0, "velocityRnd": 0.0, "cooldownTime": 30.0,
+    "autoTarget": False, "predictTarget": True, "targetInterval": 40,
+    "continuous": False, "alwaysContinuous": False,
+    "shootSoundVolume": 0.5, "layerOffset": 0.0, "shadow": 0.0,
+}
+
+
+def _override_default(fname: str) -> Any:
+    """返回覆盖字段的默认值，未知字段返回 0.0。"""
+    return _OVERRIDE_DEFAULTS.get(fname, 0.0)
 
 # ── centralized config ───────────────────────────────────────────────────
 
@@ -157,6 +194,7 @@ class WeaponArrayEditor(QWidget):
                 w.deleteLater()
 
         # Recreate
+        total = len(self.value)
         for i, weapon_data in enumerate(self.value):
             card = WeaponCard(
                 weapon_data=weapon_data,
@@ -168,9 +206,11 @@ class WeaponArrayEditor(QWidget):
                 project=self._project,
                 field_names_zh=self._field_names_zh,
                 field_docs=self._field_docs,
+                total=total,
             )
             card.modified.connect(self._on_card_modified)
             card.removeRequested.connect(self._remove_weapon)
+            card.moveRequested.connect(self._move_weapon)
             self._cards.append(card)
             self._card_container.addWidget(card)
 
@@ -201,6 +241,21 @@ class WeaponArrayEditor(QWidget):
         self._commands.execute(cmd)
         self.valueChanged.emit()
 
+    def _move_weapon(self, from_index: int, to_index: int) -> None:
+        """调整武器顺序（可撤销）。"""
+        arr = self.value
+        if not (0 <= from_index < len(arr) and 0 <= to_index < len(arr)):
+            return
+        cmd = ArrayMoveCommand(
+            data=self._data,
+            path=self._path,
+            from_index=from_index,
+            to_index=to_index,
+            on_change=lambda: self._rebuild_cards(),
+        )
+        self._commands.execute(cmd)
+        self.valueChanged.emit()
+
     def _on_card_modified(self) -> None:
         self.valueChanged.emit()
 
@@ -214,6 +269,7 @@ class WeaponCard(QGroupBox):
 
     modified = Signal()        # emitted when weapon data changes
     removeRequested = Signal(int)  # emitted with self index
+    moveRequested = Signal(int, int)  # (from_index, to_index) 拖拽/按钮排序
 
     def __init__(
         self,
@@ -226,10 +282,12 @@ class WeaponCard(QGroupBox):
         project: Project,
         field_names_zh: dict[str, str] | None = None,
         field_docs: dict[str, str] | None = None,
+        total: int = 1,
     ) -> None:
         super().__init__()
         self._weapon_data = weapon_data
         self._index = index
+        self._total = total
         self._parent_data = parent_data
         self._parent_path = parent_path
         self._commands = commands
@@ -258,22 +316,38 @@ class WeaponCard(QGroupBox):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 4, 8, 8)
 
-        # Header: name + mode badge + [×] remove
+        # Header: name + mode badge + 排序按钮 + [×] remove
         header = QHBoxLayout()
         title = QLabel(f"<b>{self._weapon_name()}</b>")
         header.addWidget(title)
 
         mode_badge = QLabel("内联" if self._is_inline else "引用")
-        mode_badge.setStyleSheet(
-            "color: #2196F3; font-size: 11px;" if self._is_inline
-            else "color: #4CAF50; font-size: 11px;"
-        )
+        mode_badge.setObjectName("badgeInline" if self._is_inline else "badgeRef")
         header.addWidget(mode_badge)
         header.addStretch()
 
+        # 排序按钮：上移 / 下移（纯文本箭头）
+        up_btn = QToolButton()
+        up_btn.setObjectName("weaponMoveBtn")
+        up_btn.setText("↑")
+        up_btn.setFixedSize(20, 20)
+        up_btn.setToolTip("上移")
+        up_btn.setEnabled(self._index > 0)
+        up_btn.clicked.connect(lambda: self.moveRequested.emit(self._index, self._index - 1))
+        header.addWidget(up_btn)
+
+        down_btn = QToolButton()
+        down_btn.setObjectName("weaponMoveBtn")
+        down_btn.setText("↓")
+        down_btn.setFixedSize(20, 20)
+        down_btn.setToolTip("下移")
+        down_btn.setEnabled(self._index < self._total - 1)
+        down_btn.clicked.connect(lambda: self.moveRequested.emit(self._index, self._index + 1))
+        header.addWidget(down_btn)
+
         remove_btn = QPushButton("×")
         remove_btn.setFixedSize(24, 24)
-        remove_btn.setStyleSheet("color: red; font-weight: bold;")
+        remove_btn.setObjectName("weaponRemoveBtn")
         remove_btn.clicked.connect(lambda: self.removeRequested.emit(self._index))
         header.addWidget(remove_btn)
         layout.addLayout(header)
@@ -286,14 +360,17 @@ class WeaponCard(QGroupBox):
     def _build_reference_form(self, layout: QVBoxLayout) -> None:
         """Reference mode: name, override fields, expand button."""
         form = QFormLayout()
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.FieldsStayAtSizeHint)
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        form.setSpacing(4)
 
         # Name
-        name_input = QLineEdit()
+        name_input = AutoWidthEdit()
         name_input.setText(self._weapon_data.get("name", ""))
         name_input.textChanged.connect(
             lambda t: self._set_field("name", t if t else None)
         )
-        form.addRow("名称", name_input)
+        form.addRow(rich_label(self._field_names_zh.get("name", ""), "name"), name_input)
 
         # Override fields (default set: x, y, reload, top, rotate, mirror)
         override_names = [
@@ -304,8 +381,8 @@ class WeaponCard(QGroupBox):
         for fname in override_names:
             widget = self._create_override_widget(fname)
             if widget:
-                label_text = _display_name(fname, self._field_names_zh)
-                row_label = QLabel(label_text)
+                zh = self._field_names_zh.get(fname, "")
+                row_label = rich_label(zh, fname)
                 doc = self._field_docs.get(fname, "")
                 if doc:
                     row_label.setToolTip(doc)
@@ -314,19 +391,24 @@ class WeaponCard(QGroupBox):
 
         layout.addLayout(form)
 
-        # "+ 添加覆盖" button
+        # "+ 添加覆盖" button（左对齐文本按钮）
         add_override_btn = QPushButton("+ 添加覆盖字段")
+        add_override_btn.setObjectName("weaponActionBtn")
         add_override_btn.clicked.connect(self._show_add_override_menu)
         layout.addWidget(add_override_btn)
 
-        # [展开为内联] button
+        # [展开为内联] button（左对齐文本按钮）
         expand_btn = QPushButton("展开为内联")
+        expand_btn.setObjectName("weaponActionBtn")
         expand_btn.clicked.connect(self._expand_to_inline)
         layout.addWidget(expand_btn)
 
     def _build_inline_form(self, layout: QVBoxLayout) -> None:
         """Inline mode: config-driven weapon fields + bullet sub-form."""
         form = QFormLayout()
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.FieldsStayAtSizeHint)
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        form.setSpacing(4)
 
         # Read weapon fields from field_groups.json config
         weapon_groups = self._field_groups.get("Weapon", {})
@@ -349,8 +431,8 @@ class WeaponCard(QGroupBox):
             if fname in self._weapon_data:
                 widget = self._create_override_widget(fname)
                 if widget:
-                    label_text = _display_name(fname, self._field_names_zh)
-                    row_label = QLabel(label_text)
+                    zh = self._field_names_zh.get(fname, "")
+                    row_label = rich_label(zh, fname)
                     doc = self._field_docs.get(fname, "")
                     if doc:
                         row_label.setToolTip(doc)
@@ -423,25 +505,27 @@ class WeaponCard(QGroupBox):
         on_change: Any,
     ) -> QWidget | None:
         if isinstance(val, bool):
-            cb = QCheckBox()
+            cb = CheckToggle()
             cb.setChecked(val)
             cb.toggled.connect(on_change)
             return cb
         elif isinstance(val, float):
-            spin = QDoubleSpinBox()
+            spin = NumDoubleSpinBox()
             spin.setRange(-999999.0, 999999.0)
             spin.setDecimals(3)
+            spin.setFixedWidth(70)
             spin.setValue(val)
             spin.valueChanged.connect(on_change)
             return spin
         elif isinstance(val, int):
-            spin = QSpinBox()
+            spin = NumSpinBox()
             spin.setRange(-999999, 999999)
+            spin.setFixedWidth(70)
             spin.setValue(val)
             spin.valueChanged.connect(on_change)
             return spin
         elif isinstance(val, str):
-            edit = QLineEdit()
+            edit = AutoWidthEdit()
             edit.setText(val)
             edit.textChanged.connect(on_change)
             return edit
@@ -450,23 +534,45 @@ class WeaponCard(QGroupBox):
     # ── actions ──────────────────────────────────────────────────────────
 
     def _show_add_override_menu(self) -> None:
-        """Let user pick additional override fields from the default set."""
-        available = [f for f in DEFAULT_OVERRIDE_FIELDS
-                     if f not in self._weapon_data]
+        """按分组筛选的二级菜单：分组名 → 字段列表。
 
-        if not available:
-            QMessageBox.information(self, "提示", "没有更多可覆盖的字段")
+        不平铺全部字段，而是按 field_groups.json 的 Weapon 分组组织，
+        每个分组一个子菜单，列出该组尚未覆盖的 optional 字段。
+        """
+        weapon_groups = self._field_groups.get("Weapon", {})
+        data_keys = set(self._weapon_data.keys())
+
+        menu = QMenu(self)
+        menu.setToolTipsVisible(True)
+        total = 0
+
+        for group_name, group_def in weapon_groups.items():
+            if group_name == "bullet":
+                continue  # 子弹走独立编辑器，不作为覆盖字段
+            optional = group_def.get("optional", [])
+            candidates = [f for f in optional if f not in data_keys]
+            if not candidates:
+                continue
+
+            label = _WEAPON_GROUP_LABELS.get(group_name, group_name)
+            submenu = menu.addMenu(label)
+            for fname in candidates:
+                action = submenu.addAction(_display_name(fname, self._field_names_zh))
+                action.setData(fname)
+                doc = self._field_docs.get(fname, "")
+                if doc:
+                    action.setToolTip(doc)
+                total += 1
+
+        if total == 0:
+            menu.addAction("(无更多可覆盖字段)").setEnabled(False)
+            menu.exec(self.mapToGlobal(self.rect().center()))
             return
 
-        item, ok = QInputDialog.getItem(
-            self, "添加覆盖字段", "选择要覆盖的字段:",
-            available, 0, False,
-        )
-        if ok and item:
-            defaults = {"x": 0.0, "y": 0.0, "reload": 1.0, "top": True,
-                        "rotate": False, "mirror": True}
-            default_val = defaults.get(item, 0.0)
-            self._set_field(item, default_val)
+        chosen = menu.exec(self.mapToGlobal(self.rect().center()))
+        if chosen and chosen.data():
+            fname = chosen.data()
+            self._set_field(fname, _override_default(fname))
             self._rebuild_card()
 
     def _expand_to_inline(self) -> None:
@@ -569,7 +675,7 @@ def _list_vanilla_weapons(metadata: Metadata) -> list[str]:
 
 
 class _AddWeaponDialog(QDialog):
-    """Dialog for choosing how to add a weapon."""
+    """完整的新建武器对话框：名称 + 模式选择 + 子弹类型预览。"""
 
     def __init__(
         self,
@@ -578,86 +684,115 @@ class _AddWeaponDialog(QDialog):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("添加武器")
+        self.setWindowTitle("新建武器")
+        self.setMinimumWidth(380)
         self._project = project
         self._metadata = metadata
         self._result: dict | None = None
-
         self._setup_ui()
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setSpacing(12)
 
-        layout.addWidget(QLabel("<b>选择添加方式:</b>"))
+        # 模式选择（放在最前面）
+        layout.addWidget(QLabel("<b>添加方式</b>"))
+        self._ref_radio = QRadioButton("引用已有武器")
+        self._ref_radio.setChecked(True)
+        self._inline_radio = QRadioButton("内联新建武器")
+        layout.addWidget(self._ref_radio)
+        layout.addWidget(self._inline_radio)
 
-        # Reference button
-        ref_btn = QPushButton("引用已有武器")
-        ref_btn.clicked.connect(self._choose_reference)
-        layout.addWidget(ref_btn)
+        # 引用模式：武器下拉
+        self._ref_combo = QComboBox()
+        self._ref_combo.setEditable(True)
+        self._ref_combo.setFixedWidth(240)
+        self._populate_weapon_list()
+        layout.addWidget(self._ref_combo)
 
-        # Inline button
-        inline_btn = QPushButton("内联新建武器")
-        inline_btn.clicked.connect(self._choose_inline)
-        layout.addWidget(inline_btn)
+        # 内联模式：名称输入框（引用模式隐藏）
+        self._name_edit = AutoWidthEdit()
+        self._name_edit.setPlaceholderText("英文, 小写+连字符, 如 salvo-mk2")
+        self._name_edit.setVisible(False)
+        layout.addWidget(self._name_edit)
 
-        # Cancel
-        btns = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel)
+        # 内联模式：子弹类型下拉 + 预览
+        self._bullet_combo = QComboBox()
+        self._bullet_combo.setFixedWidth(240)
+        self._bullet_combo.addItems(BULLET_TYPE_CHOICES)
+        self._bullet_combo.setVisible(False)
+        layout.addWidget(self._bullet_combo)
+
+        self._bullet_preview = QLabel(self._bullet_type_desc(BULLET_TYPE_CHOICES[0]))
+        self._bullet_preview.setWordWrap(True)
+        self._bullet_preview.setObjectName("bulletPreview")
+        self._bullet_preview.setVisible(False)
+        layout.addWidget(self._bullet_preview)
+
+        # 模式切换联动
+        self._ref_radio.toggled.connect(self._on_mode_changed)
+        self._bullet_combo.currentTextChanged.connect(
+            lambda t: self._bullet_preview.setText(self._bullet_type_desc(t))
+        )
+
+        # 确定 / 取消
+        btns = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        btns.accepted.connect(self._on_accept)
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
 
-    def _choose_reference(self) -> None:
-        """Pick an existing weapon to reference."""
+    def _populate_weapon_list(self) -> None:
         project_weapons = _list_project_weapons(self._project)
         vanilla_weapons = _list_vanilla_weapons(self._metadata)
-        all_weapons = project_weapons + vanilla_weapons
-
-        # Build display list with Chinese names
-        display_items: list[str] = []
-        name_map: dict[str, str] = {}
-        for w in all_weapons:
+        for w in project_weapons + vanilla_weapons:
             if w in VANILLA_WEAPON_NAMES_ZH:
-                display_name = f"{VANILLA_WEAPON_NAMES_ZH[w]} ({w})"
+                self._ref_combo.addItem(f"{VANILLA_WEAPON_NAMES_ZH[w]} ({w})", w)
             else:
-                display_name = w
-            display_items.append(display_name)
-            name_map[display_name] = w
+                self._ref_combo.addItem(w, w)
 
-        item, ok = QInputDialog.getItem(
-            self, "引用武器", "选择武器:",
-            display_items, 0, True,
-        )
-        if ok and item:
-            # Extract the actual weapon name from the display string
-            actual_name = name_map.get(item, item)
+    def _on_mode_changed(self, ref_checked: bool) -> None:
+        self._ref_combo.setVisible(ref_checked)
+        self._name_edit.setVisible(not ref_checked)
+        self._bullet_combo.setVisible(not ref_checked)
+        self._bullet_preview.setVisible(not ref_checked)
+
+    def _on_accept(self) -> None:
+        if self._ref_radio.isChecked():
+            actual = self._ref_combo.currentData() or self._ref_combo.currentText()
+            if not actual:
+                QMessageBox.warning(self, "提示", "请选择或输入一个武器引用")
+                return
             self._result = {
-                "name": actual_name,
-                "x": 0.0,
-                "y": 0.0,
-                "reload": 1.0,
-                "top": True,
-                "rotate": False,
-                "mirror": True,
+                "name": actual,
+                "x": 0.0, "y": 0.0, "reload": 1.0,
+                "top": True, "rotate": False, "mirror": True,
             }
-            self.accept()
-
-    def _choose_inline(self) -> None:
-        """Create a blank inline weapon."""
-        name, ok = QInputDialog.getText(
-            self, "内联新建", "武器名称 (英文, 小写+连字符):",
-        )
-        if ok and name:
+            # 引用模式下 name 指向被引用武器
+        else:
+            name = self._name_edit.text().strip()
+            if not name:
+                QMessageBox.warning(self, "提示", "请输入武器名称")
+                return
+            bullet_type = self._bullet_combo.currentText()
             self._result = {
                 "name": name,
-                "reload": 1.0,
-                "x": 0.0,
-                "y": 0.0,
-                "bullet": {
-                    "type": "BasicBulletType",
-                    "damage": 1.0,
-                    "speed": 1.0,
-                },
+                "reload": 1.0, "x": 0.0, "y": 0.0,
+                "bullet": {"type": bullet_type, "damage": 1.0, "speed": 1.0},
             }
-            self.accept()
+        self.accept()
+
+    @staticmethod
+    def _bullet_type_desc(bullet_type: str) -> str:
+        descs = {
+            "BasicBulletType": "基础子弹：直线飞行，命中造成伤害。最通用的子弹类型。",
+            "LaserBulletType": "激光：瞬时命中，穿透多个目标，无飞行时间。",
+            "MissileBulletType": "导弹：带制导追踪，可拐弯追击目标。",
+            "ArtilleryBulletType": "火炮：抛物线弹道，落地造成范围溅射伤害。",
+            "FlakBulletType": "高射炮：在空中引爆，对范围内目标造成伤害。",
+        }
+        return descs.get(bullet_type, "")
 
     def result_data(self) -> dict | None:
         return self._result

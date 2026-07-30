@@ -1,5 +1,136 @@
 # Changelog
 
+## v0.2.1 (2026-07-31 03:04)
+
+> B 阶段 UI 重构全面落地：从"能用但简陋的 Qt 默认界面"重构为"VS Code 气质现代化 IDE 风格编辑器"。
+
+### 新增模块
+
+- **主题系统（theme.py）**：40 个设计令牌（LIGHT/DARK），单一 QSS 模板 + `@TOKEN@` 占位符注入，`apply_theme()` 即时切换无需重启
+- **欢迎页（welcome_page.py）**：品牌大字两行错落（第二行缩进铜橙）+ 新建/打开按钮 + 上次工程恢复
+- **设置面板（settings_dialog.py + core/settings.py）**：左分类列表 + 右分页表单；主题切换即时生效；其余设置项占位禁用
+- **可折叠分组（collapsible_group.py）**：继承 QFrame（非 QWidget，解决 QSS border 不渲染问题），独立圆角白卡片，组头灰底 + 折叠箭头 `▾/▸` + 英文标签 + 操作按钮
+- **字段行容器（field_row.py）**：3px 类型色条 + 2px 间隙 + 控件 + 可选红 X 删除按钮（hover 浮现）
+- **Toast 提示（toast.py）**：右下角浮层，自动计时 + 淡出动画
+- **自绘复选框（check_toggle.py）**：`paintEvent` 画圆角框 + 白勾，颜色从主题令牌读取，深浅自适应
+- **去尾零数值框（num_spin.py）**：`NumSpinBox` / `NumDoubleSpinBox`，`textFromValue` 用 `:.Ng` 格式去尾零（300.000→300）
+- **自动撑宽输入框（auto_width_edit.py）**：名称档，最小 120px 随文本撑长，上限 280px
+- **富文本标签（label_helper.py）**：中文正常 + 英文淡化缩小等宽（`#INK2 / 10.5px / mono`），对齐 HTML 设计稿
+- **C 阶段预留（reserved_panel.py）**：统一禁用态按钮 + tooltip「v0.2.2 实现」
+
+### UI 重构
+
+- **三栏布局**：QDockWidget → QSplitter（左 200 / 中自适应 / 右 280），中央 QStackedWidget 切换欢迎页/标签页
+- **预览区**：QLabel → QGraphicsView（滚轮缩放 1.15x / 拖动平移 / 像素画 FastTransformation）+ 空态导入引导 + 内部 QSplitter 垂直分割预览/图层
+- **标签页**：右键菜单（关闭/关闭其他/关闭全部）+ 文本 `×` 关闭按钮（捕获 panel 引用防索引漂移）
+- **文件树**：缩进 18px/级 + 撤 Nieobie 分类图标（纯文本）+ 面板头标题「文件」+ 右键菜单完善
+- **工具栏/菜单**：撤全部 Nieobie SVG 图标，改纯文本按钮（`+ 单位` / `保存` / `撤销` 等）
+- **状态栏**：自管 `_StatusBar(QStatusBar)` 子类，override `showMessage` 写入自管 QLabel，绕开 Qt 内置 tempLabel 不渲染的 bug
+
+### 交互改进
+
+- **命令描述系统**：Command 基类加 `description` 属性；撤销/重做 tooltip 显示操作描述（如「撤销: 修改 health 为 300」）
+- **验证错误跳转**：状态栏可点击错误胶囊 → 切换标签 + 滚动高亮第一个错误字段
+- **自动保存反馈**：toast「已自动保存」/「已保存 · N 个验证错误」
+- **字段删除**：可选字段红 X 按钮 + `DeleteFieldCommand`（可撤销）；required 字段无红 X
+- **武器排序**：`↑/↓` 文本按钮 + `ArrayMoveCommand`（可撤销）
+- **新建武器对话框**：模式选择移到最前面；引用模式隐藏名称框（名称从下拉取）；内联模式才显示名称框
+- **布尔字段**：全仓 `QCheckBox` → `CheckToggle`（自绘白勾），含基础组/武器组/子弹组
+- **字段标签**：全仓纯文本 → 富文本（中文正常 + 英文淡化缩小等宽）
+
+### 视觉设计
+
+- **字段类型马卡龙着色**：7 种类型（num/bool/str/ref/col/arr/obj）淡底 + 同色系描边 + 3px 色条
+- **字段组独立卡片**：QFrame + `border: 1px solid @LINE@` + `border-radius: 6px`，白底浮在白底编辑区上靠边框分隔（对齐 HTML 设计稿 `.group`）
+- **组头**：灰底 `#F5F5F5` + 折叠箭头 + 中文标题 + 英文标签（mono 10.5px）+ 操作按钮（hover 显示）
+- **字段行布局**：逐行 `QHBoxLayout`（标签固定 150px + 控件在右 + stretch），替代 QFormLayout 网格
+- **描述字段**：方案 Y（标签独占上一行 + 多行 QTextEdit 撑满下一行，初始 3 行高）
+- **三档宽度模型**：短值档 70px（数字）/ 名称档 120→280 撑长 / 描述档撑满多行
+- **数值框**：隐藏 spinner（CSS 三角 hack 在 Qt 下失效）+ `padding-left: 8px` 对齐 QLineEdit
+- **面板区域标题**：`#panelHeader`（文件树「文件」/ 预览「预览」），对齐 HTML `.panel-h`
+
+### 规范清理
+
+- **内联 setStyleSheet 清零**：全仓仅剩颜色色块动态 hex（正当例外）+ `theme.py` 全局加载器
+- **QCheckBox / setArrowType 清零**：全仓仅剩 `check_toggle.py` 注释
+- **core 层无 Qt 依赖**：`settings.py` 纯 Python，不 import Qt
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/ui/theme.py` | **新增** — 40 令牌 LIGHT/DARK + apply_theme + field_type_property |
+| `app/resources/style.qss` | **新增** — 单一 QSS 模板，@TOKEN@ 占位符 |
+| `app/ui/icon_loader.py` | **新增** — Nieobie SVG 染色缓存（本版本已撤用，保留备用） |
+| `app/ui/welcome_page.py` | **新增** — 欢迎页 |
+| `app/ui/widgets/collapsible_group.py` | **新增** — QFrame 可折叠分组卡片 |
+| `app/ui/widgets/field_row.py` | **新增** — 色条 + 控件 + 红 X 行容器 |
+| `app/ui/widgets/toast.py` | **新增** — 右下角浮层提示 |
+| `app/ui/widgets/check_toggle.py` | **新增** — 自绘复选框 |
+| `app/ui/widgets/num_spin.py` | **新增** — 去尾零数值框 |
+| `app/ui/widgets/auto_width_edit.py` | **新增** — 自动撑宽输入框 |
+| `app/ui/widgets/label_helper.py` | **新增** — 富文本标签辅助 |
+| `app/ui/widgets/reserved_panel.py` | **新增** — C 阶段预留禁用态 |
+| `app/core/settings.py` | **新增** — 设置读写模块（无 Qt） |
+| `app/ui/dialogs/settings_dialog.py` | **新增** — 设置面板 |
+| `app/ui/editor_panel.py` | 重构 — 逐行布局 + 三档宽度 + 富文本标签 + 描述 Y + QFrame 卡片 |
+| `app/ui/main_window.py` | 重构 — QSplitter 三栏 + 欢迎页栈 + 自管状态栏 + 撤图标 + 文本关闭按钮 |
+| `app/ui/preview_panel.py` | 重构 — QGraphicsView + 空态 + 内部 QSplitter + 面板头 |
+| `app/ui/file_tree.py` | 重构 — 撤图标 + 面板头 + 缩进 18px |
+| `app/ui/widgets/weapon_array_editor.py` | 重构 — 文本排序 + 左对齐操作按钮 + 对话框重排 + 三档宽度 + 富文本 |
+| `app/ui/widgets/polymorphic_editor.py` | 重构 — 三档宽度 + 富文本 + spacing 4 |
+| `app/core/commands.py` | 扩展 — description 属性 + DeleteFieldCommand + ArrayMoveCommand |
+| `app/main.py` | 修改 — 启动时读取已保存主题 |
+| `app/config/settings_default.json` | 修改 — 新增 theme 字段 |
+
+---
+
+## 特别更新：汉化翻译规范与全量重写 (2026-07-31 02:09)
+
+> 不计入版本号。本次为翻译质量专项整改，涉及全部 732 个字段的名称翻译和提示文本。
+
+### 架构改进
+
+- **汉化翻译规范体系（ADR-007）**：建立完整的翻译执行标准，确保后续维护一致性
+  - 布尔字段按语义分五类句式：能力（是否可）/ 被动可能性（是否会）/ 行为开关（是否要）/ 固有属性（是否是/是否）/ 许可（是否允许）/ 绘制（是否绘制）
+  - 提示文本按字段类型采用结构化模板：布尔三段式（定义→true表现→false表现→适用范围）、数值四段式（定义+单位→效果→范围→原版参考）
+  - 单位规范：时间用 tick（60 tick = 1 秒）、距离用像素（1 格 = 8 像素）、概率标注 0~1
+  - 字段分三级：核心（完整模板+源码验证）/ 常用（完整模板）/ 内部（精简+标注"通常无需修改"）
+
+### 调整
+
+- **布尔字段名称全量修正**：239 个布尔字段统一为规范句式，消除语义歧义
+  - `omniMovement`：是否全向移动 → 是否可全向移动（能力类）
+  - `rotateMoveFirst`：是否先转向再移动 → 是否要先转向再移动（行为开关类）
+  - `canDrown`：是否可溺水 → 是否会溺水（被动可能性类）
+  - `solid`：是否固体 → 是否是固体（名词谓语加"是"）
+  - `killable`/`hittable`/`targetable`：是否可击杀 → 是否会被击杀（被动可能性）
+- **非布尔字段名称纠错**：`blockArmorMultiplier` 建筑护甲倍率 → 方块护甲倍率（术语一致性）
+- **6 个字段分类修正**：`databaseTabs`/`despawnUnit`/`envDisabled`/`envEnabled`/`envRequired`/`scaledHealth` 从错误的布尔句式改回非布尔名称
+- **提示文本全量重写**：732 条提示文本按结构化模板重写
+  - 布尔字段：统一"设为 true 时…设为 false 时…"对比格式
+  - 数值字段：补充单位标注、典型值范围、原版参考值
+  - 内部字段：精简为一句话 + "内部字段，通常无需修改"
+  - 总字符数从 17,619 → 27,240（信息密度提升 55%）
+
+### 文档
+
+- **新增 `Docs/ADR/007-汉化翻译规范与结构化提示文本.md`**：决策记录（背景、决策、否决方案）
+- **新增 `Docs/汉化翻译规范.md`**：执行参照标准（五类句式规则、模板格式、单位规范、术语表、验收标准）
+- **更新 `CONTEXT.md`**：新增 3 个术语条目（字段名称翻译、提示文本、字段分级）
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/config/field_names_zh.json` | 全量修正 — 239 个布尔字段句式统一 + 非布尔纠错 + 补充 4 条 |
+| `app/config/field_docs.json` | 全量重写 — 732 条结构化提示文本 + 补充 13 条 |
+| `Docs/ADR/007-汉化翻译规范与结构化提示文本.md` | **新增** — 决策记录 |
+| `Docs/汉化翻译规范.md` | **新增** — 执行参照标准 |
+| `CONTEXT.md` | 新增 3 个术语条目 |
+
+---
+
 ## v0.2.0 (2026-07-30 18:45)
 
 ### 架构改进

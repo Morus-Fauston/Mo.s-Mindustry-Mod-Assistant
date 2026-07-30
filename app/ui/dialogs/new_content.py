@@ -39,7 +39,7 @@ class NewUnitDialog(QDialog):
         self._name_edit = QLineEdit()
         self._name_edit.setPlaceholderText("my-soldier")
         hint = QLabel("小写字母、数字、连字符。如: my-soldier")
-        hint.setStyleSheet("color: gray; font-size: 11px;")
+        hint.setObjectName("mutedText")
         form.addRow("名称:", self._name_edit)
         form.addRow("", hint)
 
@@ -85,7 +85,7 @@ class NewBlockDialog(QDialog):
         self._name_edit = QLineEdit()
         self._name_edit.setPlaceholderText("my-turret")
         hint = QLabel("小写字母、数字、连字符")
-        hint.setStyleSheet("color: gray; font-size: 11px;")
+        hint.setObjectName("mutedText")
         form.addRow("名称:", self._name_edit)
         form.addRow("", hint)
 

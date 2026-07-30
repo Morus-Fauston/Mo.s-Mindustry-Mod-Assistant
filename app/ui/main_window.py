@@ -8,12 +8,19 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (
-    QDockWidget,
+    QApplication,
     QFileDialog,
+    QLabel,
     QMainWindow,
+    QMenu,
     QMessageBox,
+    QSplitter,
+    QStackedWidget,
+    QStatusBar,
+    QTabBar,
     QTabWidget,
     QToolBar,
+    QWidget,
 )
 
 from ..core.metadata import Metadata
@@ -24,7 +31,32 @@ from ..core.validator import Validator
 from .file_tree import FileTreePanel
 from .editor_panel import EditorPanel
 from .preview_panel import PreviewPanel
+from .welcome_page import WelcomePage
+from .widgets.toast import Toast
 from .widgets.reference_panel import ReferencePanel, _ReferencePicker
+
+
+class _StatusBar(QStatusBar):
+    """自管消息区的状态栏。
+
+    Qt 内置 showMessage 依赖懒创建的 qt_statusbar_temp_label，在当前
+    PySide6 + 自定义 QSS 组合下该 label 不进入对象树，导致铜橙条无文字。
+    故 override showMessage，把文本写入我方 addWidget 的真实 QLabel，
+    颜色走 QSS #statusMessage（@SB_INK@），彻底脱离不可靠的内置路径。
+    Python 方法解析会让现有 self.statusBar().showMessage(...) 调用自动走此类。
+    """
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._msg = QLabel()
+        self._msg.setObjectName("statusMessage")
+        self.addWidget(self._msg, 1)  # 临时区，stretch 占满左侧
+
+    def showMessage(self, message: str, timeout: int = 0) -> None:  # noqa: ARG002
+        self._msg.setText(message)
+
+    def clearMessage(self) -> None:
+        self._msg.setText("")
 
 
 class MainWindow(QMainWindow):
@@ -50,10 +82,27 @@ class MainWindow(QMainWindow):
 
         self._state_file = Path(__file__).parent.parent / "config" / "editor_state.json"
 
+        # 自管消息区的状态栏（须在首次 self.statusBar() 之前安装）
+        self.setStatusBar(_StatusBar())
+
         self._setup_ui()
         self._setup_menu()
         self._setup_toolbar()
         self._restore_last_project()
+
+        # Toast 提示（右下角浮层）
+        self._toast = Toast(self)
+
+        # 状态栏错误指示器（可点击跳转到第一个错误）
+        self._first_error_panel: EditorPanel | None = None
+        from PySide6.QtWidgets import QPushButton
+        self._error_chip = QPushButton(self.statusBar())
+        self._error_chip.setObjectName("statusErrorChip")
+        self._error_chip.setFlat(True)
+        self._error_chip.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._error_chip.hide()
+        self._error_chip.clicked.connect(self._jump_to_first_error)
+        self.statusBar().addPermanentWidget(self._error_chip)
 
         self.statusBar().showMessage(
             f"就绪 | 游戏版本: v{self._metadata.game_version}"
@@ -62,27 +111,49 @@ class MainWindow(QMainWindow):
     # ── UI setup ────────────────────────────────────────────────────────
 
     def _setup_ui(self) -> None:
-        # Central: tab widget for open content files
-        self._tabs = QTabWidget()
-        self._tabs.setTabsClosable(True)
-        self._tabs.tabCloseRequested.connect(self._close_tab)
-        self._tabs.currentChanged.connect(self._on_tab_changed)
-        self.setCentralWidget(self._tabs)
+        # 中央：QStackedWidget 在「欢迎页」与「标签页」之间切换
+        self._center_stack = QStackedWidget()
 
-        # Left dock: file tree
+        # 欢迎页（无工程时显示）
+        self._welcome = WelcomePage()
+        self._welcome.new_project_requested.connect(self._new_project)
+        self._welcome.open_project_requested.connect(self._open_project)
+        self._welcome.restore_requested.connect(self._restore_project_path)
+        self._center_stack.addWidget(self._welcome)  # index 0
+
+        # 标签页（打开内容文件）
+        self._tabs = QTabWidget()
+        # 关闭按钮改用文本 × 按钮（原生 close-button 无法放文本字符）
+        self._tabs.setTabsClosable(False)
+        self._tabs.setMovable(False)
+        self._tabs.currentChanged.connect(self._on_tab_changed)
+        # 标签页右键菜单
+        self._tabs.tabBar().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._tabs.tabBar().customContextMenuRequested.connect(self._show_tab_context_menu)
+        self._center_stack.addWidget(self._tabs)  # index 1
+
+        # 左侧：文件树
         self._file_tree = FileTreePanel()
         self._file_tree.content_opened.connect(self._open_content)
-        left_dock = QDockWidget("文件", self)
-        left_dock.setWidget(self._file_tree)
-        left_dock.setFeatures(QDockWidget.DockWidgetFeature.NoDockWidgetFeatures)
-        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, left_dock)
 
-        # Right dock: preview + sprite layers
+        # 右侧：预览 + 图层
         self._preview = PreviewPanel()
-        right_dock = QDockWidget("预览", self)
-        right_dock.setWidget(self._preview)
-        right_dock.setFeatures(QDockWidget.DockWidgetFeature.NoDockWidgetFeatures)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, right_dock)
+
+        # QSplitter 三栏：左 200 / 中自适应 / 右 280
+        self._splitter = QSplitter(Qt.Orientation.Horizontal)
+        self._splitter.addWidget(self._file_tree)
+        self._splitter.addWidget(self._center_stack)
+        self._splitter.addWidget(self._preview)
+        self._splitter.setSizes([200, 920, 280])
+        self._splitter.setStretchFactor(0, 0)
+        self._splitter.setStretchFactor(1, 1)
+        self._splitter.setStretchFactor(2, 0)
+        self._splitter.setChildrenCollapsible(False)
+
+        self.setCentralWidget(self._splitter)
+
+        # 默认显示欢迎页
+        self._center_stack.setCurrentIndex(0)
 
     def _setup_menu(self) -> None:
         menubar = self.menuBar()
@@ -93,6 +164,9 @@ class MainWindow(QMainWindow):
         self._add_action(file_menu, "打开工程...", self._open_project, "Ctrl+O")
         file_menu.addSeparator()
         self._add_action(file_menu, "保存", self._save, "Ctrl+S")
+        file_menu.addSeparator()
+        self._close_project_action = self._add_action(file_menu, "关闭工程", self._close_project)
+        self._close_project_action.setEnabled(False)
         file_menu.addSeparator()
         self._add_action(file_menu, "退出", self.close, "Ctrl+Q")
 
@@ -137,25 +211,75 @@ class MainWindow(QMainWindow):
             self._project = Project.create(path, mod_id, name)
             self._file_tree.set_project(self._project)
             self._save_state()
+            self._enter_project_view()
             self.statusBar().showMessage(f"已创建工程: {mod_id}")
 
     def _open_project(self) -> None:
         path = QFileDialog.getExistingDirectory(self, "选择 mod 工程目录")
         if not path:
             return
+        self._load_project_path(path)
+
+    def _restore_project_path(self, path: str) -> None:
+        """从欢迎页「上次打开」恢复工程。"""
+        self._load_project_path(path)
+
+    def _load_project_path(self, path: str) -> None:
         try:
             self._project = Project.open(path)
             self._file_tree.set_project(self._project)
             self._save_state()
+            self._enter_project_view()
             self.statusBar().showMessage(f"已打开: {self._project.mod_info.display_name}")
         except FileNotFoundError as e:
             QMessageBox.warning(self, "打开失败", str(e))
+
+    def _enter_project_view(self) -> None:
+        """切换到标签页视图并启用关闭工程。"""
+        self._center_stack.setCurrentIndex(1)
+        self._close_project_action.setEnabled(True)
+        if self._project is not None:
+            self._welcome.set_last_project(str(self._project.root))
+
+    def _close_project(self) -> None:
+        """关闭当前工程，清空标签页，回到欢迎页。"""
+        if self._project is None:
+            return
+        # 关闭所有标签（不逐个询问，统一提示）
+        if self._has_unsaved():
+            reply = QMessageBox.question(
+                self, "关闭工程",
+                "有未保存的修改，关闭前是否保存？",
+                QMessageBox.StandardButton.Save
+                | QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel,
+            )
+            if reply == QMessageBox.StandardButton.Save:
+                self._save()
+            elif reply == QMessageBox.StandardButton.Cancel:
+                return
+        # 清空标签页
+        self._tabs.clear()
+        self._project = None
+        self._file_tree.set_project(None)
+        self._center_stack.setCurrentIndex(0)
+        self._close_project_action.setEnabled(False)
+        self.statusBar().showMessage("未打开工程")
+
+    def _has_unsaved(self) -> bool:
+        """是否有未保存的标签页。"""
+        for i in range(self._tabs.count()):
+            panel = self._tabs.widget(i)
+            if isinstance(panel, EditorPanel) and panel.is_dirty:
+                return True
+        return False
 
     def _save(self) -> None:
         if self._project is None:
             return
         # Save all open tabs
         error_count = 0
+        first_error_panel: EditorPanel | None = None
         for i in range(self._tabs.count()):
             panel = self._tabs.widget(i)
             if isinstance(panel, EditorPanel):
@@ -164,16 +288,39 @@ class MainWindow(QMainWindow):
                 issues = self._validator.validate(panel.content.data, "content")
                 errs = [iss for iss in issues if iss.severity == "error"]
                 error_count += len(errs)
+                if errs and first_error_panel is None:
+                    first_error_panel = panel
         self._project.is_dirty = False
         if error_count > 0:
             self.statusBar().showMessage(f"已保存 ({error_count} 个验证错误)")
+            self._toast.show_message(f"已保存 · {error_count} 个验证错误")
+            # 记录第一个错误面板，供状态栏点击跳转
+            self._first_error_panel = first_error_panel
+            self._error_chip.setText(f"⚠ {error_count} 个错误 · 点击跳转")
+            self._error_chip.show()
         else:
             self.statusBar().showMessage("已保存")
+            self._toast.show_message(f"已保存 · {self._project.mod_info.display_name}")
+            self._first_error_panel = None
+            self._error_chip.hide()
 
     def _auto_save(self) -> None:
         if self._project and self._project.is_dirty:
             self._save()
-            self.statusBar().showMessage("自动保存完成")
+            self._toast.show_message("已自动保存")
+
+    def _jump_to_first_error(self) -> None:
+        """切换到含错误的标签页并滚动高亮第一个错误字段。"""
+        panel = self._first_error_panel
+        if panel is None:
+            return
+        idx = self._tabs.indexOf(panel)
+        if idx >= 0:
+            self._tabs.setCurrentIndex(idx)
+        if panel.jump_to_first_error():
+            self._toast.show_message("已定位到错误字段")
+        else:
+            self._toast.show_message("未找到可定位的错误")
 
     # ── state persistence ───────────────────────────────────────────────
 
@@ -200,6 +347,8 @@ class MainWindow(QMainWindow):
             if last_path and Path(last_path).exists():
                 self._project = Project.open(last_path)
                 self._file_tree.set_project(self._project)
+                self._welcome.set_last_project(last_path)
+                self._enter_project_view()
                 self.statusBar().showMessage(
                     f"已恢复上次工程: {self._project.mod_info.display_name}"
                 )
@@ -215,15 +364,24 @@ class MainWindow(QMainWindow):
         self._refresh_active_editor()
 
     def _on_command_stack_changed(self) -> None:
-        """Update undo/redo button states after command stack changes."""
+        """Update undo/redo button states + tooltips after command stack changes."""
+        can_undo = self._command_stack.can_undo
+        can_redo = self._command_stack.can_redo
+        undo_desc = self._command_stack.undo_description
+        redo_desc = self._command_stack.redo_description
+
         if hasattr(self, '_undo_tb'):
-            self._undo_tb.setEnabled(self._command_stack.can_undo)
+            self._undo_tb.setEnabled(can_undo)
+            self._undo_tb.setToolTip(f"撤销: {undo_desc}" if undo_desc else "撤销")
         if hasattr(self, '_redo_tb'):
-            self._redo_tb.setEnabled(self._command_stack.can_redo)
+            self._redo_tb.setEnabled(can_redo)
+            self._redo_tb.setToolTip(f"重做: {redo_desc}" if redo_desc else "重做")
         if hasattr(self, '_undo_action'):
-            self._undo_action.setEnabled(self._command_stack.can_undo)
+            self._undo_action.setEnabled(can_undo)
+            self._undo_action.setToolTip(f"撤销: {undo_desc}" if undo_desc else "撤销")
         if hasattr(self, '_redo_action'):
-            self._redo_action.setEnabled(self._command_stack.can_redo)
+            self._redo_action.setEnabled(can_redo)
+            self._redo_action.setToolTip(f"重做: {redo_desc}" if redo_desc else "重做")
 
     def _refresh_active_editor(self) -> None:
         """Refresh the currently active editor panel after undo/redo."""
@@ -297,7 +455,24 @@ class MainWindow(QMainWindow):
             project=self._project,
         )
         idx = self._tabs.addTab(panel, name)
+        self._add_tab_close_button(idx, panel)
         self._tabs.setCurrentIndex(idx)
+
+    def _add_tab_close_button(self, index: int, panel: QWidget) -> None:
+        """给指定标签注入文本 × 关闭按钮（纯文本，对齐设计稿）。
+
+        捕获 panel 引用而非固定 index，关闭其他标签导致索引漂移时仍正确。
+        """
+        from PySide6.QtWidgets import QPushButton
+        btn = QPushButton("×")
+        btn.setObjectName("tabCloseBtn")
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.clicked.connect(
+            lambda checked=False, p=panel: self._close_tab(self._tabs.indexOf(p))
+        )
+        self._tabs.tabBar().setTabButton(
+            index, QTabBar.ButtonPosition.RightSide, btn
+        )
 
     def _close_tab(self, index: int) -> None:
         panel = self._tabs.widget(index)
@@ -314,6 +489,39 @@ class MainWindow(QMainWindow):
             elif reply == QMessageBox.StandardButton.Cancel:
                 return
         self._tabs.removeTab(index)
+
+    def _show_tab_context_menu(self, pos) -> None:
+        """标签页右键菜单：关闭 / 关闭其他 / 关闭全部。"""
+        tab_bar = self._tabs.tabBar()
+        index = tab_bar.tabAt(pos)
+        menu = QMenu(self)
+
+        close_act = menu.addAction("关闭")
+        close_act.setEnabled(index >= 0)
+        close_others_act = menu.addAction("关闭其他")
+        close_others_act.setEnabled(index >= 0 and self._tabs.count() > 1)
+        close_all_act = menu.addAction("关闭全部")
+        close_all_act.setEnabled(self._tabs.count() > 0)
+
+        chosen = menu.exec(tab_bar.mapToGlobal(pos))
+        if chosen is None:
+            return
+        if chosen == close_act:
+            self._close_tab(index)
+        elif chosen == close_others_act:
+            self._close_other_tabs(index)
+        elif chosen == close_all_act:
+            self._close_all_tabs()
+
+    def _close_other_tabs(self, keep: int) -> None:
+        """关闭除 keep 之外的所有标签（从后往前关，避免索引漂移）。"""
+        for i in range(self._tabs.count() - 1, -1, -1):
+            if i != keep:
+                self._close_tab(i)
+
+    def _close_all_tabs(self) -> None:
+        for i in range(self._tabs.count() - 1, -1, -1):
+            self._close_tab(i)
 
     def _on_tab_changed(self, index: int) -> None:
         if index < 0:
@@ -359,7 +567,16 @@ class MainWindow(QMainWindow):
         self._ref_panel.set_comparison(panel.content.data, ref_data)
 
     def _open_settings(self) -> None:
-        QMessageBox.information(self, "设置", "设置面板将在后续版本实现")
+        from .dialogs.settings_dialog import SettingsDialog
+        from .theme import apply_theme, get_current_theme
+
+        dialog = SettingsDialog(self)
+        # 主题切换即时生效
+        dialog.theme_changed.connect(lambda t: apply_theme(QApplication.instance(), t))
+        if dialog.exec():
+            dialog.apply_settings()
+            # 确保最终主题与设置一致
+            apply_theme(QApplication.instance(), get_current_theme())
 
     def _about(self) -> None:
         QMessageBox.about(

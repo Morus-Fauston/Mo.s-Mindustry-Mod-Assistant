@@ -21,6 +21,11 @@ class Command(ABC):
     @abstractmethod
     def undo(self) -> None: ...
 
+    @property
+    def description(self) -> str:
+        """人类可读的操作描述，用于撤销/重做按钮 tooltip。子类可覆盖。"""
+        return "操作"
+
     def merge_with(self, other: Command) -> Command | None:
         """Try to merge with a subsequent command. Return merged or None."""
         return None
@@ -41,6 +46,10 @@ class SetFieldCommand(Command):
         self._new = new_value
         self._old: object = None
         self._on_change = on_change
+
+    @property
+    def description(self) -> str:
+        return f"修改 {self._path} 为 {self._new}"
 
     def execute(self) -> None:
         self._old = _get_nested(self._data, self._path)
@@ -70,6 +79,42 @@ class SetFieldCommand(Command):
         return None
 
 
+class DeleteFieldCommand(Command):
+    """Delete a single field (dict key) reversibly.
+
+    execute() removes the key (remembering its value); undo() restores it.
+    Used for optional-field deletion and whole-group deletion.
+    """
+
+    def __init__(
+        self,
+        data: dict,
+        path: str,
+        on_change: Callable[[], None] | None = None,
+    ) -> None:
+        self._data = data
+        self._path = path
+        self._old: object = _NOT_FOUND
+        self._on_change = on_change
+
+    @property
+    def description(self) -> str:
+        return f"删除字段 {self._path}"
+
+    def execute(self) -> None:
+        self._old = _get_nested(self._data, self._path)
+        if self._old is not _NOT_FOUND:
+            _del_nested(self._data, self._path)
+        if self._on_change:
+            self._on_change()
+
+    def undo(self) -> None:
+        if self._old is not _NOT_FOUND:
+            _set_nested(self._data, self._path, self._old)
+        if self._on_change:
+            self._on_change()
+
+
 class ArrayInsertCommand(Command):
     """Insert an element into an array at specific index."""
 
@@ -86,6 +131,10 @@ class ArrayInsertCommand(Command):
         self._index = index
         self._element = element
         self._on_change = on_change
+
+    @property
+    def description(self) -> str:
+        return f"添加 {self._path} 项"
 
     def execute(self) -> None:
         arr = _get_nested(self._data, self._path)
@@ -120,6 +169,10 @@ class ArrayRemoveCommand(Command):
         self._removed: object = None
         self._on_change = on_change
 
+    @property
+    def description(self) -> str:
+        return f"移除 {self._path} 项"
+
     def execute(self) -> None:
         arr = _get_nested(self._data, self._path)
         if not isinstance(arr, list):
@@ -133,6 +186,48 @@ class ArrayRemoveCommand(Command):
         if not isinstance(arr, list):
             return
         arr.insert(self._index, self._removed)
+        if self._on_change:
+            self._on_change()
+
+
+class ArrayMoveCommand(Command):
+    """Move an element within an array from one index to another (reversible)."""
+
+    def __init__(
+        self,
+        data: dict,
+        path: str,
+        from_index: int,
+        to_index: int,
+        on_change: Callable[[], None] | None = None,
+    ) -> None:
+        self._data = data
+        self._path = path
+        self._from = from_index
+        self._to = to_index
+        self._on_change = on_change
+
+    @property
+    def description(self) -> str:
+        return f"调整 {self._path} 顺序"
+
+    def execute(self) -> None:
+        arr = _get_nested(self._data, self._path)
+        if not isinstance(arr, list):
+            return
+        if 0 <= self._from < len(arr) and 0 <= self._to < len(arr):
+            elem = arr.pop(self._from)
+            arr.insert(self._to, elem)
+        if self._on_change:
+            self._on_change()
+
+    def undo(self) -> None:
+        arr = _get_nested(self._data, self._path)
+        if not isinstance(arr, list):
+            return
+        if 0 <= self._to < len(arr) and 0 <= self._from < len(arr):
+            elem = arr.pop(self._to)
+            arr.insert(self._from, elem)
         if self._on_change:
             self._on_change()
 
@@ -153,6 +248,20 @@ class CommandStack:
     @property
     def can_redo(self) -> bool:
         return len(self._redo_stack) > 0
+
+    @property
+    def undo_description(self) -> str:
+        """最近一条可撤销操作的描述（用于按钮 tooltip）。"""
+        if self._history:
+            return self._history[-1].description
+        return ""
+
+    @property
+    def redo_description(self) -> str:
+        """最近一条可重做操作的描述（用于按钮 tooltip）。"""
+        if self._redo_stack:
+            return self._redo_stack[-1].description
+        return ""
 
     def set_on_change(self, callback: Callable[[], None]) -> None:
         self._on_change = callback

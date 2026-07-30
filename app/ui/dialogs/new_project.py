@@ -31,7 +31,7 @@ class NewProjectDialog(QDialog):
         self._id_edit = QLineEdit()
         self._id_edit.setPlaceholderText("my-first-mod")
         id_hint = QLabel("小写字母、数字、连字符。如: my-first-mod")
-        id_hint.setStyleSheet("color: gray; font-size: 11px;")
+        id_hint.setObjectName("mutedText")
         form.addRow("模组 ID:", self._id_edit)
         form.addRow("", id_hint)
 

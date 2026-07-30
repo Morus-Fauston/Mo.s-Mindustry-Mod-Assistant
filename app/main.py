@@ -8,12 +8,17 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from .ui.main_window import MainWindow
+from .ui.theme import apply_theme
+from .core.settings import get_settings
 
 
 def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("MoMA")
     app.setApplicationDisplayName("Mo's Mindustry Mod Assistant")
+
+    # 应用统一主题（读取用户设置，默认浅色），加载 QSS 样式表
+    apply_theme(app, get_settings().get("theme", "light"))
 
     # Locate metadata directory
     metadata_dir = _find_metadata_dir()

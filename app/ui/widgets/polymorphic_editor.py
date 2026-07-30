@@ -18,9 +18,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
@@ -34,6 +33,10 @@ from PySide6.QtWidgets import (
 )
 
 from ...core.commands import CommandStack, SetFieldCommand
+from .check_toggle import CheckToggle
+from .num_spin import NumSpinBox, NumDoubleSpinBox
+from .auto_width_edit import AutoWidthEdit
+from .label_helper import rich_label
 from ...core.config_loader import (
     display_name,
     get_field_docs,
@@ -99,6 +102,9 @@ class PolymorphicTypeEditor(QGroupBox):
 
         # Type selector row
         type_form = QFormLayout()
+        type_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.FieldsStayAtSizeHint)
+        type_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        type_form.setSpacing(4)
         self._type_combo = QComboBox()
         self._type_combo.addItems(self._type_choices)
         current_type = self.value.get("type", "")
@@ -112,6 +118,9 @@ class PolymorphicTypeEditor(QGroupBox):
 
         # Field form (rebuilt on type change)
         self._field_form = QFormLayout()
+        self._field_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.FieldsStayAtSizeHint)
+        self._field_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self._field_form.setSpacing(4)
         layout.addLayout(self._field_form)
 
         self._rebuild_fields()
@@ -161,8 +170,8 @@ class PolymorphicTypeEditor(QGroupBox):
 
     def _add_field_row(self, fname: str, widget: QWidget) -> None:
         """Add a labeled row to the field form with tooltip support."""
-        label_text = display_name(fname, self._field_names_zh)
-        row_label = QLabel(label_text)
+        zh = self._field_names_zh.get(fname, "")
+        row_label = rich_label(zh, fname)
         doc = self._field_docs.get(fname, "")
         if doc:
             row_label.setToolTip(doc)
@@ -195,28 +204,30 @@ class PolymorphicTypeEditor(QGroupBox):
     def _create_widget(self, fname: str, val: Any) -> QWidget | None:
         """Create the appropriate widget for a field value."""
         if isinstance(val, bool):
-            cb = QCheckBox()
+            cb = CheckToggle()
             cb.setChecked(val)
             cb.toggled.connect(lambda v, n=fname: self._set_field(n, v))
             self._widgets[fname] = cb
             return cb
         elif isinstance(val, float):
-            spin = QDoubleSpinBox()
+            spin = NumDoubleSpinBox()
             spin.setRange(-999999.0, 999999.0)
             spin.setDecimals(3)
+            spin.setFixedWidth(70)
             spin.setValue(val)
             spin.valueChanged.connect(lambda v, n=fname: self._set_field(n, v))
             self._widgets[fname] = spin
             return spin
         elif isinstance(val, int):
-            spin = QSpinBox()
+            spin = NumSpinBox()
             spin.setRange(-999999, 999999)
+            spin.setFixedWidth(70)
             spin.setValue(val)
             spin.valueChanged.connect(lambda v, n=fname: self._set_field(n, v))
             self._widgets[fname] = spin
             return spin
         elif isinstance(val, str):
-            edit = QLineEdit()
+            edit = AutoWidthEdit()
             edit.setText(val)
             edit.textChanged.connect(
                 lambda t, n=fname: self._set_field(n, t if t else None)
@@ -226,5 +237,5 @@ class PolymorphicTypeEditor(QGroupBox):
         else:
             # Unsupported type: show read-only label
             label = QLabel(str(val) if val is not None else "(空)")
-            label.setStyleSheet("color: gray;")
+            label.setObjectName("mutedText")
             return label

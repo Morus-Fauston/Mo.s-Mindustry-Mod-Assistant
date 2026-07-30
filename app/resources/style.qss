@@ -1,0 +1,737 @@
+/* ════════════════════════════════════════════════════════════
+   MoMA v0.2.1 · 统一样式表（深浅色共用模板，令牌由 theme.py 注入）
+   设计定稿：浅色 VS Code 气质 · 中性灰结构 · 马卡龙字段编码 · 铜橙状态栏
+   占位符 @TOKEN@ 在加载时被替换为实际色值。
+   ════════════════════════════════════════════════════════════ */
+
+/* ── 全局基底 ── */
+* {
+    font-family: "MiSans", "Noto Sans SC", "Microsoft YaHei", "微软雅黑", sans-serif;
+    font-size: 13px;
+}
+
+QMainWindow, QDialog {
+    background-color: @PANEL@;
+}
+
+QWidget {
+    color: @INK@;
+}
+
+QToolTip {
+    background-color: @INK@;
+    color: @CANVAS@;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 9px;
+    font-size: 12px;
+}
+
+/* ── 菜单栏 ── */
+QMenuBar {
+    background-color: @PANEL@;
+    color: @INK2@;
+    border-bottom: 1px solid @LINE@;
+    padding: 2px 6px;
+}
+QMenuBar::item {
+    background: transparent;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+QMenuBar::item:selected {
+    background-color: @PANEL2@;
+    color: @INK@;
+}
+QMenu {
+    background-color: @CANVAS@;
+    color: @INK@;
+    border: 1px solid @LINE@;
+    border-radius: 6px;
+    padding: 4px;
+}
+QMenu::item {
+    padding: 6px 26px 6px 12px;
+    border-radius: 4px;
+}
+QMenu::item:selected {
+    background-color: @PANEL2@;
+}
+QMenu::item:disabled {
+    color: @INK2@;
+}
+QMenu::separator {
+    height: 1px;
+    background: @LINE@;
+    margin: 4px 6px;
+}
+
+/* ── 工具栏 ── */
+QToolBar {
+    background-color: @PANEL@;
+    border-bottom: 1px solid @LINE@;
+    padding: 4px 6px;
+    spacing: 2px;
+}
+QToolBar QToolButton {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: @INK@;
+}
+QToolBar QToolButton:hover {
+    background-color: @PANEL2@;
+}
+QToolBar QToolButton:pressed {
+    background-color: @COPPER_TINT@;
+}
+QToolBar QToolButton:disabled {
+    color: @INK2@;
+}
+QToolBar::separator {
+    width: 1px;
+    background: @LINE@;
+    margin: 4px 6px;
+}
+
+/* ── 状态栏（签名元素：全铜底） ── */
+QStatusBar {
+    background-color: @SB_BG@;
+    color: @SB_INK@;
+    border: none;
+    font-size: 11.5px;
+}
+QStatusBar::item {
+    border: none;
+}
+QStatusBar QLabel {
+    color: @SB_INK@;
+    font-size: 11.5px;
+}
+/* 自管状态栏消息区（_StatusBar._msg） */
+#statusMessage {
+    color: @SB_INK@;
+    background: transparent;
+    font-size: 11.5px;
+    padding: 0 8px;
+}
+
+/* ── 标签页 ── */
+QTabWidget::pane {
+    border: none;
+    background-color: @CANVAS@;
+}
+QTabBar {
+    background-color: @PANEL@;
+}
+QTabBar::tab {
+    background-color: @PANEL@;
+    color: @INK2@;
+    padding: 8px 16px;
+    border-right: 1px solid @LINE@;
+    border-top: 2px solid transparent;
+}
+QTabBar::tab:hover {
+    background-color: @PANEL2@;
+    color: @INK@;
+}
+QTabBar::tab:selected {
+    background-color: @CANVAS@;
+    color: @INK@;
+    border-top: 2px solid @COPPER@;
+    font-weight: 600;
+}
+/* 标签关闭按钮（文本 × 按钮，由 setTabButton 注入） */
+#tabCloseBtn {
+    background: transparent;
+    border: none;
+    border-radius: 3px;
+    color: @INK2@;
+    font-size: 12px;
+    padding: 0;
+    min-width: 16px;
+    max-width: 16px;
+    min-height: 16px;
+    max-height: 16px;
+}
+#tabCloseBtn:hover {
+    background-color: @ERR_BG@;
+    color: @ERR@;
+}
+
+/* ── 树视图（文件树 / 图层树） ── */
+QTreeWidget, QTreeView {
+    background-color: @PANEL@;
+    border: none;
+    outline: none;
+    padding: 4px 0;
+}
+QTreeWidget::item, QTreeView::item {
+    padding: 3px 4px;
+    border-radius: 4px;
+    color: @INK@;
+}
+QTreeWidget::item:hover, QTreeView::item:hover {
+    background-color: @PANEL2@;
+}
+QTreeWidget::item:selected, QTreeView::item:selected {
+    background-color: @COPPER_TINT@;
+    color: @INK@;
+}
+
+/* ── 滚动区（白底，跟 HTML .body 一致；组卡片靠边框分隔） ── */
+QScrollArea {
+    background-color: @CANVAS@;
+    border: none;
+}
+/* viewport 和 scroll_widget 必须显式染白（QSS background 不自动传播到 viewport） */
+#editorViewport {
+    background-color: @CANVAS@;
+}
+
+/* ── 分组框 ── */
+QGroupBox {
+    background-color: @CANVAS@;
+    border: 1px solid @LINE@;
+    border-radius: 6px;
+    margin-top: 6px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 10px;
+    padding: 0 4px;
+    background-color: @GROUP_HEAD@;
+    color: @INK@;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+/* ── 可折叠分组（CollapsibleGroup） ── */
+#collapsibleGroup {
+    background-color: @CANVAS@;
+    border: 1px solid @LINE@;
+    border-radius: 6px;
+}
+#groupHead {
+    background-color: @GROUP_HEAD@;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    min-height: 32px;
+}
+#groupHead QLabel {
+    background: transparent;
+}
+#groupEnglish {
+    color: @INK2@;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 10.5px;
+}
+#groupLock {
+    color: @INK2@;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 10px;
+}
+#groupHead QToolButton {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: @INK2@;
+    font-size: 13px;
+}
+#groupHead QToolButton:hover {
+    background-color: @PANEL2@;
+    color: @INK@;
+}
+#groupHead QToolButton[text="✕"]:hover {
+    background-color: @ERR_BG@;
+    color: @ERR@;
+}
+#groupBody {
+    background-color: @CANVAS@;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+/* ── 通用按钮 ── */
+QPushButton {
+    background-color: @PANEL2@;
+    color: @INK@;
+    border: 1px solid @LINE@;
+    border-radius: 4px;
+    padding: 5px 14px;
+}
+QPushButton:hover {
+    border-color: @COPPER@;
+}
+QPushButton:pressed {
+    background-color: @COPPER_TINT@;
+}
+QPushButton:disabled {
+    color: @INK2@;
+    background-color: @PANEL@;
+}
+/* 主按钮（铜橙实心） */
+QPushButton[class="primary"] {
+    background-color: @COPPER@;
+    color: #FFFFFF;
+    border: 1px solid @COPPER@;
+    font-weight: 600;
+}
+QPushButton[class="primary"]:hover {
+    background-color: @COPPER_DEEP@;
+}
+
+/* ── 输入控件基底 ── */
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit {
+    background-color: @CANVAS@;
+    color: @INK@;
+    border: 1px solid @LINE@;
+    border-radius: 4px;
+    padding: 3px 8px;
+    selection-background-color: @COPPER@;
+    selection-color: #FFFFFF;
+}
+QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus,
+QComboBox:focus, QTextEdit:focus {
+    border: 1px solid @COPPER@;
+}
+QLineEdit:hover, QSpinBox:hover, QDoubleSpinBox:hover, QComboBox:hover {
+    border-color: @INK2@;
+}
+
+/* 数值输入用等宽字体 */
+QSpinBox, QDoubleSpinBox {
+    font-family: "JetBrains Mono", Consolas, monospace;
+    padding-left: 8px;
+}
+QSpinBox::up-button, QDoubleSpinBox::up-button,
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    width: 0;
+    height: 0;
+    border: none;
+    background: transparent;
+}
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow,
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+    image: none;
+    width: 0; height: 0;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 20px;
+}
+QComboBox::down-arrow {
+    image: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid @INK2@;
+    width: 0; height: 0;
+    margin-right: 6px;
+}
+QComboBox QAbstractItemView {
+    background-color: @CANVAS@;
+    color: @INK@;
+    border: 1px solid @LINE@;
+    selection-background-color: @COPPER_TINT@;
+    selection-color: @INK@;
+    outline: none;
+}
+
+QCheckBox {
+    spacing: 8px;
+    color: @INK@;
+}
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid @LINE@;
+    border-radius: 4px;
+    background-color: @CANVAS@;
+}
+QCheckBox::indicator:hover {
+    border-color: @COPPER@;
+}
+QCheckBox::indicator:checked {
+    background-color: @COPPER@;
+    border-color: @COPPER@;
+}
+
+/* ════════════════════════════════════════════════════════════
+   字段类型着色
+   控件通过动态属性 fieldType 命中（见 theme.field_type_property）。
+   淡底 + 同色系描边；左侧色条由独立 #fieldBar 控件承载（FieldRow）。
+   ════════════════════════════════════════════════════════════ */
+
+/* 数值 */
+QLineEdit[fieldType="num"], QSpinBox[fieldType="num"], QDoubleSpinBox[fieldType="num"] {
+    background-color: @F_NUM@;
+    border-color: @S_NUM@;
+}
+QLineEdit[fieldType="num"]:hover, QSpinBox[fieldType="num"]:hover, QDoubleSpinBox[fieldType="num"]:hover {
+    border-color: @B_NUM@;
+}
+
+/* 布尔 */
+QCheckBox[fieldType="bool"]::indicator {
+    background-color: @F_BOOL@;
+    border-color: @S_BOOL@;
+}
+QCheckBox[fieldType="bool"]::indicator:hover { border-color: @B_BOOL@; }
+QCheckBox[fieldType="bool"]::indicator:checked {
+    background-color: @B_BOOL@;
+    border-color: @B_BOOL@;
+}
+
+/* 字符串 */
+QLineEdit[fieldType="str"] {
+    background-color: @F_STR@;
+    border-color: @S_STR@;
+}
+QLineEdit[fieldType="str"]:hover { border-color: @B_STR@; }
+
+/* 引用 */
+QComboBox[fieldType="ref"] {
+    background-color: @F_REF@;
+    border-color: @S_REF@;
+}
+QComboBox[fieldType="ref"]:hover { border-color: @B_REF@; }
+
+/* 颜色 */
+QLineEdit[fieldType="col"] {
+    background-color: @F_COL@;
+    border-color: @S_COL@;
+    font-family: "JetBrains Mono", Consolas, monospace;
+}
+QLineEdit[fieldType="col"]:hover { border-color: @B_COL@; }
+
+/* 数组容器 / 内联对象容器（卡片） */
+QWidget[fieldType="arr"] {
+    background-color: @F_ARR@;
+    border-color: @S_ARR@;
+}
+QWidget[fieldType="obj"] {
+    background-color: @F_OBJ@;
+    border-color: @S_OBJ@;
+}
+
+/* 独立色条控件（3px 宽，圆角，与控件隔 2px） */
+#fieldBar {
+    background-color: @LINE@;
+    border: none;
+    border-radius: 2px;
+    min-width: 3px;
+    max-width: 3px;
+}
+#fieldBar[fieldType="num"] { background-color: @B_NUM@; }
+#fieldBar[fieldType="bool"] { background-color: @B_BOOL@; }
+#fieldBar[fieldType="str"] { background-color: @B_STR@; }
+#fieldBar[fieldType="ref"] { background-color: @B_REF@; }
+#fieldBar[fieldType="col"] { background-color: @B_COL@; }
+#fieldBar[fieldType="arr"] { background-color: @B_ARR@; }
+#fieldBar[fieldType="obj"] { background-color: @B_OBJ@; }
+
+/* 字段行删除按钮（可选字段，hover 浮现） */
+#fieldDeleteBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: @ERR@;
+    font-size: 13px;
+    font-weight: bold;
+}
+#fieldDeleteBtn:hover {
+    background-color: @ERR_BG@;
+}
+
+/* 武器卡片：排序按钮 / 删除按钮 / 模式徽章 */
+#weaponMoveBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: @INK2@;
+    padding: 0;
+    font-size: 13px;
+}
+#weaponMoveBtn:hover {
+    background-color: @PANEL2@;
+    color: @INK@;
+}
+#weaponMoveBtn:disabled {
+    color: @LINE@;
+}
+#weaponRemoveBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: @ERR@;
+    font-weight: bold;
+    padding: 0;
+    font-size: 14px;
+}
+#weaponRemoveBtn:hover {
+    background-color: @ERR_BG@;
+}
+/* 武器卡片操作按钮（左对齐文本按钮） */
+#weaponActionBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: @INK2@;
+    text-align: left;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+#weaponActionBtn:hover {
+    background-color: @PANEL2@;
+    color: @INK@;
+}
+#badgeRef {
+    color: @BADGE_REF_FG@;
+    font-size: 11px;
+}
+#badgeInline {
+    color: @BADGE_INL_FG@;
+    font-size: 11px;
+}
+
+/* 新建武器对话框：子弹类型预览 */
+#bulletPreview {
+    color: @INK2@;
+    font-size: 11.5px;
+    background-color: @PANEL@;
+    border: 1px solid @LINE@;
+    border-radius: 4px;
+    padding: 8px 10px;
+}
+
+/* ── 验证错误态（动态属性 error="true"，不写内联样式） ── */
+QLineEdit[error="true"], QSpinBox[error="true"], QDoubleSpinBox[error="true"],
+QComboBox[error="true"] {
+    border: 1px solid @ERR@;
+    background-color: @ERR_BG@;
+}
+QCheckBox[error="true"]::indicator {
+    border: 1px solid @ERR@;
+    background-color: @ERR_BG@;
+}
+
+/* ── 模式徽章 ── */
+.badge-ref {
+    background-color: @BADGE_REF_BG@;
+    color: @BADGE_REF_FG@;
+    border-radius: 8px;
+    padding: 1px 7px;
+    font-size: 10px;
+    font-weight: 600;
+}
+.badge-inline {
+    background-color: @BADGE_INL_BG@;
+    color: @BADGE_INL_FG@;
+    border-radius: 8px;
+    padding: 1px 7px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* ── 欢迎页 ── */
+#welcomePage {
+    background-color: @CANVAS@;
+}
+#welcomeBrand {
+    color: @INK@;
+    font-size: 47px;
+    font-weight: 700;
+}
+#welcomeBrandAccent {
+    color: @COPPER@;
+    font-size: 47px;
+    font-weight: 700;
+}
+#welcomeSub {
+    color: @INK2@;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+}
+#welcomePhi {
+    color: @INK2@;
+    font-size: 13.5px;
+    line-height: 1.9;
+}
+#welcomeHint {
+    color: @INK2@;
+    font-size: 11.5px;
+}
+
+/* ── 预览视口（浅色工坊里的暗色游戏窗口） ── */
+#previewViewport {
+    background-color: @VIEWPORT@;
+    border: 1px solid @LINE@;
+    border-radius: 6px;
+}
+
+/* 预览空态覆盖层 */
+#previewEmpty {
+    color: @INK2@;
+    font-size: 12px;
+    background-color: @VIEWPORT@;
+    border: 1px dashed @LINE@;
+    border-radius: 6px;
+    padding: 24px 12px;
+}
+
+/* 预览图层标题 */
+#previewLayerTitle {
+    font-weight: 600;
+    color: @INK@;
+    margin-top: 4px;
+}
+
+/* 面板区域标题（文件树 / 预览 头顶） */
+#panelHeader {
+    font-size: 11px;
+    font-weight: 600;
+    color: @INK2@;
+    letter-spacing: 1px;
+    padding: 8px 12px 6px;
+    background-color: @PANEL@;
+    border-bottom: 1px solid @LINE@;
+}
+
+/* 编辑器内容标题 */
+#editorTitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: @INK@;
+    margin-bottom: 8px;
+}
+
+/* 灰色提示/只读占位文字（统一替代内联 setStyleSheet 灰字） */
+#mutedText {
+    color: @INK2@;
+    font-size: 11px;
+}
+
+/* 组间分隔线 */
+#groupSeparator {
+    background-color: @LINE@;
+    border: none;
+    max-height: 1px;
+    min-height: 1px;
+}
+
+/* 描述档多行文本框 */
+QTextEdit {
+    background-color: @CANVAS@;
+    color: @INK@;
+    border: 1px solid @LINE@;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12.5px;
+}
+QTextEdit:focus {
+    border: 1px solid @COPPER@;
+}
+
+/* Toast 提示（右下角浮层） */
+#toast {
+    background-color: @INK@;
+    color: @CANVAS@;
+    border-radius: 5px;
+    padding: 7px 14px;
+    font-size: 12px;
+}
+
+/* 状态栏错误指示器（可点击） */
+#statusErrorChip {
+    background-color: @ERR_BG@;
+    color: @ERR@;
+    border: 1px solid @ERR@;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+}
+#statusErrorChip:hover {
+    background-color: @ERR@;
+    color: @CANVAS@;
+}
+
+/* 设置对话框 */
+#settingsCategoryList {
+    background-color: @PANEL@;
+    border: none;
+    border-right: 1px solid @LINE@;
+    padding: 8px 0;
+    font-size: 13px;
+}
+#settingsCategoryList::item {
+    padding: 8px 16px;
+    color: @INK2@;
+}
+#settingsCategoryList::item:selected {
+    background-color: @COPPER_TINT@;
+    color: @COPPER_DEEP@;
+    font-weight: 600;
+}
+#settingsPageTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: @INK@;
+}
+#settingsPathLabel {
+    color: @INK2@;
+    padding: 4px 8px;
+    background-color: @PANEL2@;
+    border: 1px solid @LINE@;
+    border-radius: 4px;
+}
+
+/* C 阶段预留禁用态 */
+#reservedPanel {
+    background: transparent;
+}
+#reservedButton {
+    background-color: @PANEL2@;
+    color: @INK2@;
+    border: 1px dashed @LINE@;
+    border-radius: 5px;
+    padding: 6px 14px;
+    font-size: 12px;
+}
+
+/* ── 滚动条 ── */
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 0;
+}
+QScrollBar::handle:vertical {
+    background: @LINE@;
+    border-radius: 5px;
+    min-height: 24px;
+}
+QScrollBar::handle:vertical:hover {
+    background: @INK2@;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+}
+QScrollBar:horizontal {
+    background: transparent;
+    height: 10px;
+    margin: 0;
+}
+QScrollBar::handle:horizontal {
+    background: @LINE@;
+    border-radius: 5px;
+    min-width: 24px;
+}
+QScrollBar::handle:horizontal:hover {
+    background: @INK2@;
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0;
+}

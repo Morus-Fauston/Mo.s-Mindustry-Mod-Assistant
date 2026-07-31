@@ -8,11 +8,13 @@
       "optional": ["lowAltitude", "hovering", "naval", "bounded", "useUnitCap", "coreUnitDock", "isEnemy", "hidden", "internal"]
     },
     "movement": {
+      "locked": true,
       "required": ["rotateSpeed", "accel", "drag"],
       "default": ["faceTarget"],
       "optional": ["omniMovement", "rotateMoveFirst", "strafePenalty", "floorMultiplier", "baseRotateSpeed", "riseSpeed", "descentSpeed", "fallSpeed", "weaveMag", "weaveScale", "weaveRandom", "crawlSlowdown", "crawlSlowdownFrac"]
     },
     "combat": {
+      "locked": true,
       "required": ["weapons", "range", "targetAir", "targetGround"],
       "default": ["ammoCapacity", "canAttack"],
       "optional": ["maxRange", "singleTarget", "forceMultiTarget", "autoFindTarget", "targetUnderBlocks", "alwaysShootWhenMoving", "targetPriority", "circleTarget", "circleTargetRadius", "attacks", "canHeal", "autoDropBombs", "lifetime", "homingDelay", "aimDst", "targetBuildingsMobile", "targetFlags", "missileAccelTime"]

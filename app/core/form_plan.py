@@ -120,11 +120,15 @@ def compute_form_plan(
         # Empty-group hiding: show group only if it has required fields
         # or at least one visible field.  Groups with only default/optional
         # and nothing in data stay hidden (user adds via header button).
-        # Exception: capability groups always render (user needs the checkbox).
-        is_cap = group_name in CAPABILITY_GROUPS
-        if required or visible or is_cap:
+        # Capability groups render only when enabled (have fields in data)
+        # or when they have required fields (they don't, so effectively
+        # they hide when unchecked and data is clean).
+        if required or visible:
             locked = is_group_locked(group_name, group_def, content_type, data)
-            expanded = is_group_expanded(group_name, expanded_state, bool(required))
+            expanded = is_group_expanded(
+                group_name, expanded_state, bool(required),
+                is_capability=group_name in CAPABILITY_GROUPS,
+            )
             required_set = set(required)
 
             field_plans = [
@@ -217,10 +221,11 @@ def is_group_expanded(
     group_name: str,
     expanded_state: dict[str, bool] | None,
     has_required: bool = False,
+    is_capability: bool = False,
 ) -> bool:
     """Query expanded state memory.
 
-    Default: groups with required fields are expanded;
+    Default: groups with required fields or capability groups are expanded;
     groups with only default/optional are collapsed.
 
     Always returns a plain bool: callers must be able to pass
@@ -228,7 +233,7 @@ def is_group_expanded(
     """
     if expanded_state is not None and group_name in expanded_state:
         return bool(expanded_state[group_name])
-    return bool(has_required)
+    return bool(has_required or is_capability)
 
 
 def type_default(field_def: FieldDef) -> Any:

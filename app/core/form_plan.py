@@ -76,6 +76,7 @@ def compute_form_plan(
         if not group_visible(gd, subtype):
             continue
         grouped_names.update(gd.get("required", []))
+        grouped_names.update(gd.get("default", []))
         grouped_names.update(gd.get("optional", []))
 
     # Fields already in JSON but not in any visible group → "其他"
@@ -91,19 +92,29 @@ def compute_form_plan(
 
         label = (group_labels or {}).get(group_name, group_name)
         required = group_def.get("required", [])
+        default = group_def.get("default", [])
         optional = group_def.get("optional", [])
 
+        # Three-level visibility:
+        #   required → always visible
+        #   default  → visible if in data (pre-filled by template on new content)
+        #   optional → visible only if in data (user explicitly added)
         visible_names = list(required)
+        for n in default:
+            if n in data:
+                visible_names.append(n)
         for n in optional:
             if n in data:
                 visible_names.append(n)
 
         visible = [all_fields[n] for n in visible_names if n in all_fields]
 
-        # Only render if there's at least one visible field or the group has optional fields
-        if visible or optional:
+        # Empty-group hiding: show group only if it has required fields
+        # or at least one visible field.  Groups with only default/optional
+        # and nothing in data stay hidden (user adds via header button).
+        if required or visible:
             locked = is_group_locked(group_name, group_def, content_type, data)
-            expanded = is_group_expanded(group_name, expanded_state)
+            expanded = is_group_expanded(group_name, expanded_state, required)
             required_set = set(required)
 
             field_plans = [
@@ -117,7 +128,7 @@ def compute_form_plan(
                 locked=locked,
                 expanded=expanded,
                 fields=field_plans,
-                has_optional=bool(optional),
+                has_optional=bool(optional) or bool(default),
             ))
 
     # Render extra fields from JSON (not in any group) → "其他"
@@ -194,11 +205,16 @@ def is_group_locked(
 def is_group_expanded(
     group_name: str,
     expanded_state: dict[str, bool] | None,
+    has_required: bool = False,
 ) -> bool:
-    """Query expanded state memory. Default: only 'basic' is expanded."""
+    """Query expanded state memory.
+
+    Default: groups with required fields are expanded;
+    groups with only default/optional are collapsed.
+    """
     if expanded_state is not None and group_name in expanded_state:
         return expanded_state[group_name]
-    return group_name == "basic"
+    return has_required
 
 
 def type_default(field_def: FieldDef) -> Any:
@@ -236,6 +252,7 @@ def get_addable_fields(
         all_grouped: set[str] = set()
         for gd in groups_config.values():
             all_grouped.update(gd.get("required", []))
+            all_grouped.update(gd.get("default", []))
             all_grouped.update(gd.get("optional", []))
         return [
             f for f in class_def.fields
@@ -245,10 +262,10 @@ def get_addable_fields(
         ]
     else:
         group_def = groups_config.get(group_name, {})
-        optional_names = set(group_def.get("optional", []))
+        addable_names = set(group_def.get("default", [])) | set(group_def.get("optional", []))
         return [
             f for f in class_def.fields
-            if f.name in optional_names
+            if f.name in addable_names
             and f.name not in data_keys
             and not f.is_internal
         ]

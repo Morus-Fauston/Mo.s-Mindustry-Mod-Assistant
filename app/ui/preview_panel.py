@@ -137,9 +137,9 @@ class PreviewPanel(QWidget):
         layer_layout.addWidget(self._layer_tree)
 
         self._splitter.addWidget(layer_area)
-        self._splitter.setSizes([400, 200])
-        self._splitter.setStretchFactor(0, 1)
-        self._splitter.setStretchFactor(1, 0)
+        self._splitter.setSizes([360, 240])  # 6:4 ratio
+        self._splitter.setStretchFactor(0, 3)
+        self._splitter.setStretchFactor(1, 2)
         layout.addWidget(self._splitter, stretch=1)
 
     def show_content(self, content: ContentData, project: Project | None) -> None:

@@ -176,8 +176,15 @@ QTreeWidget::item:hover, QTreeView::item:hover {
     background-color: @PANEL2@;
 }
 QTreeWidget::item:selected, QTreeView::item:selected {
-    background-color: @COPPER_TINT@;
+    background-color: @SEL_BG@;
     color: @INK@;
+    font-weight: 600;
+    border-left: 3px solid @COPPER@;
+}
+QTreeWidget::item:selected:focus, QTreeView::item:selected:focus {
+    background-color: @SEL_BG@;
+    border: 1px solid @SEL_FOCUS@;
+    border-left: 3px solid @COPPER@;
 }
 
 /* ── 滚动区（白底，跟 HTML .body 一致；组卡片靠边框分隔） ── */
@@ -398,11 +405,11 @@ QWidget[fieldType="obj"] {
     border-color: @S_OBJ@;
 }
 
-/* 独立色条控件（3px 宽，圆角，与控件隔 2px） */
+/* 独立色条控件（3px 宽，1.1px 圆角，与控件隔 2px） */
 #fieldBar {
     background-color: @LINE@;
     border: none;
-    border-radius: 2px;
+    border-radius: 1.1px;
     min-width: 3px;
     max-width: 3px;
 }
@@ -649,9 +656,14 @@ QTextEdit:focus {
     color: @INK2@;
 }
 #settingsCategoryList::item:selected {
-    background-color: @COPPER_TINT@;
-    color: @COPPER_DEEP@;
+    background-color: @SEL_BG@;
+    color: @INK@;
     font-weight: 600;
+    border-left: 3px solid @COPPER@;
+}
+#settingsCategoryList::item:selected:focus {
+    border: 1px solid @SEL_FOCUS@;
+    border-left: 3px solid @COPPER@;
 }
 #settingsPageTitle {
     font-size: 16px;

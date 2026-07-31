@@ -1,3 +1,11 @@
+v0.2.2 (2026-07-31 13:34)
+  架构: _is_internal_field双黑名单→FieldDef.is_internal统一 / EditorPanel表单逻辑→form_plan.py纯函数 / MainWindow服务+生命周期→session.py(ProjectSession) / config逃逸口×3→config_loader收拢 / BulletEditor透传删除→直接用PolymorphicTypeEditor
+  修复: QDockWidget未导入(参考对比必崩) / 无用import清理(json×3)
+  测试: 49→186 (+metadata/content_store/validator/form_plan/session), 全程无Qt, 0.3s全绿
+  文档: CONTEXT.md+4术语(FormPlan/GroupPlan/ProjectSession/SaveReport)
+
+====
+
 v0.2.1 (2026-07-31 03:04)
   新增: 主题系统(40令牌LIGHT/DARK+即时切换) / 欢迎页 / 设置面板 / 可折叠分组卡片(QFrame) / 字段行容器(色条+红X) / Toast提示 / 自绘复选框(白勾) / 去尾零数值框 / 自动撑宽输入框 / 富文本标签(中文+淡化英文) / C阶段预留禁用态
   重构: QDockWidget→QSplitter三栏 / 预览QGraphicsView(缩放+平移+空态+内部QSplitter) / 标签页文本×关闭+右键菜单 / 文件树撤图标+面板头 / 工具栏菜单撤Nieobie改纯文本 / 状态栏自管_StatusBar子类

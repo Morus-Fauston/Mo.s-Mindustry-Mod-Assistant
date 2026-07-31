@@ -28,6 +28,41 @@ class FieldDef:
     inline_type: str | None = None
     doc: str = ""
 
+    # ── 字段可见性规则（唯一来源，Validator 和 EditorPanel 共用）──────────
+
+    _INTERNAL_SUFFIXES = ("Region", "Sound", "Effect", "Controller", "Color")
+    _INTERNAL_NAMES = frozenset({
+        "id", "minfo", "stats", "localizedName",
+        "alwaysUnlocked", "removed",
+        "uiIcon", "fullIcon", "fullOverride", "shownPlanets",
+        "databaseTabs", "allDatabaseTabs", "techNodes", "techNode",
+        "constructor", "firstRequirements",
+        "engineColorInner", "engineColor", "healColor",
+        "generateIcons", "generateFullIcon", "internalGenerateSprites",
+        "cachedRequirements", "totalRequirements",
+        "dpsEstimate", "sample", "unlocked",
+        "hideDatabase", "databaseCategory", "databaseTag",
+    })
+    _EDITABLE_JAVA_TYPES = frozenset({
+        "float", "double", "int", "long", "short", "boolean", "String", "Color",
+    })
+
+    @property
+    def is_internal(self) -> bool:
+        """True if this field is engine-internal and never set in mod JSON.
+
+        Used by Validator (skip validation) and EditorPanel (hide from
+        add-field menu). Single source of truth — no duplicated blacklists.
+        """
+        if self.name in self._INTERNAL_NAMES:
+            return True
+        if any(self.name.endswith(s) for s in self._INTERNAL_SUFFIXES):
+            return True
+        # Non-editable primitive types (e.g. Object references stored as primitives)
+        if self.mode == "PRIMITIVE" and self.java_type not in self._EDITABLE_JAVA_TYPES:
+            return True
+        return False
+
 
 @dataclass
 class ClassDef:

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
+    QDockWidget,
     QFileDialog,
     QLabel,
     QMainWindow,
@@ -23,11 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..core.metadata import Metadata
 from ..core.project import Project
-from ..core.commands import CommandStack
-from ..core.template import TemplateEngine
-from ..core.validator import Validator
+from ..core.session import ProjectSession
 from .file_tree import FileTreePanel
 from .editor_panel import EditorPanel
 from .preview_panel import PreviewPanel
@@ -65,12 +62,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Mo's Mindustry Mod Assistant")
         self.resize(1400, 900)
 
-        # Core services
-        self._metadata = Metadata(metadata_dir)
-        self._command_stack = CommandStack()
-        self._template_engine = TemplateEngine(self._metadata)
-        self._validator = Validator(self._metadata)
-        self._project: Project | None = None
+        # Core services are assembled inside the ProjectSession deep module.
+        self._session = ProjectSession(metadata_dir)
+        self._metadata = self._session.metadata
+        self._command_stack = self._session.command_stack
+        self._validator = self._session.validator
 
         # Auto-save timer
         self._auto_save_timer = QTimer(self)
@@ -80,7 +76,7 @@ class MainWindow(QMainWindow):
         # Wire undo/redo change notification
         self._command_stack.set_on_change(self._on_command_stack_changed)
 
-        self._state_file = Path(__file__).parent.parent / "config" / "editor_state.json"
+        # editor_state persistence is handled by config_loader
 
         # 自管消息区的状态栏（须在首次 self.statusBar() 之前安装）
         self.setStatusBar(_StatusBar())
@@ -107,6 +103,11 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(
             f"就绪 | 游戏版本: v{self._metadata.game_version}"
         )
+
+    @property
+    def _project(self) -> Project | None:
+        """Current project, owned by the session (single source of truth)."""
+        return self._session.project
 
     # ── UI setup ────────────────────────────────────────────────────────
 
@@ -208,9 +209,8 @@ class MainWindow(QMainWindow):
         dlg = NewProjectDialog(self)
         if dlg.exec():
             path, mod_id, name = dlg.get_result()
-            self._project = Project.create(path, mod_id, name)
+            self._session.create_project(path, mod_id, name)
             self._file_tree.set_project(self._project)
-            self._save_state()
             self._enter_project_view()
             self.statusBar().showMessage(f"已创建工程: {mod_id}")
 
@@ -226,9 +226,8 @@ class MainWindow(QMainWindow):
 
     def _load_project_path(self, path: str) -> None:
         try:
-            self._project = Project.open(path)
+            self._session.open_project(path)
             self._file_tree.set_project(self._project)
-            self._save_state()
             self._enter_project_view()
             self.statusBar().showMessage(f"已打开: {self._project.mod_info.display_name}")
         except FileNotFoundError as e:
@@ -260,7 +259,7 @@ class MainWindow(QMainWindow):
                 return
         # 清空标签页
         self._tabs.clear()
-        self._project = None
+        self._session.close_project()
         self._file_tree.set_project(None)
         self._center_stack.setCurrentIndex(0)
         self._close_project_action.setEnabled(False)
@@ -277,26 +276,24 @@ class MainWindow(QMainWindow):
     def _save(self) -> None:
         if self._project is None:
             return
-        # Save all open tabs
-        error_count = 0
-        first_error_panel: EditorPanel | None = None
+        # Collect open contents; remember panel by name for jump-to-error.
+        panels: dict[str, EditorPanel] = {}
+        items = []
         for i in range(self._tabs.count()):
             panel = self._tabs.widget(i)
             if isinstance(panel, EditorPanel):
-                panel.save()
-                # Content-level validation
-                issues = self._validator.validate(panel.content.data, "content")
-                errs = [iss for iss in issues if iss.severity == "error"]
-                error_count += len(errs)
-                if errs and first_error_panel is None:
-                    first_error_panel = panel
-        self._project.is_dirty = False
-        if error_count > 0:
-            self.statusBar().showMessage(f"已保存 ({error_count} 个验证错误)")
-            self._toast.show_message(f"已保存 · {error_count} 个验证错误")
+                items.append(panel.content)
+                panels[panel.content.name] = panel
+        # Deep save+validate lives in the session.
+        report = self._session.save_contents(items)
+        for panel in panels.values():
+            panel.mark_saved()
+        if report.error_count > 0:
+            self.statusBar().showMessage(f"已保存 ({report.error_count} 个验证错误)")
+            self._toast.show_message(f"已保存 · {report.error_count} 个验证错误")
             # 记录第一个错误面板，供状态栏点击跳转
-            self._first_error_panel = first_error_panel
-            self._error_chip.setText(f"⚠ {error_count} 个错误 · 点击跳转")
+            self._first_error_panel = panels.get(report.first_error_content or "")
+            self._error_chip.setText(f"⚠ {report.error_count} 个错误 · 点击跳转")
             self._error_chip.show()
         else:
             self.statusBar().showMessage("已保存")
@@ -324,36 +321,20 @@ class MainWindow(QMainWindow):
 
     # ── state persistence ───────────────────────────────────────────────
 
-    def _save_state(self) -> None:
-        """Remember last opened project path."""
-        if self._project is None:
-            return
-        state = {"last_project": str(self._project.root)}
-        try:
-            self._state_file.parent.mkdir(parents=True, exist_ok=True)
-            self._state_file.write_text(
-                json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
-            )
-        except OSError:
-            pass
-
     def _restore_last_project(self) -> None:
         """Auto-open the last project on startup."""
-        if not self._state_file.exists():
-            return
-        try:
-            state = json.loads(self._state_file.read_text(encoding="utf-8"))
-            last_path = state.get("last_project", "")
-            if last_path and Path(last_path).exists():
-                self._project = Project.open(last_path)
+        last_path = self._session.last_project_path()
+        if last_path and Path(last_path).exists():
+            try:
+                self._session.open_project(last_path)
                 self._file_tree.set_project(self._project)
                 self._welcome.set_last_project(last_path)
                 self._enter_project_view()
                 self.statusBar().showMessage(
                     f"已恢复上次工程: {self._project.mod_info.display_name}"
                 )
-        except (OSError, json.JSONDecodeError, FileNotFoundError):
-            pass
+            except (OSError, FileNotFoundError):
+                pass
 
     def _undo(self) -> None:
         self._command_stack.undo()
@@ -426,8 +407,7 @@ class MainWindow(QMainWindow):
     def _do_create_content(self, kind: str, name: str, category: str) -> None:
         if self._project is None:
             return
-        data = self._template_engine.create(kind, name)
-        self._project.contents.save(name, data, category)
+        self._session.create_content(kind, name, category)
         self._file_tree.refresh()
         self._open_content(name)
         self.statusBar().showMessage(f"已创建: {name} ({kind})")

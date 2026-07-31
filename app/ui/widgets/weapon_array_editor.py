@@ -441,12 +441,15 @@ class WeaponCard(QGroupBox):
 
         layout.addLayout(form)
 
-        # Bullet sub-form (delegates to BulletEditor → PolymorphicTypeEditor)
-        from .bullet_editor import BulletEditor
-        bullet_editor = BulletEditor(
+        # Bullet sub-form (PolymorphicTypeEditor, ADR-006)
+        from .polymorphic_editor import BULLET_TYPES, PolymorphicTypeEditor
+        bullet_editor = PolymorphicTypeEditor(
             data=self._parent_data,
             path=self._data_path("bullet"),
+            type_choices=BULLET_TYPES,
             command_stack=self._commands,
+            title="子弹",
+            type_label="类型",
         )
         bullet_editor.valueChanged.connect(lambda: self.modified.emit())
         layout.addWidget(bullet_editor)

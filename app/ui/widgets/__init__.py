@@ -5,6 +5,6 @@ and encapsulates a specific editing concern.
 """
 
 from .weapon_array_editor import WeaponArrayEditor
-from .bullet_editor import BulletEditor
+from .polymorphic_editor import PolymorphicTypeEditor
 
-__all__ = ["WeaponArrayEditor", "BulletEditor"]
+__all__ = ["WeaponArrayEditor", "PolymorphicTypeEditor"]

@@ -76,7 +76,7 @@ class Validator:
 
         # Only validate fields that mods actually set in JSON.
         # Skip internal engine fields (regions, sounds, effects, controllers).
-        if self._is_internal_field(field_def):
+        if field_def.is_internal:
             return issues
 
         # Required check: only for primitive fields that are non-nullable

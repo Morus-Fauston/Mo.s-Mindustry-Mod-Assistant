@@ -35,11 +35,17 @@ from ..core.config_loader import (
     get_field_names_zh,
 )
 from ..core.content_store import ContentData
+from ..core.form_plan import (
+    GroupPlan,
+    compute_form_plan,
+    get_addable_fields,
+    type_default,
+)
 from ..core.metadata import ClassDef, FieldDef, Metadata
 from ..core.project import Project
 from ..core.validator import Validator
 from .widgets.weapon_array_editor import WeaponArrayEditor
-from .widgets.bullet_editor import BulletEditor
+from .widgets.polymorphic_editor import BULLET_TYPES, PolymorphicTypeEditor
 from .widgets.check_toggle import CheckToggle
 from .widgets.collapsible_group import CollapsibleGroup
 from .widgets.field_row import FieldRow
@@ -172,13 +178,11 @@ class EditorPanel(QWidget):
         layout.addWidget(scroll)
 
     def _rebuild_form(self) -> None:
-        """Rebuild form groups. Called on init and when fields are added/deleted.
+        """Rebuild form groups from the computed form plan.
 
-        Each group in field_groups.json now has 'required' (always shown) and
-        'optional' (shown only if the field already exists in JSON data).
-        The '+' button on each group reveals that group's optional fields.
-
-        Groups may have 'visible_for' to restrict visibility to specific subtypes.
+        All "what to show" decisions (group visibility, required/optional
+        filtering, subtype inference, locking, expansion) live in
+        core.form_plan. This method only renders the plan into Qt widgets.
         """
         if self._class_def is None or self._form_layout is None:
             return
@@ -191,49 +195,17 @@ class EditorPanel(QWidget):
                 w.deleteLater()
         self._field_widgets.clear()
 
-        content_type = self._content.data.get("type", "")
-        groups_config = self._field_groups.get(content_type, {})
-        all_fields = {f.name: f for f in self._class_def.fields}
+        expanded_state = _EXPANDED_STATE.get(self._content.name)
+        plan = compute_form_plan(
+            class_def=self._class_def,
+            data=self._content.data,
+            field_groups=self._field_groups,
+            expanded_state=expanded_state,
+            group_labels=self.GROUP_LABELS,
+        )
 
-        # Infer subtype for visible_for filtering
-        subtype = self._infer_subtype(content_type)
-
-        # Collect all field names that appear in any visible group
-        grouped_names: set[str] = set()
-        for gd in groups_config.values():
-            if not self._group_visible(gd, subtype):
-                continue
-            grouped_names.update(gd.get("required", []))
-            grouped_names.update(gd.get("optional", []))
-
-        # Fields already in JSON but not in any visible group → "其他"
-        json_fields = set(self._content.data.keys()) - {"type"}
-        extra_names = json_fields - grouped_names
-
-        # Render configured groups: required always, optional only if in data
-        for group_name, group_def in groups_config.items():
-            if not self._group_visible(group_def, subtype):
-                continue
-
-            label = self.GROUP_LABELS.get(group_name, group_name)
-            required = group_def.get("required", [])
-            optional = group_def.get("optional", [])
-
-            visible_names = list(required)
-            for n in optional:
-                if n in self._content.data:
-                    visible_names.append(n)
-
-            visible = [all_fields[n] for n in visible_names if n in all_fields]
-            # Only render if there's at least one visible field or the group has optional fields
-            if visible or optional:
-                self._render_group(label, group_name, visible)
-
-        # Render extra fields from JSON (not in any group) → "其他"
-        if extra_names:
-            extra = [all_fields[n] for n in sorted(extra_names) if n in all_fields]
-            if extra:
-                self._render_group("其他", "_other", extra)
+        for group_plan in plan:
+            self._render_group(group_plan)
 
         # Re-add user notes box
         notes_box = QGroupBox("用户备注")
@@ -246,38 +218,29 @@ class EditorPanel(QWidget):
 
         self._form_layout.addStretch()
 
-    def _render_group(self, label: str, group_name: str, fields: list[FieldDef]) -> None:
-        """Render a collapsible group with header and field rows."""
-        content_type = self._content.data.get("type", "")
-        groups_config = self._field_groups.get(content_type, {})
-        group_def = groups_config.get(group_name, {})
-
-        locked = self._is_group_locked(group_name, group_def)
-        expanded = self._is_group_expanded(group_name)
-
+    def _render_group(self, plan: GroupPlan) -> None:
+        """Render a collapsible group from a GroupPlan."""
         group = CollapsibleGroup(
-            group_name=group_name,
-            title=label,
-            english=group_name if group_name != "_other" else "",
-            locked=locked,
-            expanded=expanded,
+            group_name=plan.group_name,
+            title=plan.label,
+            english=plan.group_name if plan.group_name != "_other" else "",
+            locked=plan.locked,
+            expanded=plan.expanded,
         )
         group.add_field_requested.connect(self._show_add_field_menu)
         group.delete_group_requested.connect(self._delete_group)
         # 折叠状态变化时记忆
         group._chevron.clicked.connect(  # noqa: SLF001
-            lambda gn=group_name, g=group: self._remember_expanded(gn, g.expanded)
+            lambda gn=plan.group_name, g=group: self._remember_expanded(gn, g.expanded)
         )
-
-        # required 字段不可删除
-        required_names = set(group_def.get("required", []))
 
         # Field rows — 逐行 VBox 布局（替代 QFormLayout 网格）
         rows_layout = QVBoxLayout()
         rows_layout.setContentsMargins(0, 0, 0, 0)
         rows_layout.setSpacing(4)
 
-        for f in fields:
+        for fp in plan.fields:
+            f = fp.field_def
             widget = self._create_field_widget(f)
             if widget is None:
                 continue
@@ -310,9 +273,8 @@ class EditorPanel(QWidget):
 
             if f.mode in ("PRIMITIVE", "STRING_REF"):
                 ft = field_type_property(f.mode, f.java_type)
-                deletable = f.name not in required_names
-                field_row = FieldRow(widget, ft, deletable=deletable)
-                if deletable:
+                field_row = FieldRow(widget, ft, deletable=fp.deletable)
+                if fp.deletable:
                     field_row.deleteRequested.connect(
                         lambda fn=f.name: self._delete_field(fn)
                     )
@@ -335,30 +297,10 @@ class EditorPanel(QWidget):
         sep.setFixedHeight(1)
         sep.setAutoFillBackground(True)  # QFrame 默认不填充背景→QSS background 不可见
         self._form_layout.addWidget(sep)
-    # ── 折叠状态 / 锁定 辅助 ─────────────────────────────────────────────
-
-    def _is_group_expanded(self, group_name: str) -> bool:
-        """查询记忆中的展开状态，默认只展开 basic 组。"""
-        per_content = _EXPANDED_STATE.get(self._content.name)
-        if per_content is not None and group_name in per_content:
-            return per_content[group_name]
-        return group_name == "basic"
+    # ── 折叠状态记忆 ─────────────────────────────────────────────────────
 
     def _remember_expanded(self, group_name: str, expanded: bool) -> None:
         _EXPANDED_STATE.setdefault(self._content.name, {})[group_name] = expanded
-
-    def _is_group_locked(self, group_name: str, group_def: dict) -> bool:
-        """basic 组永远锁定；子类型特征组按 locked_for 锁定。"""
-        if group_name == "basic":
-            return True
-        if group_def.get("locked"):
-            return True
-        locked_for = group_def.get("locked_for")
-        if locked_for:
-            subtype = self._infer_subtype(self._content.data.get("type", ""))
-            if subtype in locked_for:
-                return True
-        return False
 
     def _delete_group(self, group_name: str) -> None:
         """删除整组字段（通过 CommandStack 可撤销）。"""
@@ -379,84 +321,17 @@ class EditorPanel(QWidget):
         if deleted:
             self._rebuild_form()
 
-    # ── visible_for / subtype helpers ────────────────────────────────────
-
-    def _infer_subtype(self, content_type: str) -> str:
-        """Infer the subtype key for visible_for filtering.
-
-        For UnitType, checks data flags (flying, legCount, squareShape, etc.)
-        to determine which subtype template was used.
-        Returns e.g. 'UnitType-tank', 'UnitType-flying', 'UnitType-legs', 'UnitType'.
-        """
-        if content_type != "UnitType":
-            return content_type
-
-        data = self._content.data
-        if data.get("squareShape") or data.get("crushDamage") is not None:
-            return "UnitType-tank"
-        if data.get("legCount"):
-            return "UnitType-legs"
-        if data.get("flying"):
-            return "UnitType-flying"
-        return "UnitType"
-
-    @staticmethod
-    def _group_visible(group_def: dict, subtype: str) -> bool:
-        """Check if a group should be visible for the given subtype.
-
-        A group with no 'visible_for' key is always visible.
-        A group with 'visible_for' is visible only if subtype is in the list.
-        """
-        visible_for = group_def.get("visible_for")
-        if visible_for is None:
-            return True
-        return subtype in visible_for
-
-    def _get_group_default(self, group_name: str, field_name: str) -> Any:
-        """Look up a configured default value for a field in a group.
-
-        Returns None if no default is configured.
-        """
-        content_type = self._content.data.get("type", "")
-        groups_config = self._field_groups.get(content_type, {})
-        group_def = groups_config.get(group_name, {})
-        defaults = group_def.get("defaults", {})
-        return defaults.get(field_name)
-
     def _show_add_field_menu(self, group_name: str) -> None:
-        """Popup menu listing available optional fields for this group.
-
-        Each group's '+' only shows optional fields from that group.
-        The '_other' group shows fields not in any group at all.
-        """
+        """Popup menu listing available optional fields for this group."""
         if self._class_def is None:
             return
 
-        content_type = self._content.data.get("type", "")
-        groups_config = self._field_groups.get(content_type, {})
-        data_keys = set(self._content.data.keys())
-
-        if group_name == "_other":
-            # "其他" group: show all class fields not in any group at all
-            all_grouped = set()
-            for gd in groups_config.values():
-                all_grouped.update(gd.get("required", []))
-                all_grouped.update(gd.get("optional", []))
-            candidates = [
-                f for f in self._class_def.fields
-                if f.name not in all_grouped
-                and f.name not in data_keys
-                and not self._is_internal_field(f)
-            ]
-        else:
-            group_def = groups_config.get(group_name, {})
-            optional_names = set(group_def.get("optional", []))
-            candidates = [
-                f for f in self._class_def.fields
-                if f.name in optional_names
-                and f.name not in data_keys
-                and not self._is_internal_field(f)
-            ]
+        candidates = get_addable_fields(
+            class_def=self._class_def,
+            data=self._content.data,
+            field_groups=self._field_groups,
+            group_name=group_name,
+        )
 
         menu = QMenu(self)
         menu.setToolTipsVisible(True)
@@ -464,7 +339,6 @@ class EditorPanel(QWidget):
         for f in candidates:
             action = menu.addAction(self._display_name(f.name))
             action.setData(f.name)
-            # Tooltip in menu
             doc = self._field_docs.get(f.name, "")
             if doc:
                 action.setToolTip(doc)
@@ -494,9 +368,17 @@ class EditorPanel(QWidget):
                 if default_val is not None:
                     self._content.data[field_name] = default_val
                 else:
-                    self._content.data[field_name] = self._type_default(field_def)
+                    self._content.data[field_name] = type_default(field_def)
                 self._mark_dirty()
                 self._rebuild_form()
+
+    def _get_group_default(self, group_name: str, field_name: str) -> Any:
+        """Look up a configured default value for a field in a group."""
+        content_type = self._content.data.get("type", "")
+        groups_config = self._field_groups.get(content_type, {})
+        group_def = groups_config.get(group_name, {})
+        defaults = group_def.get("defaults", {})
+        return defaults.get(field_name)
 
     # ── field widget creation ───────────────────────────────────────────
 
@@ -692,11 +574,14 @@ class EditorPanel(QWidget):
         return editor
 
     def _create_bullet_editor(self) -> QWidget:
-        """Create a BulletEditor for the bullet field."""
-        editor = BulletEditor(
+        """Create a PolymorphicTypeEditor for the bullet field."""
+        editor = PolymorphicTypeEditor(
             data=self._content.data,
             path="bullet",
+            type_choices=BULLET_TYPES,
             command_stack=self._commands,
+            title="子弹",
+            type_label="类型",
         )
         editor.valueChanged.connect(self._mark_dirty)
         self._field_widgets["bullet"] = editor
@@ -780,6 +665,10 @@ class EditorPanel(QWidget):
         )
         self._dirty = False
 
+    def mark_saved(self) -> None:
+        """Clear the dirty flag without writing (session already persisted)."""
+        self._dirty = False
+
     def error_count(self) -> int:
         """返回当前内容的验证错误数量。"""
         issues = self._validator.validate(self._content.data, "content")
@@ -825,43 +714,3 @@ class EditorPanel(QWidget):
         return _format_display_name(field_name, self._field_names_zh)
 
     # ── helpers ─────────────────────────────────────────────────────────
-
-    @staticmethod
-    def _is_internal_field(f: FieldDef) -> bool:
-        """Fields users would almost never edit in a mod."""
-        internal_suffixes = ("Region", "Sound", "Effect", "Controller")
-        internal_names = {
-            "id", "minfo", "stats", "localizedName",
-            "alwaysUnlocked", "removed",
-            "uiIcon", "fullIcon", "fullOverride", "shownPlanets",
-            "databaseTabs", "allDatabaseTabs", "techNodes", "techNode",
-            "constructor", "firstRequirements",
-            "engineColorInner", "engineColor", "healColor",
-            "generateIcons", "generateFullIcon", "internalGenerateSprites",
-            "cachedRequirements", "totalRequirements",
-            "dpsEstimate", "sample", "unlocked",
-            "hideDatabase", "databaseCategory", "databaseTag",
-        }
-        if f.name in internal_names:
-            return True
-        if any(f.name.endswith(s) for s in internal_suffixes):
-            return True
-        if f.mode == "PRIMITIVE" and f.java_type not in (
-            "float", "double", "int", "long", "short", "boolean", "String", "Color"
-        ):
-            return True
-        return False
-
-    @staticmethod
-    def _type_default(f: FieldDef) -> Any:
-        if f.java_type in ("float", "double"):
-            return 0.0
-        if f.java_type in ("int", "long", "short"):
-            return 0
-        if f.java_type == "boolean":
-            return False
-        if f.mode == "ARRAY":
-            return []
-        if f.mode == "INLINE_OBJECT":
-            return {}
-        return None

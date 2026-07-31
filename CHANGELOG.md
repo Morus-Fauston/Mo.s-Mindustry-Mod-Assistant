@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.2.4 (2026-07-31 18:59) — 上半：UI 体验问题全量修复
+
+> 用户反馈的 7 项 UI 问题全量修复（根因报告：`Docs/辅助文档/v024-UI体验问题根因报告.md`）。
+
+### 修复
+
+- **字段行间距/高度不齐**（问题 1）：各行 `row_container` 固定行高 26px，消除 CheckToggle（18px）与输入框（23px）的高度差；标签富文本英文从 10.5px 调至 11.5px，协调标签与控件字号比例
+- **tooltip 黑底白字**（问题 2）：`style.qss` 的 `QToolTip` 令牌语义用反（`background: @INK@; color: @CANVAS@` 在浅色下恰好黑底白字）→ 改为 `background: @PANEL@; color: @INK@` + 描边，深浅主题都正确
+- **添加字段后已展开的组被折叠**（问题 3）：双重 bug——① chevron 点击的记忆 lambda 被 `clicked(bool)` 信号参数污染，记忆 key 变成 `False/True` 而非组名（记忆从未真正生效）；② 点组头展开不写记忆 → 统一改为 `CollapsibleGroup.expandedChanged(str, bool)` 信号，组头点击与 chevron 点击都触发记忆
+- **新建武器对话框切换后大片空白**（问题 4）：`QDialog` 默认布局约束「变大不缩回」——内联→引用切换后窗口保持内联高度，多余空间被标题 QLabel 拉伸 → `layout.setSizeConstraint(SetMinimumSize)` + `_on_mode_changed` 末尾 `adjustSize()`
+- **数值框未聚焦时滚轮误改值**（问题 5）：`NumSpinBox` / `NumDoubleSpinBox` 补 `wheelEvent`——未聚焦时 `event.ignore()` 交给父级滚动
+- **武器卡片字段无马卡龙着色**（问题 6）：`WeaponCard` 用 `form.addRow` 放裸控件、未设 `fieldType` 属性、未包 `FieldRow` → `_create_widget_for_value` 统一用 `FieldRow` 包裹 + `fieldType` 动态属性，与主面板一致
+- **输入框左内边距不齐**（问题 7）：`QAbstractSpinBox` 内部 QLineEdit 被 Qt 固定放在 x=3 处 → QSS 补 `QSpinBox QLineEdit { padding-left: 6px }`，数值框文本起点与字符串框对齐（实测均 9px）
+
+### 清理
+
+- 删除 `WeaponCard._create_primitive_widget` 死代码（无调用点）
+
+### 测试
+
+- 200 个 pytest 全绿（0.79s）
+- offscreen 冒烟 13/13 通过（行高统一 / tooltip 令牌 / 折叠记忆保留 / 对话框约束 / 滚轮拦截 / 卡片 FieldRow+fieldType / 文本起点对齐 9px=9px）
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/ui/editor_panel.py` | 修改 — 行容器固定高度 + expandedChanged 信号替代被污染 lambda |
+| `app/ui/widgets/collapsible_group.py` | 修改 — 新增 `expandedChanged(str, bool)` 信号（组头/chevron 统一记忆通道） |
+| `app/ui/widgets/weapon_array_editor.py` | 修改 — 对话框 SetMinimumSize+adjustSize；卡片 FieldRow 包裹+fieldType；删死代码 |
+| `app/ui/widgets/num_spin.py` | 修改 — wheelEvent 未聚焦拦截 |
+| `app/ui/widgets/label_helper.py` | 修改 — 英文 10.5→11.5px |
+| `app/resources/style.qss` | 修改 — QToolTip 令牌修正 + spinbox 内部 padding 对齐 |
+
+---
+
 ## v0.2.3 (2026-07-31 17:55)
 
 > Bug 修复与体验优化：修 8 类崩溃/逻辑 bug、清规范遗留、补体验细节。测试 186 → 200。

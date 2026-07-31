@@ -239,10 +239,10 @@ class EditorPanel(QWidget):
         )
         group.add_field_requested.connect(self._show_add_field_menu)
         group.delete_group_requested.connect(self._delete_group)
-        # 折叠状态变化时记忆
-        group._chevron.clicked.connect(  # noqa: SLF001
-            lambda gn=plan.group_name, g=group: self._remember_expanded(gn, g.expanded)
-        )
+        # 折叠状态变化时记忆（v0.2.4：统一走 expandedChanged 信号，组头点击与
+        # chevron 点击都触发；旧实现 lambda 被 clicked(bool) 信号参数污染，
+        # 记忆 key 变成 False/True 而非组名，导致展开状态从未真正记忆）
+        group.expandedChanged.connect(self._remember_expanded)
 
         # Field rows — 逐行 VBox 布局（替代 QFormLayout 网格）
         rows_layout = QVBoxLayout()
@@ -295,6 +295,9 @@ class EditorPanel(QWidget):
             row_container = QWidget()
             row_container.setLayout(row_h)
             row_h.setContentsMargins(0, 0, 0, 0)  # 去掉 QWidget 默认 margin
+            # v0.2.4：统一字段行高（复选框 18px 与输入框 23px 不齐 → 固定高度对齐，
+            # 色条随 FieldRow 拉伸到满高，布尔行不再显得矮）
+            row_container.setFixedHeight(26)
             rows_layout.addWidget(row_container)
 
         group.body_layout.addLayout(rows_layout)

@@ -30,6 +30,7 @@ class CollapsibleGroup(QFrame):
 
     add_field_requested = Signal(str)   # group_name
     delete_group_requested = Signal(str)  # group_name
+    expandedChanged = Signal(str, bool)  # (group_name, expanded) — v0.2.4 统一记忆通道
 
     def __init__(
         self,
@@ -133,6 +134,8 @@ class CollapsibleGroup(QFrame):
         self._expanded = expanded
         self._body.setVisible(expanded)
         self._chevron.setText("▾" if expanded else "▸")
+        # 统一记忆通道：组头点击与 chevron 点击都经由此信号
+        self.expandedChanged.emit(self.group_name, self._expanded)
 
     def toggle(self) -> None:
         self.set_expanded(not self._expanded)

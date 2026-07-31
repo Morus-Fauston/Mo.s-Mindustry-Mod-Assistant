@@ -19,9 +19,9 @@ QWidget {
 }
 
 QToolTip {
-    background-color: @INK@;
-    color: @CANVAS@;
-    border: none;
+    background-color: @PANEL@;
+    color: @INK@;
+    border: 1px solid @LINE@;
     border-radius: 4px;
     padding: 5px 9px;
     font-size: 12px;
@@ -305,6 +305,11 @@ QLineEdit:hover, QSpinBox:hover, QDoubleSpinBox:hover, QComboBox:hover {
 QSpinBox, QDoubleSpinBox {
     font-family: "JetBrains Mono", Consolas, monospace;
     padding-left: 8px;
+}
+/* v0.2.4：QAbstractSpinBox 内部 QLineEdit 被 Qt 固定放在 x=3 处，
+   补 padding 使数值框文本起点与其他输入框（padding 8px + border）对齐 */
+QSpinBox QLineEdit, QDoubleSpinBox QLineEdit {
+    padding-left: 6px;
 }
 QSpinBox::up-button, QDoubleSpinBox::up-button,
 QSpinBox::down-button, QDoubleSpinBox::down-button {

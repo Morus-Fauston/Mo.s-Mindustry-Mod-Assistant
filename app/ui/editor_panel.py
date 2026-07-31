@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QComboBox,
     QGroupBox,
@@ -272,11 +272,11 @@ class EditorPanel(QWidget):
 
         self._form_layout.addStretch()
 
-        # 恢复滚动位置
+        # 恢复滚动位置（延迟到事件循环，等 deleteLater 完成布局计算）
         if hasattr(self, "_scroll_area") and self._scroll_area is not None:
             vbar = self._scroll_area.verticalScrollBar()
             if vbar is not None:
-                vbar.setValue(scroll_val)
+                QTimer.singleShot(0, lambda v=scroll_val: vbar.setValue(v))
 
     def _on_notes_changed(self) -> None:
         """备注写入 data['$notes']。不经过命令栈（编辑器私有笔记，无需撤销）。"""
@@ -288,8 +288,6 @@ class EditorPanel(QWidget):
 
     def _render_group(self, plan: GroupPlan) -> None:
         """Render a collapsible group from a GroupPlan."""
-        # 能力组：使用 form_plan 计算的 capability_enabled
-        # （由 _ENABLED_GROUPS 状态 + data 中字段共同决定）
         cap_enabled = plan.capability_enabled
 
         group = CollapsibleGroup(
@@ -307,6 +305,24 @@ class EditorPanel(QWidget):
         if plan.capability:
             group.capability_toggled.connect(self._on_capability_toggled)
 
+        self._populate_group_body(group, plan)
+        self._form_layout.addWidget(group)
+
+    def _populate_group_body(self, group: CollapsibleGroup, plan: GroupPlan) -> None:
+        """Fill a group's body with field rows. Clears existing content first.
+
+        Extracted from _render_group so that capability toggle / add-field
+        can refresh a single group in-place without rebuilding the entire form.
+        """
+        # Clear existing body content
+        bl = group.body_layout
+        while bl.count() > 0:
+            item = bl.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+            elif item.layout():
+                self._clear_layout(item.layout())
+
         # Field rows — 逐行 VBox 布局（替代 QFormLayout 网格）
         rows_layout = QVBoxLayout()
         rows_layout.setContentsMargins(0, 0, 0, 0)
@@ -322,7 +338,6 @@ class EditorPanel(QWidget):
             zh = self._field_names_zh.get(f.name, "")
             label_widget = rich_label(zh, f.name)
             doc = self._field_docs.get(f.name, "")
-            # tooltip 补英文字段名 + field_docs
             en_name = label_widget.property("_en_name") or f.name
             tip_parts = [en_name]
             if doc:
@@ -349,9 +364,6 @@ class EditorPanel(QWidget):
             label_widget.setFixedWidth(180)
             row_h.addWidget(label_widget)
 
-            # v0.2.4：仅普通字段行（PRIMITIVE/STRING_REF）统一行高；
-            # 复合控件行（weapons 武器列表、子弹等）必须自适应高度，
-            # 否则会被压扁成一条窄条
             is_plain_row = f.mode in ("PRIMITIVE", "STRING_REF")
             if is_plain_row:
                 ft = field_type_property(f.mode, f.java_type)
@@ -366,15 +378,56 @@ class EditorPanel(QWidget):
             row_h.addStretch()
             row_container = QWidget()
             row_container.setLayout(row_h)
-            row_h.setContentsMargins(0, 0, 0, 0)  # 去掉 QWidget 默认 margin
+            row_h.setContentsMargins(0, 0, 0, 0)
             if is_plain_row:
-                # 统一普通字段行高（复选框/输入框/色条高度一致）
                 row_container.setFixedHeight(26)
             rows_layout.addWidget(row_container)
 
-        group.body_layout.addLayout(rows_layout)
+        bl.addLayout(rows_layout)
 
-        self._form_layout.addWidget(group)
+    @staticmethod
+    def _clear_layout(layout) -> None:
+        """Recursively remove all items from a layout."""
+        while layout.count() > 0:
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+            elif item.layout():
+                EditorPanel._clear_layout(item.layout())
+
+    def _find_group_widget(self, group_name: str) -> CollapsibleGroup | None:
+        """Find a CollapsibleGroup widget by group_name in the form layout."""
+        for i in range(self._form_layout.count()):
+            w = self._form_layout.itemAt(i).widget()
+            if isinstance(w, CollapsibleGroup) and w.group_name == group_name:
+                return w
+        return None
+
+    def _refresh_group(self, group_name: str) -> None:
+        """Recompute and re-populate a single group's body in-place.
+
+        Does NOT destroy/recreate the CollapsibleGroup widget itself,
+        so scroll position and focus are preserved.
+        """
+        group = self._find_group_widget(group_name)
+        if group is None:
+            return
+        # Recompute full plan (cheap pure logic) and find our group
+        expanded_state = _EXPANDED_STATE.get(self._content.name)
+        deleted_groups = _DELETED_GROUPS.get(self._content.name, set())
+        enabled_groups = _ENABLED_GROUPS.get(self._content.name, set())
+        plans = compute_form_plan(
+            class_def=self._class_def,
+            data=self._content.data,
+            field_groups=self._field_groups,
+            expanded_state=expanded_state,
+            group_labels=self.GROUP_LABELS,
+            deleted_groups=deleted_groups,
+            enabled_groups=enabled_groups,
+        )
+        plan = next((p for p in plans if p.group_name == group_name), None)
+        if plan is not None:
+            self._populate_group_body(group, plan)
 
     # ── 折叠状态记忆 ─────────────────────────────────────────────────────
 
@@ -500,7 +553,17 @@ class EditorPanel(QWidget):
             # 从 _ENABLED_GROUPS 移除
             _ENABLED_GROUPS.get(content_name, set()).discard(group_name)
 
-        self._rebuild_form()
+        # 原地刷新受影响的组（不重建整个表单，保持滚动位置）
+        self._refresh_group(group_name)
+
+        # 联动组：同步视觉状态 + 刷新 body
+        linked = CAPABILITY_LINKAGE.get(group_name)
+        if linked and enabled:
+            _ENABLED_GROUPS.setdefault(content_name, set()).add(linked)
+            linked_widget = self._find_group_widget(linked)
+            if linked_widget is not None:
+                linked_widget.set_capability_enabled(True)
+            self._refresh_group(linked)
 
     def _get_enabled_capabilities(self) -> set[str]:
         """返回当前 data 中已启用的能力组名集合。"""
@@ -560,7 +623,6 @@ class EditorPanel(QWidget):
         _DELETED_GROUPS.setdefault(content_name, set()).add(group_name)
         _ENABLED_GROUPS.get(content_name, set()).discard(group_name)
 
-        deleted = False
         for name in names:
             if name in self._content.data:
                 cmd = DeleteFieldCommand(
@@ -569,9 +631,15 @@ class EditorPanel(QWidget):
                     on_change=self._mark_dirty,
                 )
                 self._commands.execute(cmd)
-                deleted = True
-        if deleted:
-            self._rebuild_form()
+
+        # 原地移除组控件（不重建整个表单）
+        group_widget = self._find_group_widget(group_name)
+        if group_widget is not None:
+            self._form_layout.removeWidget(group_widget)
+            group_widget.deleteLater()
+        # 清理 _field_widgets 中该组的字段引用
+        for name in names:
+            self._field_widgets.pop(name, None)
 
     def _show_add_field_menu(self, group_name: str) -> None:
         """Popup menu listing available optional fields for this group."""

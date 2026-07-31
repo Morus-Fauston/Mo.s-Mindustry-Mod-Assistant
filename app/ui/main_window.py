@@ -33,7 +33,7 @@ from .widgets.toast import Toast
 from .widgets.reference_panel import ReferencePanel, _ReferencePicker
 
 # 应用版本号（与 pyproject.toml 同步）
-APP_VERSION = "0.2.3"
+APP_VERSION = "0.2.4.batch1"
 
 
 class _StatusBar(QStatusBar):
@@ -180,11 +180,13 @@ class MainWindow(QMainWindow):
         self._undo_action = self._add_action(edit_menu, "撤销", self._undo, "Ctrl+Z")
         self._redo_action = self._add_action(edit_menu, "重做", self._redo, "Ctrl+Y")
 
+        # Settings menu (independent top-level)
+        settings_menu = menubar.addMenu("设置(&S)")
+        self._add_action(settings_menu, "设置...", self._open_settings)
+
         # Tools menu
         tools_menu = menubar.addMenu("工具(&T)")
         self._add_action(tools_menu, "导入参考...", self._import_reference)
-        tools_menu.addSeparator()
-        self._add_action(tools_menu, "设置...", self._open_settings)
 
         # Help menu
         help_menu = menubar.addMenu("帮助(&H)")

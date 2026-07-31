@@ -125,9 +125,11 @@ class TestIsGroupLocked:
 
 class TestIsGroupExpanded:
     def test_basic_expanded_by_default(self):
-        assert is_group_expanded("basic", None)
+        # basic has required fields → expanded by default
+        assert is_group_expanded("basic", None, has_required=True)
 
     def test_other_collapsed_by_default(self):
+        # combat has required fields but we test without has_required
         assert not is_group_expanded("combat", None)
 
     def test_state_override(self):
@@ -135,7 +137,8 @@ class TestIsGroupExpanded:
         assert not is_group_expanded("basic", {"basic": False})
 
     def test_missing_key_uses_default(self):
-        assert is_group_expanded("basic", {"combat": False})
+        # basic with required → expanded; combat without required → collapsed
+        assert is_group_expanded("basic", {"combat": False}, has_required=True)
         assert not is_group_expanded("combat", {"basic": True})
 
 

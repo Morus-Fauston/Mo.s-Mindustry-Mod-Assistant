@@ -56,6 +56,9 @@ LIGHT: dict[str, str] = {
     "BADGE_INL_BG": "#E3EDF9", "BADGE_INL_FG": "#2F6FB2",
     # 参考对比差异行
     "DIFF_BG": "#FFF3CD", "DIFF_FG": "#8A6D1F",
+    # 选中态（文件树 + 设置列表共用）
+    "SEL_BG": "#DCE4F0",
+    "SEL_FOCUS": "#9FB3CF",
 }
 
 DARK: dict[str, str] = {
@@ -85,6 +88,9 @@ DARK: dict[str, str] = {
     "BADGE_INL_BG": "#1D2C3D", "BADGE_INL_FG": "#7EB0E8",
     # 参考对比差异行（深色降明度保色相）
     "DIFF_BG": "#3D3520", "DIFF_FG": "#D9B45B",
+    # 选中态（文件树 + 设置列表共用）
+    "SEL_BG": "#2D3139",
+    "SEL_FOCUS": "#4A6DA0",
 }
 
 _THEMES: dict[str, dict[str, str]] = {"light": LIGHT, "dark": DARK}

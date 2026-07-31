@@ -1,18 +1,21 @@
 {
-  "_schema": "Each group has 'required' (always shown) and 'optional' (hidden, add via '+') fields.",
+  "_schema": "Each group has 'required' (always shown, not deletable), 'default' (shown by default, deletable), and 'optional' (hidden, add via '+') fields.",
 
   "UnitType": {
     "basic": {
       "required": ["name", "health", "armor", "speed", "hitSize", "flying"],
-      "optional": ["description", "lowAltitude", "hovering", "naval", "bounded", "useUnitCap", "coreUnitDock", "isEnemy", "hidden", "internal"]
+      "default": ["description"],
+      "optional": ["lowAltitude", "hovering", "naval", "bounded", "useUnitCap", "coreUnitDock", "isEnemy", "hidden", "internal"]
     },
     "movement": {
       "required": ["rotateSpeed", "accel", "drag"],
-      "optional": ["omniMovement", "rotateMoveFirst", "faceTarget", "strafePenalty", "floorMultiplier", "baseRotateSpeed", "riseSpeed", "descentSpeed", "fallSpeed", "weaveMag", "weaveScale", "weaveRandom", "crawlSlowdown", "crawlSlowdownFrac"]
+      "default": ["faceTarget"],
+      "optional": ["omniMovement", "rotateMoveFirst", "strafePenalty", "floorMultiplier", "baseRotateSpeed", "riseSpeed", "descentSpeed", "fallSpeed", "weaveMag", "weaveScale", "weaveRandom", "crawlSlowdown", "crawlSlowdownFrac"]
     },
     "combat": {
       "required": ["weapons", "range", "targetAir", "targetGround"],
-      "optional": ["maxRange", "ammoCapacity", "canAttack", "singleTarget", "forceMultiTarget", "autoFindTarget", "targetUnderBlocks", "alwaysShootWhenMoving", "targetPriority", "circleTarget", "circleTargetRadius", "attacks", "canHeal", "autoDropBombs", "lifetime", "homingDelay", "aimDst", "targetBuildingsMobile", "targetFlags", "missileAccelTime"]
+      "default": ["ammoCapacity", "canAttack"],
+      "optional": ["maxRange", "singleTarget", "forceMultiTarget", "autoFindTarget", "targetUnderBlocks", "alwaysShootWhenMoving", "targetPriority", "circleTarget", "circleTargetRadius", "attacks", "canHeal", "autoDropBombs", "lifetime", "homingDelay", "aimDst", "targetBuildingsMobile", "targetFlags", "missileAccelTime"]
     },
     "mining": {
       "required": [],
@@ -31,22 +34,27 @@
       "optional": ["canBoost", "boostMultiplier", "boostWhenBuilding", "boostWhenMining"]
     },
     "tank": {
+      "visible_for": ["UnitType-tank"],
       "required": [],
       "optional": ["squareShape", "crushDamage", "crushDamageMultiplier", "crushFragile", "crashDamageMultiplier", "rippleScale", "treadFrames", "treadPullOffset", "treadRects", "treadRegion", "treadRegions", "treadEffect"]
     },
     "flying_engine": {
+      "visible_for": ["UnitType-flying"],
       "required": [],
       "optional": ["engineOffset", "engineSize", "engines", "engineColor", "engineColorInner", "engineLayer", "useEngineElevation", "trailLength", "trailColor", "trailScl"]
     },
     "legs": {
+      "visible_for": ["UnitType-legs"],
       "required": [],
       "optional": ["legCount", "legGroupSize", "legLength", "legLengthScl", "legMaxLength", "legMinLength", "legSpeed", "legMoveSpace", "legExtension", "legPairOffset", "legForwardScl", "legBaseOffset", "legStraightness", "legStraightLength", "baseLegStraightness", "legSplashDamage", "legSplashRange", "legContinuousMove", "lockLegBase", "flipBackLegs", "flipLegSide", "legBaseUnder", "allowLegStep", "legPhysicsLayer", "legRegion", "legBaseRegion", "jointRegion", "baseJointRegion", "footRegion"]
     },
     "mech": {
+      "visible_for": ["UnitType-mech"],
       "required": [],
       "optional": ["mechStride", "mechFrontSway", "mechSideSway", "mechLandShake", "mechStepParticles", "mechLegColor"]
     },
     "segment": {
+      "visible_for": ["UnitType-segment"],
       "required": [],
       "optional": ["segments", "segmentSpacing", "segmentMag", "segmentPhase", "segmentRotSpeed", "segmentRotationRange", "segmentMaxRot", "segmentScl", "segmentLayerOrder", "segmentRegions", "segmentOutlineRegions", "segmentCellRegions", "segmentUnit", "segmentUnits", "segmentEndUnit"]
     },
@@ -80,14 +88,16 @@
     },
     "meta": {
       "required": [],
-      "optional": ["research", "details", "credit", "hideDetails", "inlineDescription", "allowedInPayloads", "researchCostMultiplier", "canOverdrive"]
+      "default": ["research"],
+      "optional": ["details", "credit", "hideDetails", "inlineDescription", "allowedInPayloads", "researchCostMultiplier", "canOverdrive"]
     }
   },
 
   "Wall": {
     "basic": {
       "required": ["name", "health", "size"],
-      "optional": ["description", "scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+      "default": ["description", "armor"],
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
     },
     "defense": {
       "required": [],
@@ -106,11 +116,13 @@
   "ItemTurret": {
     "basic": {
       "required": ["name", "health", "size"],
-      "optional": ["description", "scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+      "default": ["description"],
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
     },
     "combat": {
       "required": ["range", "reload", "ammoTypes"],
-      "optional": ["targetAir", "targetGround", "inaccuracy", "maxAmmo", "ammoPerShot", "minRange", "trackingRange", "velocityRnd", "armor"]
+      "default": ["targetAir", "targetGround", "inaccuracy"],
+      "optional": ["maxAmmo", "ammoPerShot", "minRange", "trackingRange", "velocityRnd", "armor"]
     },
     "shooting": {
       "required": [],
@@ -137,11 +149,13 @@
   "PowerTurret": {
     "basic": {
       "required": ["name", "health", "size"],
-      "optional": ["description", "scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+      "default": ["description"],
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
     },
     "combat": {
       "required": ["range", "reload", "shootType"],
-      "optional": ["targetAir", "targetGround", "inaccuracy", "maxAmmo", "ammoPerShot", "minRange", "trackingRange", "velocityRnd", "armor"]
+      "default": ["targetAir", "targetGround", "inaccuracy"],
+      "optional": ["maxAmmo", "ammoPerShot", "minRange", "trackingRange", "velocityRnd", "armor"]
     },
     "shooting": {
       "required": [],
@@ -168,6 +182,7 @@
   "Weapon": {
     "basic": {
       "required": ["name", "reload", "x", "y", "shootX", "shootY"],
+      "default": ["mirror", "alternate"],
       "optional": ["display", "mountType"]
     },
     "behavior": {

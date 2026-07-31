@@ -1,5 +1,51 @@
 # Changelog
 
+## v0.2.4 (2026-07-31 19:55) — 上半补充 3：问题 7 真根因（spinbox 内部偏移）
+
+> 用户实测：换字体后数字左留白仍大于名称。推翻「字体差异」假设。probe 证实：QSS 后代选择器无法命中 QAbstractSpinBox 内部 QLineEdit；windows11 样式下内部 lineEdit 继承基础 QSS 的 border+padding，文本起点 = editfield(6) + border(1) + padding(4) = 10px vs 普通 QLineEdit 6px。
+
+### 修复
+
+- **spinbox 内部 QLineEdit 编程式补偿**：`num_spin.py` 构造时对 `lineEdit()` 设局部样式 `padding: 0; border: none;`（QSS 后代选择器对内部 lineEdit 无效，只能实例级局部样式）→ 文本起点 = editfield 起点，与普通输入框对齐（实测 windows11 样式下 6px = 6px）
+- **删除无效 QSS 规则**：此前加的 `QSpinBox QLineEdit { padding: 0 }`（实测不生效）移除，注释说明机制
+
+### 测试
+
+- 200 个 pytest 全绿（0.84s）
+- offscreen + windows11 样式冒烟：spinbox 文本起点 = QLineEdit = 6px
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/ui/widgets/num_spin.py` | 修改 — 构造时补偿内部 lineEdit 局部样式 |
+| `app/resources/style.qss` | 修改 — 移除无效后代规则 + 注释 |
+
+---
+
+## v0.2.4 (2026-07-31 19:40) — 上半补充 2：问题 7 字体统一
+
+> 依据截图重述：输入框文字左缘不齐 + 左留白偏大。核实：容器起点此前已对齐（9px），不齐来自字体字形差异（JetBrains Mono 等宽下 `1` 带左 bearing 偏右、`0`/`8` 贴左；名称框 MiSans 与数值框等宽是两套字体族）。采纳用户方案 C：数值统一用 MiSans。
+
+### 调整
+
+- **数值框字体统一为 MiSans**：删除 `QSpinBox/QDoubleSpinBox` 的 JetBrains Mono 等宽声明，与字符串输入框同一字体族 → 消除等宽/比例字体的字形左缘差异（颜色 hex 输入框等宽保留，hex 码需要等宽可读性）
+- **左留白收紧**：输入控件基础 padding 左内边距 8→5px，文本起点 9px→6px（容器起点实测全部 6px 一致）
+- **删死规则**：`QSpinBox QLineEdit { padding-left: 6px }`（实测未生效的遗留规则）
+
+### 测试
+
+- 200 个 pytest 全绿（0.88s）
+- offscreen 冒烟：5 字段容器起点全部 6px + 字体族统一 MiSans
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/resources/style.qss` | 修改 — 数值框去等宽字体 + 基础 padding 8→5px + 删死规则 |
+
+---
+
 ## v0.2.4 (2026-07-31 19:20) — 上半补充：跟进修复
 
 > 上半修复后的 4 项跟进问题（含 1 项上半引入的回归）。

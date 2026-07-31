@@ -289,7 +289,7 @@ QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit {
     color: @INK@;
     border: 1px solid @LINE@;
     border-radius: 4px;
-    padding: 3px 8px;
+    padding: 3px 5px;  /* v0.2.4：左内边距 8→5px，收紧左留白 */
     selection-background-color: @COPPER@;
     selection-color: #FFFFFF;
 }
@@ -301,15 +301,12 @@ QLineEdit:hover, QSpinBox:hover, QDoubleSpinBox:hover, QComboBox:hover {
     border-color: @INK2@;
 }
 
-/* 数值输入用等宽字体 */
+/* 数值输入（v0.2.4：字体统一为全局 MiSans，消除等宽字形差异导致的左缘不齐；
+   颜色 hex 等宽仍保留在 fieldType=col 规则中。
+   注：内部 QLineEdit 的 padding/border 偏移在 num_spin.py 编程式补偿——
+   QSS 后代选择器无法命中 QAbstractSpinBox 内部 lineEdit） */
 QSpinBox, QDoubleSpinBox {
-    font-family: "JetBrains Mono", Consolas, monospace;
-    padding-left: 8px;
-}
-/* v0.2.4：QAbstractSpinBox 内部 QLineEdit 被 Qt 固定放在 x=3 处，
-   补 padding 使数值框文本起点与其他输入框（padding 8px + border）对齐 */
-QSpinBox QLineEdit, QDoubleSpinBox QLineEdit {
-    padding-left: 6px;
+    padding-left: 5px;
 }
 QSpinBox::up-button, QDoubleSpinBox::up-button,
 QSpinBox::down-button, QDoubleSpinBox::down-button {

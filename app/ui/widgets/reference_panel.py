@@ -9,10 +9,10 @@ from __future__ import annotations
 from typing import Any
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
-    QHBoxLayout,
     QHeaderView,
     QLabel,
     QListWidget,
@@ -30,6 +30,7 @@ from ...core.config_loader import (
     get_field_names_zh,
     get_vanilla_weapon_names_zh,
 )
+from ..theme import get_tokens
 
 # ── Chinese translations (from centralized config) ───────────────────────
 
@@ -110,13 +111,15 @@ class ReferencePanel(QWidget):
             my_item = QTableWidgetItem(_format_value(my_val))
             ref_item = QTableWidgetItem(_format_value(ref_val))
 
+            # 差异高亮走主题令牌（深浅色自适应，不再硬编码 GlobalColor）
+            tokens = get_tokens()
             if my_val != ref_val:
-                my_item.setBackground(Qt.GlobalColor.yellow)
-                ref_item.setBackground(Qt.GlobalColor.yellow)
+                my_item.setBackground(QColor(tokens["DIFF_BG"]))
+                ref_item.setBackground(QColor(tokens["DIFF_BG"]))
             elif my_val == "-":
-                my_item.setForeground(Qt.GlobalColor.gray)
+                my_item.setForeground(QColor(tokens["INK2"]))
             elif ref_val == "-":
-                ref_item.setForeground(Qt.GlobalColor.gray)
+                ref_item.setForeground(QColor(tokens["INK2"]))
 
             self._table.setItem(row, 1, my_item)
             self._table.setItem(row, 2, ref_item)

@@ -78,6 +78,16 @@ class TestValidateTypeChecks:
         errors = [i for i in issues if i.severity == "error"]
         assert errors == []
 
+    def test_short_type_is_checked(self, validator):
+        """v0.2.3：short 字段的类型检查（此前漏掉，错值不报错）。"""
+        field_def = FieldDef(
+            name="testShort", java_type="short", mode="PRIMITIVE", nullable=True
+        )
+        assert validator.validate_field_value(field_def, 5) is None
+        issue = validator.validate_field_value(field_def, "oops")
+        assert issue is not None
+        assert "应为数字" in issue.message
+
 
 # ── validate: internal fields are skipped ──────────────────────────────
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
@@ -10,9 +12,13 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
 )
+
+# 模组 ID 允许的字符：小写字母、数字、连字符
+_MOD_ID_RE = re.compile(r"^[a-z0-9-]+$")
 
 
 class NewProjectDialog(QDialog):
@@ -64,6 +70,24 @@ class NewProjectDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def accept(self) -> None:
+        """校验通过才关闭对话框，失败时提示并保持打开。"""
+        mod_id = self._id_edit.text().strip()
+        path = self._path_edit.text().strip()
+        if not mod_id:
+            QMessageBox.warning(self, "校验失败", "请填写模组 ID")
+            return
+        if not _MOD_ID_RE.match(mod_id):
+            QMessageBox.warning(
+                self, "校验失败",
+                "模组 ID 只能包含小写字母、数字、连字符",
+            )
+            return
+        if not path:
+            QMessageBox.warning(self, "校验失败", "请选择保存位置")
+            return
+        super().accept()
 
     def _browse(self) -> None:
         path = QFileDialog.getExistingDirectory(self, "选择保存位置")

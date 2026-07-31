@@ -340,22 +340,12 @@ QComboBox QAbstractItemView {
     outline: none;
 }
 
-QCheckBox {
-    spacing: 8px;
-    color: @INK@;
-}
-QCheckBox::indicator {
-    width: 16px;
-    height: 16px;
+/* 颜色字段色块按钮（背景色为动态 hex，属唯一内联例外；描边/圆角走这里） */
+#colorSwatch {
     border: 1px solid @LINE@;
-    border-radius: 4px;
-    background-color: @CANVAS@;
+    border-radius: 3px;
 }
-QCheckBox::indicator:hover {
-    border-color: @COPPER@;
-}
-QCheckBox::indicator:checked {
-    background-color: @COPPER@;
+#colorSwatch:hover {
     border-color: @COPPER@;
 }
 
@@ -372,17 +362,6 @@ QLineEdit[fieldType="num"], QSpinBox[fieldType="num"], QDoubleSpinBox[fieldType=
 }
 QLineEdit[fieldType="num"]:hover, QSpinBox[fieldType="num"]:hover, QDoubleSpinBox[fieldType="num"]:hover {
     border-color: @B_NUM@;
-}
-
-/* 布尔 */
-QCheckBox[fieldType="bool"]::indicator {
-    background-color: @F_BOOL@;
-    border-color: @S_BOOL@;
-}
-QCheckBox[fieldType="bool"]::indicator:hover { border-color: @B_BOOL@; }
-QCheckBox[fieldType="bool"]::indicator:checked {
-    background-color: @B_BOOL@;
-    border-color: @B_BOOL@;
 }
 
 /* 字符串 */
@@ -510,10 +489,6 @@ QWidget[fieldType="obj"] {
 /* ── 验证错误态（动态属性 error="true"，不写内联样式） ── */
 QLineEdit[error="true"], QSpinBox[error="true"], QDoubleSpinBox[error="true"],
 QComboBox[error="true"] {
-    border: 1px solid @ERR@;
-    background-color: @ERR_BG@;
-}
-QCheckBox[error="true"]::indicator {
     border: 1px solid @ERR@;
     background-color: @ERR_BG@;
 }

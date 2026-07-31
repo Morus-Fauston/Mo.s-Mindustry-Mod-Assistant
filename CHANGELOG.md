@@ -1,5 +1,73 @@
 # Changelog
 
+## v0.2.3 (2026-07-31 17:55)
+
+> Bug 修复与体验优化：修 8 类崩溃/逻辑 bug、清规范遗留、补体验细节。测试 186 → 200。
+
+### 崩溃 / 数据安全
+
+- **坏 mod.json 打开崩槽**：`Project.open` 中 `json.loads` 抛 `JSONDecodeError`（`ValueError`）未被 UI 捕获，打开坏工程直接崩 → 转成带路径的友好 `ValueError`，打开/恢复上次工程统一弹警告
+- **重命名静默覆盖**：重命名内容无重名检查，直接覆盖已有文件；且已打开的旧名标签会"复活"旧文件 → 改名前查重 + 校验名称字符，新增 `content_renamed` 信号同步标签页（名称 + 标题）
+- **新建同名内容静默覆盖**：重复创建同名单位/方块/武器直接丢旧数据 → 创建前 `session.content_exists()` 查重，弹窗确认覆盖
+- **新建工程参数无校验**：mod_id 含非法字符崩槽、路径留空写错位置 → 对话框正则校验（小写字母/数字/连字符，失败不关框）+ `Project.create` 双重防御
+
+### 逻辑修复
+
+- **跨标签撤销/重做失同步**：标签 A 编辑 → 切 B → Ctrl+Z，A 控件仍显示旧值，切回后编辑把过期值写回 → 撤销/重做后刷新全部打开面板，切换标签时也从数据重建表单
+- **「+ 添加字段」绕过命令栈**：直接写 data 不可撤销（删除可撤销、添加不可，撤销历史被污染）→ 改用 `SetFieldCommand`，与删除对称
+- **用户备注丢失**：每次重建表单即清空、从不持久化 → 持久化到 `data["$notes"]`（已核实 Mindustry `ContentParser.ignoreUnknownFields=true`，游戏忽略未知键）
+- **关标签保存路径不一致**：`EditorPanel.save()` 直接写盘不校验、dirty 标志不清 → 关标签保存统一走 session（带验证 + 错误跳转）
+
+### 规范 / 一致性
+
+- **validator 死代码回潮**：`_is_internal_field` 双黑名单残留（与 `FieldDef.is_internal` 不一致）→ 删除
+- **版本号漂移**：关于对话框显示 v0.1.0，实际已 v0.2.2 → `APP_VERSION` 常量 + `pyproject.toml` 统一为 0.2.3
+- **测试污染真实配置**：pytest 运行覆盖 `editor_state.json` 的 `last_project` → `tests/conftest.py` autouse fixture 把 `save/load_editor_state` 重定向到 tmp
+- **死代码清理**：`icon_loader.py`（撤图标后零引用整模块）、`_add_group_separator`、`template._default`、QSS `QCheckBox[fieldType="bool"]` / `QCheckBox[error="true"]` 死规则、`field_groups.json.bak` 杂散文件
+- **重复子弹类型表**：`BULLET_TYPE_CHOICES`（weapon_array_editor）与 `BULLET_TYPES`（polymorphic_editor）内容相同各自维护 → 收敛为 `polymorphic_editor.BULLET_TYPES` 单一来源
+- **漏 `short` 类型检查**：`_check_primitive` 覆盖 float/double/int/long 但漏 short → 补上
+- **未用导入清理**：`metadata.py` lru_cache、`editor_panel.py` get_tokens、`reference_panel.py` QHBoxLayout
+
+### 体验优化
+
+- **参考对比差异行硬编码黄底**（深色主题刺眼）→ 新增 `DIFF_BG` / `DIFF_FG` 主题令牌，深浅自适应
+- **关闭/退出多个脏标签只问第一个**，其余静默丢弃 → 统计全部未保存标签统一确认
+- **颜色色块内联 setStyleSheet**（border/border-radius 静态部分）→ 移入 QSS `#colorSwatch`，仅保留动态背景色 hex（唯一正当例外）
+
+### 测试
+
+- **总量**：186 → 200 全绿（0.87s）
+- **新增 `tests/test_project.py`**：坏 mod.json → ValueError、mod_id 校验（8 个）
+- **扩展**：`content_store.exists`（4）、`session.content_exists`（2）、validator short 类型检查（1）
+- **隔离**：conftest 重定向 editor state，测试不再写真实配置文件
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/core/project.py` | 修改 — 坏 JSON 转 ValueError + mod_id 校验 |
+| `app/core/content_store.py` | 修改 — 新增 `exists()` |
+| `app/core/session.py` | 修改 — 新增 `content_exists()` |
+| `app/core/validator.py` | 修改 — 删死代码黑名单 + 补 short 检查 |
+| `app/core/template.py` | 修改 — 删 `_default` 死方法 |
+| `app/core/metadata.py` | 修改 — 删未用导入 |
+| `app/ui/main_window.py` | 修改 — 坏 JSON 捕获 / 全面板刷新 / 查重 / 关标签统一保存 / 版本号 / 脏标签确认 / 重命名同步 |
+| `app/ui/editor_panel.py` | 修改 — 添加字段走命令栈 / 备注持久化 / save 带验证 / 删死代码 |
+| `app/ui/file_tree.py` | 修改 — 重命名查重 + `content_renamed` 信号 |
+| `app/ui/dialogs/new_project.py` | 修改 — 对话框校验 |
+| `app/ui/theme.py` | 修改 — +DIFF_BG/DIFF_FG 令牌 |
+| `app/ui/widgets/reference_panel.py` | 修改 — 差异高亮走主题令牌 |
+| `app/ui/widgets/weapon_array_editor.py` | 修改 — BULLET_TYPES 收敛 |
+| `app/resources/style.qss` | 修改 — 删 QCheckBox 死规则 + `#colorSwatch` |
+| `app/ui/icon_loader.py` | **删除** — 零引用模块 |
+| `app/config/field_groups.json.bak` | **删除** — 杂散备份 |
+| `tests/conftest.py` | **新增** — editor state 隔离 fixture |
+| `tests/test_project.py` | **新增** — 8 个用例 |
+| `tests/`（3 个文件） | 扩展 — exists / content_exists / short 检查 |
+| `pyproject.toml` | 修改 — version 0.2.3 |
+
+---
+
 ## v0.2.2 (2026-07-31 13:34)
 
 > 代码库架构全量优化：消除 God Object、统一规则来源、补全核心测试。测试 49 → 186。

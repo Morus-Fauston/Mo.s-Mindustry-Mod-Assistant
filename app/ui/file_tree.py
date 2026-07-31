@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
@@ -21,11 +22,15 @@ from ..core.config_loader import get_block_categories
 from ..core.project import Project
 from ..core.content_store import ContentRef
 
+# 内容文件名（同时也是 JSON 内 name 字段）允许的字符
+_NAME_RE = re.compile(r"^[a-z0-9-]+$")
+
 
 class FileTreePanel(QWidget):
     """Left sidebar: mod project file tree with two-level virtual grouping for blocks."""
 
     content_opened = Signal(str)  # emits content name
+    content_renamed = Signal(str, str)  # (old_name, new_name)
 
     def __init__(self) -> None:
         super().__init__()
@@ -205,12 +210,26 @@ class FileTreePanel(QWidget):
         )
         if not ok or not new_name or new_name == old_name:
             return
+        new_name = new_name.strip()
+        if not _NAME_RE.match(new_name):
+            QMessageBox.warning(
+                self, "重命名失败",
+                "名称只能包含小写字母、数字、连字符",
+            )
+            return
+        if self._project.contents.exists(new_name):
+            QMessageBox.warning(
+                self, "重命名失败",
+                f"已存在名为 '{new_name}' 的内容，不能重命名",
+            )
+            return
         try:
             content = self._project.contents.get(old_name)
             content.data["name"] = new_name
             self._project.contents.save(new_name, content.data, category)
             self._project.contents.delete(old_name)
             self.refresh()
+            self.content_renamed.emit(old_name, new_name)
         except FileNotFoundError:
             QMessageBox.warning(self, "重命名失败", f"找不到文件: {old_name}")
 

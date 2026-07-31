@@ -1,3 +1,13 @@
+v0.2.3 (2026-07-31 17:55)
+  修复: 坏mod.json打开崩槽(JSONDecodeError→友好ValueError) / 重命名静默覆盖+标签脱节(查重+content_renamed信号) / 新建同名静默覆盖(查重确认) / 新建工程mod_id无校验(对话框正则+Project.create防御)
+  修复: 跨标签撤销/重做失同步(撤销刷新全部+切标签重建表单) / 添加字段绕过命令栈(改SetFieldCommand) / 用户备注丢失不持久化(data["$notes"], 游戏忽略未知键已核实) / 关标签保存路径不一致(统一走session带验证)
+  规范: validator死代码双黑名单回潮删除 / 版本号v0.1.0漂移→0.2.3统一 / 测试污染editor_state.json→conftest隔离tmp / 死代码清理(icon_loader整模块/_add_group_separator/template._default/QSS QCheckBox死规则/field_groups.json.bak) / 重复BULLET_TYPES表收敛单一来源 / validator漏short类型检查补上 / 未用导入×3
+  体验: 参考对比差异黄底硬编码→DIFF主题令牌深浅自适应 / 关闭多个脏标签只问第一个→统计统一确认 / 颜色swatch内联setStyleSheet静态部分→QSS #colorSwatch
+  测试: 186→200全绿(+test_project 8个坏JSON/mod_id校验, +content_store.exists, +session.content_exists, +short检查), 0.87s
+  文件: +tests/conftest.py +tests/test_project.py / 修改14文件 / 删除2文件
+
+====
+
 v0.2.2 (2026-07-31 13:34)
   架构: _is_internal_field双黑名单→FieldDef.is_internal统一 / EditorPanel表单逻辑→form_plan.py纯函数 / MainWindow服务+生命周期→session.py(ProjectSession) / config逃逸口×3→config_loader收拢 / BulletEditor透传删除→直接用PolymorphicTypeEditor
   修复: QDockWidget未导入(参考对比必崩) / 无用import清理(json×3)

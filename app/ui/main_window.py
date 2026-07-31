@@ -32,6 +32,9 @@ from .welcome_page import WelcomePage
 from .widgets.toast import Toast
 from .widgets.reference_panel import ReferencePanel, _ReferencePicker
 
+# 应用版本号（与 pyproject.toml 同步）
+APP_VERSION = "0.2.3"
+
 
 class _StatusBar(QStatusBar):
     """自管消息区的状态栏。
@@ -136,6 +139,7 @@ class MainWindow(QMainWindow):
         # 左侧：文件树
         self._file_tree = FileTreePanel()
         self._file_tree.content_opened.connect(self._open_content)
+        self._file_tree.content_renamed.connect(self._on_content_renamed)
 
         # 右侧：预览 + 图层
         self._preview = PreviewPanel()
@@ -230,7 +234,7 @@ class MainWindow(QMainWindow):
             self._file_tree.set_project(self._project)
             self._enter_project_view()
             self.statusBar().showMessage(f"已打开: {self._project.mod_info.display_name}")
-        except FileNotFoundError as e:
+        except (FileNotFoundError, ValueError) as e:
             QMessageBox.warning(self, "打开失败", str(e))
 
     def _enter_project_view(self) -> None:
@@ -333,16 +337,16 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage(
                     f"已恢复上次工程: {self._project.mod_info.display_name}"
                 )
-            except (OSError, FileNotFoundError):
+            except (OSError, FileNotFoundError, ValueError):
                 pass
 
     def _undo(self) -> None:
         self._command_stack.undo()
-        self._refresh_active_editor()
+        self._refresh_all_editors()
 
     def _redo(self) -> None:
         self._command_stack.redo()
-        self._refresh_active_editor()
+        self._refresh_all_editors()
 
     def _on_command_stack_changed(self) -> None:
         """Update undo/redo button states + tooltips after command stack changes."""
@@ -364,14 +368,16 @@ class MainWindow(QMainWindow):
             self._redo_action.setEnabled(can_redo)
             self._redo_action.setToolTip(f"重做: {redo_desc}" if redo_desc else "重做")
 
-    def _refresh_active_editor(self) -> None:
-        """Refresh the currently active editor panel after undo/redo."""
-        idx = self._tabs.currentIndex()
-        if idx < 0:
-            return
-        panel = self._tabs.widget(idx)
-        if isinstance(panel, EditorPanel):
-            panel.refresh_from_data()
+    def _refresh_all_editors(self) -> None:
+        """Refresh ALL open editor panels after undo/redo.
+
+        数据是共享 dict，一次撤销可能影响多个已打开的标签；只刷新活动
+        标签会导致其他标签显示过期值，切回后编辑会把旧值写回。
+        """
+        for i in range(self._tabs.count()):
+            panel = self._tabs.widget(i)
+            if isinstance(panel, EditorPanel):
+                panel.refresh_from_data()
 
     def _new_unit(self) -> None:
         if self._project is None:
@@ -407,6 +413,16 @@ class MainWindow(QMainWindow):
     def _do_create_content(self, kind: str, name: str, category: str) -> None:
         if self._project is None:
             return
+        if self._session.content_exists(name):
+            reply = QMessageBox.question(
+                self, "内容已存在",
+                f"已存在名为 '{name}' 的内容，是否覆盖？",
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
         self._session.create_content(kind, name, category)
         self._file_tree.refresh()
         self._open_content(name)
@@ -424,7 +440,7 @@ class MainWindow(QMainWindow):
 
         try:
             content = self._project.contents.get(name)
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError):
             return
 
         panel = EditorPanel(
@@ -454,6 +470,14 @@ class MainWindow(QMainWindow):
             index, QTabBar.ButtonPosition.RightSide, btn
         )
 
+    def _on_content_renamed(self, old_name: str, new_name: str) -> None:
+        """内容重命名后，同步已打开的标签页（名称 + 标题）。"""
+        for i in range(self._tabs.count()):
+            panel = self._tabs.widget(i)
+            if isinstance(panel, EditorPanel) and panel.content.name == old_name:
+                panel.content.name = new_name
+                self._tabs.setTabText(i, new_name)
+
     def _close_tab(self, index: int) -> None:
         panel = self._tabs.widget(index)
         if isinstance(panel, EditorPanel) and panel.is_dirty:
@@ -465,7 +489,8 @@ class MainWindow(QMainWindow):
                 | QMessageBox.StandardButton.Cancel,
             )
             if reply == QMessageBox.StandardButton.Save:
-                panel.save()
+                # 统一走 session 保存（带验证 + 错误跳转），与 Ctrl+S 一致
+                self._save()
             elif reply == QMessageBox.StandardButton.Cancel:
                 return
         self._tabs.removeTab(index)
@@ -508,6 +533,8 @@ class MainWindow(QMainWindow):
             return
         panel = self._tabs.widget(index)
         if isinstance(panel, EditorPanel):
+            # 切换标签时从数据重建表单，防止跨标签撤销/重做后显示过期值
+            panel.refresh_from_data()
             self._preview.show_content(panel.content, self._project)
 
     def _import_reference(self) -> None:
@@ -561,7 +588,7 @@ class MainWindow(QMainWindow):
     def _about(self) -> None:
         QMessageBox.about(
             self, "关于",
-            "Mo's Mindustry Mod Assistant v0.1.0\n\n"
+            f"Mo's Mindustry Mod Assistant v{APP_VERSION}\n\n"
             f"目标游戏版本: v{self._metadata.game_version}\n"
             "一个 GUI 化的 Mindustry 模组编辑器。"
         )
@@ -583,17 +610,20 @@ class MainWindow(QMainWindow):
         return action
 
     def closeEvent(self, event) -> None:
-        # Check for unsaved changes
-        for i in range(self._tabs.count()):
-            panel = self._tabs.widget(i)
-            if isinstance(panel, EditorPanel) and panel.is_dirty:
-                reply = QMessageBox.question(
-                    self, "退出",
-                    "有未保存的修改，确定退出？",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                )
-                if reply == QMessageBox.StandardButton.No:
-                    event.ignore()
-                    return
-                break
+        # 统计所有有未保存修改的标签页，统一确认（不静默丢弃）
+        dirty_count = sum(
+            1
+            for i in range(self._tabs.count())
+            if isinstance(self._tabs.widget(i), EditorPanel)
+            and self._tabs.widget(i).is_dirty
+        )
+        if dirty_count > 0:
+            reply = QMessageBox.question(
+                self, "退出",
+                f"有 {dirty_count} 个标签页有未保存的修改，确定退出？\n\n未保存的修改将丢失。",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if reply == QMessageBox.StandardButton.No:
+                event.ignore()
+                return
         event.accept()

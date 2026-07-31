@@ -48,6 +48,7 @@ class GroupPlan:
     fields: list[FieldPlan] = field(default_factory=list)
     has_optional: bool = False  # True if group has more fields available via '+'
     capability: bool = False  # True = 能力开关组（▾ ☐ 标题）
+    capability_enabled: bool = False  # True = 能力组复选框已勾选
 
 
 # ── Public interface ───────────────────────────────────────────────────
@@ -60,6 +61,7 @@ def compute_form_plan(
     expanded_state: dict[str, bool] | None = None,
     group_labels: dict[str, str] | None = None,
     deleted_groups: set[str] | None = None,
+    enabled_groups: set[str] | None = None,
 ) -> list[GroupPlan]:
     """Compute the full form plan for a content item.
 
@@ -125,6 +127,7 @@ def compute_form_plan(
         # unless manually deleted (handled by deleted_groups param).
         is_cap = group_name in CAPABILITY_GROUPS
         is_deleted = group_name in (deleted_groups or set())
+        is_enabled = group_name in (enabled_groups or set())
         if required or visible or (is_cap and not is_deleted):
             locked = is_group_locked(group_name, group_def, content_type, data)
             expanded = is_group_expanded(
@@ -145,7 +148,8 @@ def compute_form_plan(
                 expanded=expanded,
                 fields=field_plans,
                 has_optional=bool(optional) or bool(default),
-                capability=group_name in CAPABILITY_GROUPS,
+                capability=is_cap,
+                capability_enabled=is_enabled or bool(visible),
             ))
 
     # Render extra fields from JSON (not in any group) → "其他"

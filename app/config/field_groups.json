@@ -37,26 +37,31 @@
     },
     "tank": {
       "visible_for": ["UnitType-tank"],
+      "locked_for": ["UnitType-tank"],
       "required": [],
       "optional": ["squareShape", "crushDamage", "crushDamageMultiplier", "crushFragile", "crashDamageMultiplier", "rippleScale", "treadFrames", "treadPullOffset", "treadRects", "treadRegion", "treadRegions", "treadEffect"]
     },
     "flying_engine": {
       "visible_for": ["UnitType-flying"],
+      "locked_for": ["UnitType-flying"],
       "required": [],
       "optional": ["engineOffset", "engineSize", "engines", "engineColor", "engineColorInner", "engineLayer", "useEngineElevation", "trailLength", "trailColor", "trailScl"]
     },
     "legs": {
       "visible_for": ["UnitType-legs"],
+      "locked_for": ["UnitType-legs"],
       "required": [],
       "optional": ["legCount", "legGroupSize", "legLength", "legLengthScl", "legMaxLength", "legMinLength", "legSpeed", "legMoveSpace", "legExtension", "legPairOffset", "legForwardScl", "legBaseOffset", "legStraightness", "legStraightLength", "baseLegStraightness", "legSplashDamage", "legSplashRange", "legContinuousMove", "lockLegBase", "flipBackLegs", "flipLegSide", "legBaseUnder", "allowLegStep", "legPhysicsLayer", "legRegion", "legBaseRegion", "jointRegion", "baseJointRegion", "footRegion"]
     },
     "mech": {
       "visible_for": ["UnitType-mech"],
+      "locked_for": ["UnitType-mech"],
       "required": [],
       "optional": ["mechStride", "mechFrontSway", "mechSideSway", "mechLandShake", "mechStepParticles", "mechLegColor"]
     },
     "segment": {
       "visible_for": ["UnitType-segment"],
+      "locked_for": ["UnitType-segment"],
       "required": [],
       "optional": ["segments", "segmentSpacing", "segmentMag", "segmentPhase", "segmentRotSpeed", "segmentRotationRange", "segmentMaxRot", "segmentScl", "segmentLayerOrder", "segmentRegions", "segmentOutlineRegions", "segmentCellRegions", "segmentUnit", "segmentUnits", "segmentEndUnit"]
     },

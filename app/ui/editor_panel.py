@@ -67,6 +67,10 @@ _CACHED_VALUES: dict[str, dict[str, dict[str, Any]]] = {}
 # 能力组默认始终显示，只有手动删除才消失。
 _DELETED_GROUPS: dict[str, set[str]] = {}
 
+# 能力组复选框启用状态：{content_name: set(group_name)}
+# 独立于 data 推导——勾选后即使 data 中暂无字段也保持启用。
+_ENABLED_GROUPS: dict[str, set[str]] = {}
+
 
 class EditorPanel(QWidget):
     """Generates a form from metadata for editing a single content item.
@@ -232,6 +236,7 @@ class EditorPanel(QWidget):
 
         expanded_state = _EXPANDED_STATE.get(self._content.name)
         deleted_groups = _DELETED_GROUPS.get(self._content.name, set())
+        enabled_groups = _ENABLED_GROUPS.get(self._content.name, set())
         plan = compute_form_plan(
             class_def=self._class_def,
             data=self._content.data,
@@ -239,6 +244,7 @@ class EditorPanel(QWidget):
             expanded_state=expanded_state,
             group_labels=self.GROUP_LABELS,
             deleted_groups=deleted_groups,
+            enabled_groups=enabled_groups,
         )
 
         for group_plan in plan:
@@ -268,18 +274,9 @@ class EditorPanel(QWidget):
 
     def _render_group(self, plan: GroupPlan) -> None:
         """Render a collapsible group from a GroupPlan."""
-        # 能力组：自动检测是否已启用（data 中有该组字段 = 已启用）
-        cap_enabled = False
-        if plan.capability:
-            content_type = self._content.data.get("type", "")
-            groups_config = self._field_groups.get(content_type, {})
-            group_def = groups_config.get(plan.group_name, {})
-            all_group_fields = (
-                set(group_def.get("required", []))
-                | set(group_def.get("default", []))
-                | set(group_def.get("optional", []))
-            )
-            cap_enabled = bool(all_group_fields & set(self._content.data.keys()))
+        # 能力组：使用 form_plan 计算的 capability_enabled
+        # （由 _ENABLED_GROUPS 状态 + data 中字段共同决定）
+        cap_enabled = plan.capability_enabled
 
         group = CollapsibleGroup(
             group_name=plan.group_name,
@@ -426,6 +423,24 @@ class EditorPanel(QWidget):
                     )
                     self._commands.execute(cmd)
 
+            # 若 required+default 都为空且无缓存，写第一个 optional 作为存在标记
+            written = any(fn in self._content.data for fn in all_fields)
+            if not written and group_def.get("optional"):
+                first_opt = group_def["optional"][0]
+                if first_opt not in self._content.data:
+                    val = cached.get(first_opt) or defaults.get(first_opt)
+                    if val is None:
+                        fd = next((f for f in self._class_def.fields if f.name == first_opt), None) if self._class_def else None
+                        val = type_default(fd) if fd else None
+                    cmd = SetFieldCommand(
+                        data=self._content.data, path=first_opt,
+                        new_value=val, on_change=self._mark_dirty,
+                    )
+                    self._commands.execute(cmd)
+
+            # 记入 _ENABLED_GROUPS
+            _ENABLED_GROUPS.setdefault(content_name, set()).add(group_name)
+
             # 单向联动
             linked = CAPABILITY_LINKAGE.get(group_name)
             if linked and linked not in self._get_enabled_capabilities():
@@ -468,6 +483,8 @@ class EditorPanel(QWidget):
                         on_change=self._mark_dirty,
                     )
                     self._commands.execute(cmd)
+            # 从 _ENABLED_GROUPS 移除
+            _ENABLED_GROUPS.get(content_name, set()).discard(group_name)
 
         self._rebuild_form()
 
@@ -525,8 +542,9 @@ class EditorPanel(QWidget):
         if cache:
             _CACHED_VALUES.setdefault(content_name, {})[group_name] = cache
 
-        # Bug2：记入已删除集合
+        # Bug2：记入已删除集合 + 从启用集合移除
         _DELETED_GROUPS.setdefault(content_name, set()).add(group_name)
+        _ENABLED_GROUPS.get(content_name, set()).discard(group_name)
 
         deleted = False
         for name in names:
@@ -1081,6 +1099,27 @@ class EditorPanel(QWidget):
                         on_change=self._mark_dirty,
                     )
                     self._commands.execute(cmd)
+
+            # Bug3 修复：若 required+default 都为空且无缓存，写第一个 optional 作为存在标记
+            written = any(fn in self._content.data for fn in all_fields)
+            if not written and group_def.get("optional"):
+                first_opt = group_def["optional"][0]
+                if first_opt not in self._content.data:
+                    val = cached.get(first_opt) or defaults.get(first_opt)
+                    if val is None:
+                        fd = next((f for f in self._class_def.fields if f.name == first_opt), None) if self._class_def else None
+                        val = type_default(fd) if fd else None
+                    cmd = SetFieldCommand(
+                        data=self._content.data, path=first_opt,
+                        new_value=val, on_change=self._mark_dirty,
+                    )
+                    self._commands.execute(cmd)
+
+            # 能力组：记入 _ENABLED_GROUPS
+            from ..core.form_plan import CAPABILITY_GROUPS
+            if group_name in CAPABILITY_GROUPS:
+                _ENABLED_GROUPS.setdefault(content_name, set()).add(group_name)
+
             self._rebuild_form()
 
     # ── helpers ─────────────────────────────────────────────────────────

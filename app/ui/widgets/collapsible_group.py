@@ -194,6 +194,11 @@ class CollapsibleGroup(QFrame):
     def capability_enabled(self) -> bool:
         return self._capability_enabled
 
+    def set_capability_enabled(self, enabled: bool) -> None:
+        """Set capability state without emitting signal (for external sync)."""
+        self._capability_enabled = enabled
+        self._apply_capability_state(enabled, emit=False)
+
     def set_expanded(self, expanded: bool) -> None:
         self._expanded = expanded
         if self._capability and not self._capability_enabled:

@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QInputDialog,
     QLabel,
+    QLayout,
     QLineEdit,
     QMenu,
     QMessageBox,
@@ -40,6 +41,7 @@ from .check_toggle import CheckToggle
 from .num_spin import NumSpinBox, NumDoubleSpinBox
 from .auto_width_edit import AutoWidthEdit
 from .label_helper import rich_label
+from .field_row import FieldRow
 from .polymorphic_editor import BULLET_TYPES
 
 # NOTE: These are imported lazily or at module level depending on need
@@ -480,29 +482,26 @@ class WeaponCard(QGroupBox):
             return None
         return self._create_widget_for_value(fname, val, self._set_field)
 
-    def _create_primitive_widget(self, data: dict, fname: str) -> QWidget | None:
-        val = data.get(fname)
-        if val is None:
-            return None
-
-        # Build a path-aware setter
-        def setter(v: Any) -> None:
-            if data is self._weapon_data:
-                self._set_field(fname, v)
-            else:
-                self._set_bullet_field(fname, v)
-
-        return self._create_widget_for_value(fname, val, setter)
+    @staticmethod
+    def _field_type_for_value(val: Any) -> str:
+        """按 Python 值类型推断 fieldType（与主面板 field_type_property 对齐）。"""
+        if isinstance(val, bool):
+            return "bool"
+        if isinstance(val, (int, float)):
+            return "num"
+        return "str"
 
     def _create_widget_for_value(
         self, fname: str, val: Any,
         on_change: Any,
     ) -> QWidget | None:
+        """创建控件并用 FieldRow 包裹（v0.2.4：与主面板一致的马卡龙着色 + 色条）。"""
+        control: QWidget | None = None
         if isinstance(val, bool):
             cb = CheckToggle()
             cb.setChecked(val)
             cb.toggled.connect(on_change)
-            return cb
+            control = cb
         elif isinstance(val, float):
             spin = NumDoubleSpinBox()
             spin.setRange(-999999.0, 999999.0)
@@ -510,20 +509,23 @@ class WeaponCard(QGroupBox):
             spin.setFixedWidth(70)
             spin.setValue(val)
             spin.valueChanged.connect(on_change)
-            return spin
+            control = spin
         elif isinstance(val, int):
             spin = NumSpinBox()
             spin.setRange(-999999, 999999)
             spin.setFixedWidth(70)
             spin.setValue(val)
             spin.valueChanged.connect(on_change)
-            return spin
+            control = spin
         elif isinstance(val, str):
             edit = AutoWidthEdit()
             edit.setText(val)
             edit.textChanged.connect(on_change)
-            return edit
-        return None
+            control = edit
+        if control is None:
+            return None
+        # 与主面板统一：FieldRow 内部设置 fieldType 动态属性（QSS 命中淡底描边）+ 左侧色条
+        return FieldRow(control, self._field_type_for_value(val), deletable=False)
 
     # ── actions ──────────────────────────────────────────────────────────
 
@@ -688,6 +690,9 @@ class _AddWeaponDialog(QDialog):
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
+        # v0.2.4：minimum 跟随内容。修复「内联→引用」切换后窗口不缩回、
+        # 多余空间被标题 QLabel 拉伸成大片空白的问题
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
 
         # 模式选择（放在最前面）
         layout.addWidget(QLabel("<b>添加方式</b>"))
@@ -751,6 +756,8 @@ class _AddWeaponDialog(QDialog):
         self._name_edit.setVisible(not ref_checked)
         self._bullet_combo.setVisible(not ref_checked)
         self._bullet_preview.setVisible(not ref_checked)
+        # v0.2.4：模式切换后收缩窗口到内容高度（minimum 已由 SetMinimumSize 更新）
+        self.adjustSize()
 
     def _on_accept(self) -> None:
         if self._ref_radio.isChecked():

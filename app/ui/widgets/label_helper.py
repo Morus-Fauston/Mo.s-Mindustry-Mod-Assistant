@@ -22,7 +22,7 @@ def rich_label(zh: str, en: str, parent=None) -> QLabel:  # noqa: ANN001
         t = get_tokens()
         ink2 = t.get("INK2", "#6B7280")
         html = (
-            f'{zh} <span style="color:{ink2};font-size:10.5px;'
+            f'{zh} <span style="color:{ink2};font-size:11.5px;'
             f'font-family:\'JetBrains Mono\',Consolas,monospace">{en}</span>'
         )
         label.setText(html)

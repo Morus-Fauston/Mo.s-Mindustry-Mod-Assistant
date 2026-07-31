@@ -1,3 +1,11 @@
+v0.2.4 (2026-07-31 18:59) 上半: 用户反馈7项UI体验问题全量修复
+  修复: 字段行高度不齐(行容器固定26px+标签英文10.5→11.5px) / tooltip黑底白字(QToolTip令牌用反@INK@做底→改@PANEL@底@INK@字) / 添加字段后组折叠(chevron lambda被clicked(bool)参数污染记忆key=False/True+组头点击不记忆→统一expandedChanged信号) / 对话框切换大片空白(QDialog变大不缩回→SetMinimumSize+adjustSize) / 数值框未聚焦滚轮误改值(wheelEvent拦截) / 武器卡片无马卡龙着色(FieldRow包裹+fieldType属性与主面板统一) / 左内边距不齐(spinbox内部QLineEdit x=3→补padding 6px, 文本起点9px=9px对齐)
+  清理: 删WeaponCard._create_primitive_widget死代码
+  测试: 200 pytest全绿(0.79s) + offscreen冒烟13/13通过
+  文件: 修改6文件(editor_panel/collapsible_group/weapon_array_editor/num_spin/label_helper/style.qss)
+
+====
+
 v0.2.3 (2026-07-31 17:55)
   修复: 坏mod.json打开崩槽(JSONDecodeError→友好ValueError) / 重命名静默覆盖+标签脱节(查重+content_renamed信号) / 新建同名静默覆盖(查重确认) / 新建工程mod_id无校验(对话框正则+Project.create防御)
   修复: 跨标签撤销/重做失同步(撤销刷新全部+切标签重建表单) / 添加字段绕过命令栈(改SetFieldCommand) / 用户备注丢失不持久化(data["$notes"], 游戏忽略未知键已核实) / 关标签保存路径不一致(统一走session带验证)

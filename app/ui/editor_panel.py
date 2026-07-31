@@ -281,7 +281,11 @@ class EditorPanel(QWidget):
             label_widget.setFixedWidth(150)
             row_h.addWidget(label_widget)
 
-            if f.mode in ("PRIMITIVE", "STRING_REF"):
+            # v0.2.4：仅普通字段行（PRIMITIVE/STRING_REF）统一行高；
+            # 复合控件行（weapons 武器列表、子弹等）必须自适应高度，
+            # 否则会被压扁成一条窄条
+            is_plain_row = f.mode in ("PRIMITIVE", "STRING_REF")
+            if is_plain_row:
                 ft = field_type_property(f.mode, f.java_type)
                 field_row = FieldRow(widget, ft, deletable=fp.deletable)
                 if fp.deletable:
@@ -295,9 +299,9 @@ class EditorPanel(QWidget):
             row_container = QWidget()
             row_container.setLayout(row_h)
             row_h.setContentsMargins(0, 0, 0, 0)  # 去掉 QWidget 默认 margin
-            # v0.2.4：统一字段行高（复选框 18px 与输入框 23px 不齐 → 固定高度对齐，
-            # 色条随 FieldRow 拉伸到满高，布尔行不再显得矮）
-            row_container.setFixedHeight(26)
+            if is_plain_row:
+                # 统一普通字段行高（复选框/输入框/色条高度一致）
+                row_container.setFixedHeight(26)
             rows_layout.addWidget(row_container)
 
         group.body_layout.addLayout(rows_layout)

@@ -4,7 +4,8 @@ QSpinBox / QDoubleSpinBox 固定 setDecimals(N) 会显示 N 位小数（300.000�
 子类化 override textFromValue 用 Python f"{v:g}" 格式化，显示时去尾零，
 输入精度不变。
 
-v0.2.4：override wheelEvent —— 未聚焦时忽略滚轮，防止滚动页面误改值。
+v0.2.4：彻底禁用滚轮改值（无论是否聚焦）——hover 滚轮时焦点可能转移，
+判断焦点不可靠；数值一律只允许键盘/点击调整，滚轮只用于滚动页面。
 """
 
 from __future__ import annotations
@@ -20,11 +21,8 @@ class NumSpinBox(QSpinBox):
         return str(value)
 
     def wheelEvent(self, event) -> None:  # noqa: N802
-        # 未聚焦时滚轮交给父级（滚动页面），不修改值
-        if not self.hasFocus():
-            event.ignore()
-            return
-        super().wheelEvent(event)
+        # 彻底禁用滚轮改值：事件交给父级（滚动页面），数值不变
+        event.ignore()
 
 
 class NumDoubleSpinBox(QDoubleSpinBox):
@@ -35,8 +33,5 @@ class NumDoubleSpinBox(QDoubleSpinBox):
         return f"{value:.{self.decimals()}g}"
 
     def wheelEvent(self, event) -> None:  # noqa: N802
-        # 未聚焦时滚轮交给父级（滚动页面），不修改值
-        if not self.hasFocus():
-            event.ignore()
-            return
-        super().wheelEvent(event)
+        # 彻底禁用滚轮改值：事件交给父级（滚动页面），数值不变
+        event.ignore()

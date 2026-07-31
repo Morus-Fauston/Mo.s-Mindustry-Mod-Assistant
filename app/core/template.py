@@ -194,23 +194,3 @@ class TemplateEngine:
             },
         }
 
-    def _default(self, class_name: str, field_name: str, fallback: Any) -> Any:
-        """Try to get default from metadata, fall back to hardcoded value.
-        
-        Note: extractor reads defaults from freshly instantiated objects,
-        which gives 0/0.0/false for most fields (game hasn't initialized them).
-        Only trust non-zero numeric defaults and non-empty strings.
-        """
-        try:
-            class_def = self._meta.get_class(class_name)
-            for f in class_def.fields:
-                if f.name == field_name and f.default is not None:
-                    # Skip meaningless zero defaults from fresh instantiation
-                    if isinstance(f.default, (int, float)) and f.default == 0:
-                        return fallback
-                    if isinstance(f.default, str) and f.default == "":
-                        return fallback
-                    return f.default
-        except (KeyError, Exception):
-            pass
-        return fallback

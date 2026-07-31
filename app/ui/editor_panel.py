@@ -14,7 +14,6 @@ from typing import Any
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
-    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -53,7 +52,7 @@ from .widgets.reserved_panel import ReservedPanel
 from .widgets.num_spin import NumSpinBox, NumDoubleSpinBox
 from .widgets.auto_width_edit import AutoWidthEdit
 from .widgets.label_helper import rich_label
-from .theme import field_type_property, get_tokens
+from .theme import field_type_property
 
 
 # 展开状态记忆：{content_name: {group_name: bool}}，跨标签页切换保持。
@@ -213,10 +212,21 @@ class EditorPanel(QWidget):
         self._notes_edit = QTextEdit()
         self._notes_edit.setMaximumHeight(60)
         self._notes_edit.setPlaceholderText("在此添加备注...")
+        # 备注持久化在 data["$notes"]（编辑器私有键；游戏加载 JSON 时忽略未知字段）
+        self._notes_edit.setPlainText(self._content.data.get("$notes", "") or "")
+        self._notes_edit.textChanged.connect(self._on_notes_changed)
         notes_layout.addWidget(self._notes_edit)
         self._form_layout.addWidget(notes_box)
 
         self._form_layout.addStretch()
+
+    def _on_notes_changed(self) -> None:
+        """备注写入 data['$notes']。不经过命令栈（编辑器私有笔记，无需撤销）。"""
+        text = self._notes_edit.toPlainText()
+        if text:
+            self._content.data["$notes"] = text
+        else:
+            self._content.data.pop("$notes", None)
 
     def _render_group(self, plan: GroupPlan) -> None:
         """Render a collapsible group from a GroupPlan."""
@@ -290,13 +300,7 @@ class EditorPanel(QWidget):
         group.body_layout.addLayout(rows_layout)
 
         self._form_layout.addWidget(group)
-    def _add_group_separator(self) -> None:
-        """在 _form_layout 末尾插入一条 1px 分隔线（组间/块间）。"""
-        sep = QFrame()
-        sep.setObjectName("groupSeparator")
-        sep.setFixedHeight(1)
-        sep.setAutoFillBackground(True)  # QFrame 默认不填充背景→QSS background 不可见
-        self._form_layout.addWidget(sep)
+
     # ── 折叠状态记忆 ─────────────────────────────────────────────────────
 
     def _remember_expanded(self, group_name: str, expanded: bool) -> None:
@@ -365,11 +369,19 @@ class EditorPanel(QWidget):
             if field_def:
                 # Use configured default if available, else type zero value
                 default_val = self._get_group_default(group_name, field_name)
-                if default_val is not None:
-                    self._content.data[field_name] = default_val
-                else:
-                    self._content.data[field_name] = type_default(field_def)
-                self._mark_dirty()
+                new_value = (
+                    default_val
+                    if default_val is not None
+                    else type_default(field_def)
+                )
+                # 走命令栈，保证与删除对称（可撤销）
+                cmd = SetFieldCommand(
+                    data=self._content.data,
+                    path=field_name,
+                    new_value=new_value,
+                    on_change=self._mark_dirty,
+                )
+                self._commands.execute(cmd)
                 self._rebuild_form()
 
     def _get_group_default(self, group_name: str, field_name: str) -> Any:
@@ -512,12 +524,11 @@ class EditorPanel(QWidget):
             color = QColor(r, g, b)
             display_text = f"{r:02x}{g:02x}{b:02x}"
 
-        # Color swatch button
+        # Color swatch button（背景色动态 hex 为唯一内联例外，描边/圆角走 QSS）
         swatch = QPushButton()
+        swatch.setObjectName("colorSwatch")
         swatch.setFixedSize(48, 24)
-        swatch.setStyleSheet(
-            f"background-color: {color.name()}; border: 1px solid #999; border-radius: 3px;"
-        )
+        swatch.setStyleSheet(f"background-color: {color.name()};")
 
         # Text label showing the hex value
         hex_label = QLineEdit(display_text)
@@ -528,9 +539,7 @@ class EditorPanel(QWidget):
             if chosen.isValid():
                 hex_val = chosen.name().lstrip("#")
                 hex_label.setText(hex_val)
-                swatch.setStyleSheet(
-                    f"background-color: {chosen.name()}; border: 1px solid #999; border-radius: 3px;"
-                )
+                swatch.setStyleSheet(f"background-color: {chosen.name()};")
                 self._on_field_changed(field_def.name, hex_val)
 
         def on_text_edit(text: str):
@@ -539,9 +548,7 @@ class EditorPanel(QWidget):
                 try:
                     int(text, 16)
                     c = QColor(f"#{text}")
-                    swatch.setStyleSheet(
-                        f"background-color: {c.name()}; border: 1px solid #999; border-radius: 3px;"
-                    )
+                    swatch.setStyleSheet(f"background-color: {c.name()};")
                     self._on_field_changed(field_def.name, text)
                 except ValueError:
                     pass
@@ -657,13 +664,22 @@ class EditorPanel(QWidget):
         self._dirty = True
         self._project.is_dirty = True
 
-    def save(self) -> None:
+    def save(self) -> int:
+        """保存当前内容（带验证），返回验证错误数。
+
+        与主窗口 Ctrl+S 路径（session.save_contents）等价：
+        写盘 + 校验 + 清空 dirty 标志。
+        """
+        issues = self._validator.validate(self._content.data, "content")
+        errs = [iss for iss in issues if iss.severity == "error"]
         self._project.contents.save(
             self._content.name,
             self._content.data,
             self._content.category,
         )
         self._dirty = False
+        self._project.is_dirty = False
+        return len(errs)
 
     def mark_saved(self) -> None:
         """Clear the dirty flag without writing (session already persisted)."""

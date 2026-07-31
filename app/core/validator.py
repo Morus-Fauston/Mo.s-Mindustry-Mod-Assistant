@@ -102,7 +102,7 @@ class Validator:
     def _check_primitive(self, field_def: FieldDef, value: Any) -> Issue | None:
         java_type = field_def.java_type
 
-        if java_type in ("float", "double", "int", "long"):
+        if java_type in ("float", "double", "int", "long", "short"):
             if not isinstance(value, (int, float)):
                 return Issue(
                     field_def.name, "error",
@@ -122,30 +122,6 @@ class Validator:
                 )
 
         return None
-
-    @staticmethod
-    def _is_internal_field(field_def: FieldDef) -> bool:
-        """Skip fields that are engine-internal and never set in mod JSON."""
-        internal_suffixes = (
-            "Region", "Sound", "Effect", "Controller", "Color",
-        )
-        internal_names = {
-            "id", "minfo", "stats", "localizedName", "description",
-            "details", "credit", "alwaysUnlocked", "removed",
-            "uiIcon", "fullIcon", "fullOverride", "shownPlanets",
-            "databaseTabs", "techNodes", "constructor",
-            "engineColorInner", "engineColor", "healColor",
-        }
-        if field_def.name in internal_names:
-            return True
-        if any(field_def.name.endswith(s) for s in internal_suffixes):
-            return True
-        # Non-primitive object fields that aren't in mod JSON
-        if field_def.mode == "PRIMITIVE" and field_def.java_type not in (
-            "float", "double", "int", "long", "boolean", "String", "Color"
-        ):
-            return True
-        return False
 
     def _validate_references(self, data: dict, class_def: Any) -> list[Issue]:
         """Check that STRING_REF fields point to existing instances."""

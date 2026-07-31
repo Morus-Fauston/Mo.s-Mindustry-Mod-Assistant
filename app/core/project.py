@@ -8,11 +8,15 @@ Interface (2 static methods):
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from .content_store import ContentStore
+
+# mod.json 的 name 字段（同时也是目录名）允许的字符：小写字母、数字、连字符
+_MOD_ID_RE = re.compile(r"^[a-z0-9-]+$")
 
 
 @dataclass
@@ -65,13 +69,22 @@ class Project:
         if not mod_json.exists():
             raise FileNotFoundError(f"No mod.json found in {root}")
 
-        data = json.loads(mod_json.read_text(encoding="utf-8"))
+        try:
+            data = json.loads(mod_json.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            raise ValueError(f"{mod_json} 不是合法 JSON: {e}") from e
+        if not isinstance(data, dict):
+            raise ValueError(f"{mod_json} 格式错误：应为 JSON 对象")
         mod_info = ModInfo.from_dict(data)
         return Project(root, mod_info)
 
     @staticmethod
     def create(path: str | Path, mod_id: str, display_name: str, author: str = "") -> Project:
         """Create a new mod project skeleton."""
+        if not mod_id:
+            raise ValueError("模组 ID 不能为空")
+        if not _MOD_ID_RE.match(mod_id):
+            raise ValueError("模组 ID 只能包含小写字母、数字、连字符")
         root = Path(path) / mod_id
         root.mkdir(parents=True, exist_ok=True)
 

@@ -96,6 +96,15 @@ class TestCreateContent:
         with pytest.raises(RuntimeError, match="No project open"):
             session.create_content("UnitType", "x", "units")
 
+    def test_content_exists(self, session, project_dir):
+        session.open_project(project_dir)
+        session.create_content("UnitType", "my-unit", "units")
+        assert session.content_exists("my-unit")
+        assert not session.content_exists("other-unit")
+
+    def test_content_exists_without_project(self, session):
+        assert not session.content_exists("whatever")
+
 
 # ── save with validation ───────────────────────────────────────────────
 

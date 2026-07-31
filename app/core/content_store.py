@@ -107,6 +107,13 @@ class ContentStore:
                 return
         raise FileNotFoundError(f"Content not found: {name}")
 
+    def exists(self, name: str) -> bool:
+        """Whether a content file with this name exists (any category)."""
+        for cat in self._list_categories():
+            if (self._dir / cat / f"{name}.json").exists():
+                return True
+        return False
+
     def _list_categories(self) -> list[str]:
         if not self._dir.is_dir():
             return []

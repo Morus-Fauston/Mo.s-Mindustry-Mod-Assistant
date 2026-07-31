@@ -175,3 +175,22 @@ class TestRoundTrip:
         store.save("phoenix", {"type": "UnitType", "health": 1}, "units")
         data = store.get("phoenix")
         assert data.data["health"] == 1
+
+
+# ── exists ─────────────────────────────────────────────────────────────
+
+
+class TestExists:
+    def test_exists_found(self, store):
+        assert store.exists("my-soldier")
+
+    def test_exists_not_found(self, store):
+        assert not store.exists("nope")
+
+    def test_exists_after_save(self, store):
+        store.save("new-thing", {"type": "Wall"}, "blocks")
+        assert store.exists("new-thing")
+
+    def test_exists_after_delete(self, store):
+        store.delete("my-wall")
+        assert not store.exists("my-wall")

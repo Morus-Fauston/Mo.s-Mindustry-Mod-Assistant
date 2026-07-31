@@ -96,6 +96,12 @@ class ProjectSession:
 
     # ── content creation ────────────────────────────────────────────────
 
+    def content_exists(self, name: str) -> bool:
+        """Whether a content file with this name already exists in the project."""
+        if self._project is None:
+            return False
+        return self._project.contents.exists(name)
+
     def create_content(self, kind: str, name: str, category: str) -> None:
         """Generate a template and write it to disk under category."""
         if self._project is None:

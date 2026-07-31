@@ -40,6 +40,7 @@ from .check_toggle import CheckToggle
 from .num_spin import NumSpinBox, NumDoubleSpinBox
 from .auto_width_edit import AutoWidthEdit
 from .label_helper import rich_label
+from .polymorphic_editor import BULLET_TYPES
 
 # NOTE: These are imported lazily or at module level depending on need
 from ...core.commands import ArrayInsertCommand, ArrayMoveCommand, ArrayRemoveCommand, CommandStack
@@ -50,16 +51,6 @@ from ...core.project import Project
 # ── config: default override fields shown on weapon reference cards ──────
 
 DEFAULT_OVERRIDE_FIELDS = ["x", "y", "reload", "top", "rotate", "mirror"]
-
-# ── predefined bullet types (first-class subclasses) ────────────────────
-
-BULLET_TYPE_CHOICES = [
-    "BasicBulletType",
-    "LaserBulletType",
-    "MissileBulletType",
-    "ArtilleryBulletType",
-    "FlakBulletType",
-]
 
 # ── 武器覆盖字段分组标签（二级菜单用） ────────────────────────────────────
 
@@ -722,11 +713,11 @@ class _AddWeaponDialog(QDialog):
         # 内联模式：子弹类型下拉 + 预览
         self._bullet_combo = QComboBox()
         self._bullet_combo.setFixedWidth(240)
-        self._bullet_combo.addItems(BULLET_TYPE_CHOICES)
+        self._bullet_combo.addItems(BULLET_TYPES)
         self._bullet_combo.setVisible(False)
         layout.addWidget(self._bullet_combo)
 
-        self._bullet_preview = QLabel(self._bullet_type_desc(BULLET_TYPE_CHOICES[0]))
+        self._bullet_preview = QLabel(self._bullet_type_desc(BULLET_TYPES[0]))
         self._bullet_preview.setWordWrap(True)
         self._bullet_preview.setObjectName("bulletPreview")
         self._bullet_preview.setVisible(False)

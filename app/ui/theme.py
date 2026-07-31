@@ -54,6 +54,8 @@ LIGHT: dict[str, str] = {
     # 模式徽章
     "BADGE_REF_BG": "#E4F3E7", "BADGE_REF_FG": "#2E7D43",
     "BADGE_INL_BG": "#E3EDF9", "BADGE_INL_FG": "#2F6FB2",
+    # 参考对比差异行
+    "DIFF_BG": "#FFF3CD", "DIFF_FG": "#8A6D1F",
 }
 
 DARK: dict[str, str] = {
@@ -81,6 +83,8 @@ DARK: dict[str, str] = {
     "F_OBJ": "#302D17", "S_OBJ": "#6F6838", "B_OBJ": "#B0A65C",
     "BADGE_REF_BG": "#1E3527", "BADGE_REF_FG": "#7FC896",
     "BADGE_INL_BG": "#1D2C3D", "BADGE_INL_FG": "#7EB0E8",
+    # 参考对比差异行（深色降明度保色相）
+    "DIFF_BG": "#3D3520", "DIFF_FG": "#D9B45B",
 }
 
 _THEMES: dict[str, dict[str, str]] = {"light": LIGHT, "dark": DARK}

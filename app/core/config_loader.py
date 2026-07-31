@@ -83,6 +83,42 @@ def get_category_names_zh() -> dict[str, str]:
     return get_config("category_names_zh")
 
 
+def get_block_categories() -> dict:
+    """Block virtual grouping configuration for the file tree."""
+    return get_config("block_categories")
+
+
+def get_sprite_layers() -> dict:
+    """Sprite layer definitions per content type for the preview panel."""
+    return get_config("sprite_layers")
+
+
+# ── Editor state persistence ────────────────────────────────────────────
+
+
+def load_editor_state() -> dict[str, Any]:
+    """Load editor_state.json (bypasses cache — mutable file)."""
+    path = _CONFIG_DIR / "editor_state.json"
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_editor_state(state: dict[str, Any]) -> None:
+    """Persist editor state to editor_state.json."""
+    try:
+        _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        (_CONFIG_DIR / "editor_state.json").write_text(
+            json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except OSError:
+        pass
+
+
 # ── Display name formatting ──────────────────────────────────────────────
 
 # The four display name modes:

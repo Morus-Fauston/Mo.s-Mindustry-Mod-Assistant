@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -21,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..core.config_loader import get_sprite_layers
 from ..core.content_store import ContentData
 from ..core.project import Project
 
@@ -247,7 +247,4 @@ class PreviewPanel(QWidget):
 
     @staticmethod
     def _load_sprite_layers() -> dict:
-        config_path = Path(__file__).parent.parent / "config" / "sprite_layers.json"
-        if config_path.exists():
-            return json.loads(config_path.read_text(encoding="utf-8"))
-        return {}
+        return get_sprite_layers() or {}

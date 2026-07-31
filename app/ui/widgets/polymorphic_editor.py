@@ -44,6 +44,16 @@ from ...core.config_loader import (
     get_field_names_zh,
 )
 
+# ── bullet type choices (used by weapon/bullet editing) ─────────────────
+
+BULLET_TYPES = [
+    "BasicBulletType",
+    "LaserBulletType",
+    "MissileBulletType",
+    "ArtilleryBulletType",
+    "FlakBulletType",
+]
+
 
 class PolymorphicTypeEditor(QGroupBox):
     """A type selector + config-driven field form for polymorphic inline objects.

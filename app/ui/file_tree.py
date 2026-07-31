@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 
@@ -18,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..core.config_loader import get_block_categories
 from ..core.project import Project
 from ..core.content_store import ContentRef
 
@@ -249,7 +249,4 @@ class FileTreePanel(QWidget):
 
     @staticmethod
     def _load_block_categories() -> dict:
-        config_path = Path(__file__).parent.parent / "config" / "block_categories.json"
-        if config_path.exists():
-            return json.loads(config_path.read_text(encoding="utf-8"))
-        return {"categories": []}
+        return get_block_categories() or {"categories": []}

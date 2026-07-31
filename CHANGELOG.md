@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.2.2 (2026-07-31 13:34)
+
+> 代码库架构全量优化：消除 God Object、统一规则来源、补全核心测试。测试 49 → 186。
+
+### 架构改进
+
+- **字段可见性规则统一**：`validator.py` 和 `editor_panel.py` 各有一份 `_is_internal_field` 黑名单且内容不同步 → 合并为 `FieldDef.is_internal` 属性（`metadata.py`），两处共用同一规则，消除"验证报错但编辑器不显示该字段"的矛盾 bug 类
+- **表单计算逻辑提取**：EditorPanel（~850 行）中"显示哪些分组/字段"的决策逻辑（子类型推断、visible_for 过滤、锁定、折叠、可添加字段）提取为 `core/form_plan.py` 纯函数模块，零 Qt 依赖，可无头测试；EditorPanel 降至 ~720 行，只负责渲染
+- **ProjectSession 深模块**：MainWindow 的服务组装（Metadata + CommandStack + TemplateEngine + Validator）、工程生命周期（open/create/close）、内容创建、带验证保存、上次工程记忆全部收进 `core/session.py`；MainWindow 退化为布局壳 + 信号转发，`_project` 变为只读属性指向 session 唯一实例
+- **config 逃逸口收拢**：`file_tree.py`、`preview_panel.py`、`main_window.py`（editor_state）三处直接读 JSON 的逃逸口改为走 `config_loader`；新增 `get_block_categories()`、`get_sprite_layers()`、`load/save_editor_state()` 便捷函数
+- **BulletEditor 透传删除**：70 行纯转发包装（`.value`/`.valueChanged` 全部委托 PolymorphicTypeEditor）删除；`BULLET_TYPES` 常量移入 `polymorphic_editor.py`，调用方直接实例化 PolymorphicTypeEditor
+
+### 修复
+
+- **QDockWidget 未导入**：`main_window.py` 的 `_show_reference_comparison` 使用 `QDockWidget` 但从未 import，参考对比功能首次使用时必崩 → 补入导入
+- **无用导入清理**：`main_window.py` 的 `import json`（editor_state 已移入 config_loader）、`file_tree.py` / `preview_panel.py` 的 `import json`（改走 config_loader）
+
+### 测试
+
+- **核心模块覆盖**：新增 `test_metadata.py`（继承链合并、类型别名、is_internal 规则）、`test_content_store.py`（CRUD + 原子写入 + 中文 + 坏 JSON 容错）、`test_validator.py`（三级验证、类型检查、内部字段跳过）
+- **表单逻辑覆盖**：新增 `test_form_plan.py`（子类型推断、分组可见性、锁定、折叠、可添加字段过滤）
+- **会话流程覆盖**：新增 `test_session.py`（工程 open/create/close、内容创建、带验证保存、undo/redo 委托），全程无 QApplication
+- **总量**：49 → 186 个测试，0.3 秒全绿
+
+### 文档
+
+- **CONTEXT.md**：+4 术语（FormPlan / GroupPlan / ProjectSession / SaveReport）
+
+---
+
 ## v0.2.1 (2026-07-31 03:04)
 
 > B 阶段 UI 重构全面落地：从"能用但简陋的 Qt 默认界面"重构为"VS Code 气质现代化 IDE 风格编辑器"。

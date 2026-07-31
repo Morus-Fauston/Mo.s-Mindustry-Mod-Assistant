@@ -18,16 +18,19 @@ from ..theme import get_tokens
 
 
 class CheckToggle(QAbstractButton):
-    """18×18 自绘复选框：未选=淡底描边方框，选中=深色底+白色对勾。"""
+    """22×22 自绘复选框：未选=淡底描边方框，选中=深色底+白色对勾。
+
+    v0.2.4：18→22px，与 26px 字段行高 / 马卡龙色条比例协调。
+    """
 
     def __init__(self, parent=None) -> None:  # noqa: ANN001
         super().__init__(parent)
         self.setCheckable(True)
-        self.setFixedSize(18, 18)
+        self.setFixedSize(22, 22)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def sizeHint(self) -> QSize:  # noqa: N802
-        return QSize(18, 18)
+        return QSize(22, 22)
 
     def paintEvent(self, event) -> None:  # noqa: ANN001, N802
         t = get_tokens()

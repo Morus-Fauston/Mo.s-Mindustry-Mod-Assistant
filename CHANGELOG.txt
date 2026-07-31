@@ -1,3 +1,10 @@
+v0.2.4 (2026-07-31 19:20) 上半补充: 跟进修复4项(含上半1项回归)
+  修复: 滚轮仍误改值(未聚焦拦截不可靠→彻底禁用wheelEvent, 数值只允许键盘/点击) / 复选框小于色条(18→22px) / 字段名空间偏大(标签中文14px英文12px) / 武器列表压扁成窄条(回归: setFixedHeight(26)误作用于weapons复合控件→仅普通字段行固定行高)
+  测试: 200 pytest全绿(0.78s) + offscreen冒烟5/5通过
+  文件: 修改4文件(editor_panel/num_spin/check_toggle/label_helper)
+
+====
+
 v0.2.4 (2026-07-31 18:59) 上半: 用户反馈7项UI体验问题全量修复
   修复: 字段行高度不齐(行容器固定26px+标签英文10.5→11.5px) / tooltip黑底白字(QToolTip令牌用反@INK@做底→改@PANEL@底@INK@字) / 添加字段后组折叠(chevron lambda被clicked(bool)参数污染记忆key=False/True+组头点击不记忆→统一expandedChanged信号) / 对话框切换大片空白(QDialog变大不缩回→SetMinimumSize+adjustSize) / 数值框未聚焦滚轮误改值(wheelEvent拦截) / 武器卡片无马卡龙着色(FieldRow包裹+fieldType属性与主面板统一) / 左内边距不齐(spinbox内部QLineEdit x=3→补padding 6px, 文本起点9px=9px对齐)
   清理: 删WeaponCard._create_primitive_widget死代码

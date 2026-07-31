@@ -141,6 +141,14 @@ class TestIsGroupExpanded:
         assert is_group_expanded("basic", {"combat": False}, has_required=True)
         assert not is_group_expanded("combat", {"basic": True})
 
+    def test_returns_plain_bool_even_with_non_bool_input(self):
+        # v0.2.4.batch1 regression: compute_form_plan passed the raw
+        # `required` list here, which flowed into QWidget.setVisible(list).
+        # The function must coerce to bool regardless of caller input.
+        assert is_group_expanded("basic", None, has_required=["health", "speed"]) is True
+        assert isinstance(is_group_expanded("combat", None, has_required=[]), bool)
+        assert is_group_expanded("combat", {"combat": 1}) is True
+
 
 # ── type_default ───────────────────────────────────────────────────────
 
@@ -247,6 +255,19 @@ class TestComputeFormPlan:
         )
         basic = next(g for g in plan if g.group_name == "basic")
         assert not basic.expanded
+
+    def test_required_group_expanded_is_bool_without_state(self):
+        # v0.2.4.batch1 regression: with no expanded_state, groups with
+        # required fields got `expanded` = the raw required list, crashing
+        # EditorPanel (setVisible(list)). Must be a plain bool.
+        plan = compute_form_plan(
+            _class_def(SAMPLE_FIELDS),
+            {"type": "TestType", "health": 100, "speed": 1.0},
+            SAMPLE_GROUPS,
+        )
+        basic = next(g for g in plan if g.group_name == "basic")
+        assert isinstance(basic.expanded, bool)
+        assert basic.expanded is True
 
     def test_group_labels_applied(self):
         labels = {"basic": "基础属性"}

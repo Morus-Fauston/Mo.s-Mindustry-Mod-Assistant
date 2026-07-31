@@ -4,6 +4,9 @@
 组头右侧 hover 显示操作按钮（+ 添加字段 / ✕ 删除整组），
 锁定组（basic 等）显示锁图标且不可删除。
 
+v0.2.4.batch2：能力开关组（capability=True）组头 = ▾ ☐ 标题 …
+复选框管能力开关、箭头管折叠，二者正交。
+
 objectName: collapsibleGroup / groupHead / groupBody，配合 QSS。
 """
 
@@ -20,6 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .check_toggle import CheckToggle
+
 
 class CollapsibleGroup(QFrame):
     """可折叠的字段分组容器。
@@ -31,6 +36,7 @@ class CollapsibleGroup(QFrame):
     add_field_requested = Signal(str)   # group_name
     delete_group_requested = Signal(str)  # group_name
     expandedChanged = Signal(str, bool)  # (group_name, expanded) — v0.2.4 统一记忆通道
+    capability_toggled = Signal(str, bool)  # (group_name, enabled) — v0.2.4.batch2
 
     def __init__(
         self,
@@ -39,6 +45,8 @@ class CollapsibleGroup(QFrame):
         english: str = "",
         locked: bool = False,
         expanded: bool = True,
+        capability: bool = False,
+        capability_enabled: bool = False,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -46,8 +54,13 @@ class CollapsibleGroup(QFrame):
         self.group_name = group_name
         self._locked = locked
         self._expanded = expanded
+        self._capability = capability
+        self._capability_enabled = capability_enabled
         self._setup_ui(title, english)
-        self.set_expanded(expanded)
+        if capability:
+            self._apply_capability_state(capability_enabled, emit=False)
+        else:
+            self.set_expanded(expanded)
 
     # ── UI ──────────────────────────────────────────────────────────────
 
@@ -71,6 +84,14 @@ class CollapsibleGroup(QFrame):
         self._chevron.setObjectName("groupChevron")
         self._chevron.clicked.connect(self.toggle)
         head_layout.addWidget(self._chevron)
+
+        # 能力开关组：复选框在箭头和标题之间
+        self._cap_toggle: CheckToggle | None = None
+        if self._capability:
+            self._cap_toggle = CheckToggle()
+            self._cap_toggle.setFixedSize(18, 18)
+            self._cap_toggle.toggled.connect(self._on_capability_toggled)
+            head_layout.addWidget(self._cap_toggle)
 
         # 标题
         title_label = QLabel(f"<b>{title}</b>")
@@ -114,10 +135,45 @@ class CollapsibleGroup(QFrame):
         layout.addWidget(self._body)
 
         # 组头点击折叠（点标题区域也触发）
+        # v0.2.4.batch2：能力组须排除复选框子控件的点击
         self._head.mousePressEvent = self._on_head_click  # type: ignore[method-assign]
 
     def _on_head_click(self, event) -> None:  # noqa: N802
+        """组头点击 → 折叠/展开。能力组排除复选框区域。"""
+        if self._cap_toggle is not None:
+            # 检查点击是否在复选框上
+            pos = self._cap_toggle.mapFromGlobal(event.globalPosition().toPoint())
+            if self._cap_toggle.rect().contains(pos):
+                return  # 让复选框自己处理
         self.toggle()
+
+    def _on_capability_toggled(self, checked: bool) -> None:
+        """复选框状态变化 → 发射信号，不触发折叠。"""
+        self._capability_enabled = checked
+        self._apply_capability_state(checked, emit=True)
+
+    def _apply_capability_state(self, enabled: bool, emit: bool = True) -> None:
+        """应用能力开关状态：未勾选=禁用态+组体不渲染。"""
+        if self._cap_toggle is not None:
+            self._cap_toggle.blockSignals(True)
+            self._cap_toggle.setChecked(enabled)
+            self._cap_toggle.blockSignals(False)
+
+        if enabled:
+            # 勾选：组头正常，组体可见，首次默认展开
+            self._head.setEnabled(True)
+            self._chevron.setEnabled(True)
+            self._body.setVisible(self._expanded)
+            self._chevron.setText("▾" if self._expanded else "▸")
+        else:
+            # 未勾选：组头禁用态，组体不渲染
+            self._head.setEnabled(True)  # head 本身要能点复选框
+            self._chevron.setEnabled(False)
+            self._chevron.setText("▸")
+            self._body.setVisible(False)
+
+        if emit:
+            self.capability_toggled.emit(self.group_name, enabled)
 
     # ── 公共接口 ────────────────────────────────────────────────────────
 
@@ -130,12 +186,27 @@ class CollapsibleGroup(QFrame):
     def expanded(self) -> bool:
         return self._expanded
 
+    @property
+    def is_capability(self) -> bool:
+        return self._capability
+
+    @property
+    def capability_enabled(self) -> bool:
+        return self._capability_enabled
+
     def set_expanded(self, expanded: bool) -> None:
         self._expanded = expanded
-        self._body.setVisible(expanded)
-        self._chevron.setText("▾" if expanded else "▸")
+        if self._capability and not self._capability_enabled:
+            # 能力未开启时不展开组体
+            self._body.setVisible(False)
+            self._chevron.setText("▸")
+        else:
+            self._body.setVisible(expanded)
+            self._chevron.setText("▾" if expanded else "▸")
         # 统一记忆通道：组头点击与 chevron 点击都经由此信号
         self.expandedChanged.emit(self.group_name, self._expanded)
 
     def toggle(self) -> None:
+        if self._capability and not self._capability_enabled:
+            return  # 能力未开启时不允许折叠操作
         self.set_expanded(not self._expanded)

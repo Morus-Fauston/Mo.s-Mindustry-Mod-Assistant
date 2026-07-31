@@ -290,6 +290,26 @@ QPushButton[class="primary"]:hover {
     background-color: @COPPER_DEEP@;
 }
 
+/* 编辑器抬头类型小字（12px 淡化，底对齐） */
+#editorTypeLabel {
+    color: @INK2@;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+}
+/* 添加字段组按钮 */
+#addGroupBtn {
+    background: transparent;
+    border: 1px dashed @LINE@;
+    border-radius: 4px;
+    color: @INK2@;
+    font-size: 12px;
+    padding: 2px 10px;
+}
+#addGroupBtn:hover {
+    border-color: @COPPER@;
+    color: @COPPER@;
+}
+
 /* ── 输入控件基底 ── */
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit {
     background-color: @CANVAS@;

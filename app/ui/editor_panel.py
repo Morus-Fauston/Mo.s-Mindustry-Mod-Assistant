@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtCore import Signal
 
 from ..core.commands import CommandStack, DeleteFieldCommand, SetFieldCommand
 from ..core.config_loader import (
@@ -139,14 +140,42 @@ class EditorPanel(QWidget):
 
     # ── UI setup ────────────────────────────────────────────────────────
 
+    # 重命名信号（抬头双击编辑 / 右键重命名）
+    rename_requested = Signal(str, str)  # (old_name, new_name)
+
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
 
-        # Title
-        title = QLabel(f"{self._content.name}  ({self._content.data.get('type', '?')})")
-        title.setObjectName("editorTitle")
-        layout.addWidget(title)
+        # ── 抬头标题栏（v0.2.4.batch2：名字可编辑 + 类型小字底对齐 + 添加字段组按钮）──
+        title_bar = QHBoxLayout()
+        title_bar.setSpacing(8)
+
+        # 名字（大字粗，可双击原地编辑）
+        self._title_label = QLabel(self._content.name)
+        self._title_label.setObjectName("editorTitle")
+        self._title_label.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._title_label.setToolTip("双击编辑文件名")
+        self._title_label.mouseDoubleClickEvent = self._on_title_double_click  # type: ignore[method-assign]
+        self._title_label.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._title_label.customContextMenuRequested.connect(self._on_title_context_menu)
+        title_bar.addWidget(self._title_label)
+
+        # 类型小字（12px 淡化，同行底对齐，去括号）
+        type_label = QLabel(self._content.data.get("type", "?"))
+        type_label.setObjectName("editorTypeLabel")
+        title_bar.addWidget(type_label, 0, Qt.AlignmentFlag.AlignBottom)
+
+        title_bar.addStretch()
+
+        # [添加字段组] 按钮
+        self._add_group_btn = QPushButton("+ 添加字段组")
+        self._add_group_btn.setObjectName("addGroupBtn")
+        self._add_group_btn.setFixedHeight(24)
+        self._add_group_btn.clicked.connect(self._show_add_group_menu)
+        title_bar.addWidget(self._add_group_btn)
+
+        layout.addLayout(title_bar)
 
         # Scrollable form area
         scroll = QScrollArea()
@@ -230,19 +259,33 @@ class EditorPanel(QWidget):
 
     def _render_group(self, plan: GroupPlan) -> None:
         """Render a collapsible group from a GroupPlan."""
+        # 能力组：自动检测是否已启用（data 中有该组字段 = 已启用）
+        cap_enabled = False
+        if plan.capability:
+            content_type = self._content.data.get("type", "")
+            groups_config = self._field_groups.get(content_type, {})
+            group_def = groups_config.get(plan.group_name, {})
+            all_group_fields = (
+                set(group_def.get("required", []))
+                | set(group_def.get("default", []))
+                | set(group_def.get("optional", []))
+            )
+            cap_enabled = bool(all_group_fields & set(self._content.data.keys()))
+
         group = CollapsibleGroup(
             group_name=plan.group_name,
             title=plan.label,
             english=plan.group_name if plan.group_name != "_other" else "",
             locked=plan.locked,
             expanded=plan.expanded,
+            capability=plan.capability,
+            capability_enabled=cap_enabled,
         )
         group.add_field_requested.connect(self._show_add_field_menu)
         group.delete_group_requested.connect(self._delete_group)
-        # 折叠状态变化时记忆（v0.2.4：统一走 expandedChanged 信号，组头点击与
-        # chevron 点击都触发；旧实现 lambda 被 clicked(bool) 信号参数污染，
-        # 记忆 key 变成 False/True 而非组名，导致展开状态从未真正记忆）
         group.expandedChanged.connect(self._remember_expanded)
+        if plan.capability:
+            group.capability_toggled.connect(self._on_capability_toggled)
 
         # Field rows — 逐行 VBox 布局（替代 QFormLayout 网格）
         rows_layout = QVBoxLayout()
@@ -259,9 +302,14 @@ class EditorPanel(QWidget):
             zh = self._field_names_zh.get(f.name, "")
             label_widget = rich_label(zh, f.name)
             doc = self._field_docs.get(f.name, "")
+            # tooltip 补英文字段名 + field_docs
+            en_name = label_widget.property("_en_name") or f.name
+            tip_parts = [en_name]
             if doc:
-                label_widget.setToolTip(doc)
-                widget.setToolTip(doc)
+                tip_parts.append(doc)
+            tip = "\n".join(tip_parts)
+            label_widget.setToolTip(tip)
+            widget.setToolTip(tip)
 
             # 右键菜单
             widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -278,7 +326,7 @@ class EditorPanel(QWidget):
             # 普通行：标签固定宽 + 控件在右
             row_h = QHBoxLayout()
             row_h.setSpacing(8)
-            label_widget.setFixedWidth(150)
+            label_widget.setFixedWidth(180)
             row_h.addWidget(label_widget)
 
             # v0.2.4：仅普通字段行（PRIMITIVE/STRING_REF）统一行高；
@@ -313,12 +361,127 @@ class EditorPanel(QWidget):
     def _remember_expanded(self, group_name: str, expanded: bool) -> None:
         _EXPANDED_STATE.setdefault(self._content.name, {})[group_name] = expanded
 
-    def _delete_group(self, group_name: str) -> None:
-        """删除整组字段（通过 CommandStack 可撤销）。"""
+    # ── 能力开关组联动（v0.2.4.batch2）──────────────────────────────────
+
+    def _on_capability_toggled(self, group_name: str, enabled: bool) -> None:
+        """能力开关组复选框状态变化。
+
+        勾选 → 写入该组 defaults 字段到 data；
+        取消 → 从 data 移除该组字段（值缓存到 editor_state）。
+        联动：勾 mining → 自动勾 capacity（单向）。
+        """
+        from ..core.form_plan import CAPABILITY_LINKAGE
+
         content_type = self._content.data.get("type", "")
         groups_config = self._field_groups.get(content_type, {})
         group_def = groups_config.get(group_name, {})
-        names = list(group_def.get("required", [])) + list(group_def.get("optional", []))
+        all_fields = (
+            list(group_def.get("required", []))
+            + list(group_def.get("default", []))
+            + list(group_def.get("optional", []))
+        )
+
+        if enabled:
+            # 写入 defaults 值（只写 data 中不存在的字段）
+            defaults = group_def.get("defaults", {})
+            for field_name in all_fields:
+                if field_name not in self._content.data:
+                    val = defaults.get(field_name)
+                    if val is None:
+                        field_def = next(
+                            (f for f in self._class_def.fields if f.name == field_name), None
+                        ) if self._class_def else None
+                        val = type_default(field_def) if field_def else None
+                    # 只写 required + default 级字段（optional 等用户手动加）
+                    if field_name in group_def.get("required", []) or field_name in group_def.get("default", []):
+                        cmd = SetFieldCommand(
+                            data=self._content.data,
+                            path=field_name,
+                            new_value=val,
+                            on_change=self._mark_dirty,
+                        )
+                        self._commands.execute(cmd)
+
+            # 单向联动
+            linked = CAPABILITY_LINKAGE.get(group_name)
+            if linked and linked not in self._get_enabled_capabilities():
+                # 触发 linked 组的勾选（通过 rebuild 自动检测）
+                linked_def = groups_config.get(linked, {})
+                linked_defaults = linked_def.get("defaults", {})
+                linked_fields = (
+                    list(linked_def.get("required", []))
+                    + list(linked_def.get("default", []))
+                )
+                for fn in linked_fields:
+                    if fn not in self._content.data:
+                        val = linked_defaults.get(fn)
+                        if val is None:
+                            fd = next(
+                                (f for f in self._class_def.fields if f.name == fn), None
+                            ) if self._class_def else None
+                            val = type_default(fd) if fd else None
+                        cmd = SetFieldCommand(
+                            data=self._content.data,
+                            path=fn,
+                            new_value=val,
+                            on_change=self._mark_dirty,
+                        )
+                        self._commands.execute(cmd)
+        else:
+            # 移除该组所有字段（软删除：值缓存在 editor_state）
+            for field_name in all_fields:
+                if field_name in self._content.data:
+                    cmd = DeleteFieldCommand(
+                        data=self._content.data,
+                        path=field_name,
+                        on_change=self._mark_dirty,
+                    )
+                    self._commands.execute(cmd)
+
+        self._rebuild_form()
+
+    def _get_enabled_capabilities(self) -> set[str]:
+        """返回当前 data 中已启用的能力组名集合。"""
+        from ..core.form_plan import CAPABILITY_GROUPS
+        content_type = self._content.data.get("type", "")
+        groups_config = self._field_groups.get(content_type, {})
+        enabled = set()
+        for gname in CAPABILITY_GROUPS:
+            gdef = groups_config.get(gname, {})
+            all_fields = (
+                set(gdef.get("required", []))
+                | set(gdef.get("default", []))
+                | set(gdef.get("optional", []))
+            )
+            if all_fields & set(self._content.data.keys()):
+                enabled.add(gname)
+        return enabled
+
+    def _delete_group(self, group_name: str) -> None:
+        """删除整组字段（通过 CommandStack 可撤销）。
+
+        v0.2.4.batch2：包含 default 字段；弹确认对话框。
+        """
+        from PySide6.QtWidgets import QMessageBox
+        label = self.GROUP_LABELS.get(group_name, group_name)
+        reply = QMessageBox.question(
+            self, "删除字段组",
+            f"确定删除「{label}」组的所有字段？\n"
+            f"字段值将缓存在编辑器中，重新添加组时可恢复。",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        content_type = self._content.data.get("type", "")
+        groups_config = self._field_groups.get(content_type, {})
+        group_def = groups_config.get(group_name, {})
+        names = (
+            list(group_def.get("required", []))
+            + list(group_def.get("default", []))
+            + list(group_def.get("optional", []))
+        )
         deleted = False
         for name in names:
             if name in self._content.data:
@@ -469,12 +632,19 @@ class EditorPanel(QWidget):
             self._field_widgets[field_def.name] = desc
             return desc
 
-        # 名称档：自动撑宽
+        # 名称档：自动撑宽（name 字段只读镜像文件名，ADR-009）
         edit = AutoWidthEdit()
         edit.setText(str(value) if value is not None else "")
-        edit.textChanged.connect(
-            lambda t, n=field_def.name: self._on_field_changed(n, t)
-        )
+        if field_def.name == "name":
+            edit.setReadOnly(True)
+            edit.setToolTip(
+                "内容标识符由文件名决定，不能在此修改。\n"
+                "想改身份？请双击抬头名字或右键重命名。"
+            )
+        else:
+            edit.textChanged.connect(
+                lambda t, n=field_def.name: self._on_field_changed(n, t)
+            )
         self._field_widgets[field_def.name] = edit
         return edit
 
@@ -735,5 +905,104 @@ class EditorPanel(QWidget):
 
     def _display_name(self, field_name: str) -> str:
         return _format_display_name(field_name, self._field_names_zh)
+
+    # ── 抬头交互（v0.2.4.batch2）─────────────────────────────────────────
+
+    def _on_title_double_click(self, event) -> None:  # noqa: N802
+        """双击名字 → 原地变成 QLineEdit 编辑。"""
+        old_name = self._content.name
+        edit = QLineEdit(old_name, self._title_label.parent())
+        edit.setFixedWidth(max(self._title_label.width(), 120))
+        edit.setFixedHeight(self._title_label.height())
+        edit.move(self._title_label.pos())
+        edit.show()
+        edit.setFocus()
+        edit.selectAll()
+        self._title_label.hide()
+
+        def finish():
+            new_name = edit.text().strip()
+            edit.deleteLater()
+            self._title_label.show()
+            if new_name and new_name != old_name:
+                self.rename_requested.emit(old_name, new_name)
+
+        edit.editingFinished.connect(finish)
+        edit.returnPressed.connect(edit.clearFocus)
+
+    def _on_title_context_menu(self, pos) -> None:
+        """右键名字 → 重命名菜单。"""
+        menu = QMenu(self)
+        menu.addAction("重命名...", self._trigger_rename_via_dialog)
+        menu.exec(self._title_label.mapToGlobal(pos))
+
+    def _trigger_rename_via_dialog(self) -> None:
+        """通过对话框触发重命名（走 file_tree 的 _rename_content 逻辑）。"""
+        from PySide6.QtWidgets import QInputDialog
+        import re
+        old_name = self._content.name
+        new_name, ok = QInputDialog.getText(
+            self, "重命名", "新名称 (英文, 小写+连字符):", text=old_name
+        )
+        if ok and new_name and new_name.strip() != old_name:
+            self.rename_requested.emit(old_name, new_name.strip())
+
+    def _show_add_group_menu(self) -> None:
+        """抬头 [添加字段组] 按钮 → 列出当前未显示的可见组。"""
+        if self._class_def is None:
+            return
+
+        content_type = self._content.data.get("type", "")
+        groups_config = self._field_groups.get(content_type, {})
+        from ..core.form_plan import infer_subtype, group_visible
+        subtype = infer_subtype(content_type, self._content.data)
+
+        # 当前已显示的组名
+        current_groups = set()
+        for i in range(self._form_layout.count()):
+            w = self._form_layout.itemAt(i).widget()
+            if isinstance(w, CollapsibleGroup):
+                current_groups.add(w.group_name)
+
+        menu = QMenu(self)
+        count = 0
+        for group_name, group_def in groups_config.items():
+            if group_name in current_groups:
+                continue
+            if not group_visible(group_def, subtype):
+                continue
+            label = self.GROUP_LABELS.get(group_name, group_name)
+            action = menu.addAction(f"{label}  ({group_name})")
+            action.setData(group_name)
+            count += 1
+
+        if count == 0:
+            menu.addAction("(无更多可添加的字段组)").setEnabled(False)
+
+        chosen = menu.exec(self._add_group_btn.mapToGlobal(
+            self._add_group_btn.rect().bottomLeft()
+        ))
+        if chosen and chosen.data():
+            group_name = chosen.data()
+            # 写入一个 required 字段（如果有的话）或第一个 default/optional 字段到 data
+            group_def = groups_config.get(group_name, {})
+            fields_to_add = group_def.get("required", []) or group_def.get("default", []) or group_def.get("optional", [])
+            if fields_to_add:
+                first_field = fields_to_add[0]
+                if first_field not in self._content.data:
+                    field_def = next(
+                        (f for f in self._class_def.fields if f.name == first_field), None
+                    )
+                    if field_def:
+                        default_val = self._get_group_default(group_name, first_field)
+                        new_value = default_val if default_val is not None else type_default(field_def)
+                        cmd = SetFieldCommand(
+                            data=self._content.data,
+                            path=first_field,
+                            new_value=new_value,
+                            on_change=self._mark_dirty,
+                        )
+                        self._commands.execute(cmd)
+            self._rebuild_form()
 
     # ── helpers ─────────────────────────────────────────────────────────

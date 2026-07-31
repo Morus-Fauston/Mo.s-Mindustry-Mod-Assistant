@@ -194,6 +194,7 @@ class EditorPanel(QWidget):
         # QSS background 不传播到 viewport，且 QWidget 默认不渲染 QSS background
         scroll.viewport().setObjectName("editorViewport")
         scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self._scroll_area = scroll  # 保存引用，rebuild 时恢复滚动位置
         scroll_widget = QWidget()
         scroll_widget.setObjectName("editorViewport")
         scroll_widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -225,6 +226,13 @@ class EditorPanel(QWidget):
         """
         if self._class_def is None or self._form_layout is None:
             return
+
+        # 保存滚动位置（rebuild 后恢复，避免跳顶）
+        scroll_val = 0
+        if hasattr(self, "_scroll_area") and self._scroll_area is not None:
+            vbar = self._scroll_area.verticalScrollBar()
+            if vbar is not None:
+                scroll_val = vbar.value()
 
         # Clear existing widgets (groups + notes + stretch)
         while self._form_layout.count() > 0:
@@ -263,6 +271,12 @@ class EditorPanel(QWidget):
         self._form_layout.addWidget(notes_box)
 
         self._form_layout.addStretch()
+
+        # 恢复滚动位置
+        if hasattr(self, "_scroll_area") and self._scroll_area is not None:
+            vbar = self._scroll_area.verticalScrollBar()
+            if vbar is not None:
+                vbar.setValue(scroll_val)
 
     def _on_notes_changed(self) -> None:
         """备注写入 data['$notes']。不经过命令栈（编辑器私有笔记，无需撤销）。"""

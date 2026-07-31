@@ -211,6 +211,28 @@ class FileTreePanel(QWidget):
         if not ok or not new_name or new_name == old_name:
             return
         new_name = new_name.strip()
+        self._do_rename(old_name, new_name, category)
+
+    def _rename_content_by_name(self, old_name: str, new_name: str) -> None:
+        """从编辑器抬头触发的重命名（无对话框，直接执行）。
+
+        v0.2.4.batch2：抬头双击/右键重命名走此方法。
+        """
+        if self._project is None:
+            return
+        # 查找 category
+        category = None
+        for cat in ("units", "blocks", "weapons"):
+            if (self._project.contents.content_dir / cat / f"{old_name}.json").exists():
+                category = cat
+                break
+        if category is None:
+            QMessageBox.warning(self, "重命名失败", f"找不到文件: {old_name}")
+            return
+        self._do_rename(old_name, new_name, category)
+
+    def _do_rename(self, old_name: str, new_name: str, category: str) -> None:
+        """执行重命名（校验 + 文件操作 + 信号）。"""
         if not _NAME_RE.match(new_name):
             QMessageBox.warning(
                 self, "重命名失败",
@@ -225,7 +247,9 @@ class FileTreePanel(QWidget):
             return
         try:
             content = self._project.contents.get(old_name)
-            content.data["name"] = new_name
+            # ADR-009：仅当 name 字段已存在时才跟改，不注入
+            if "name" in content.data:
+                content.data["name"] = new_name
             self._project.contents.save(new_name, content.data, category)
             self._project.contents.delete(old_name)
             self.refresh()

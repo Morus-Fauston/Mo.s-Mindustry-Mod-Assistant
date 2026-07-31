@@ -53,6 +53,11 @@ class TemplateEngine:
             "hitSize": 8,
             "flying": False,
             "rotateSpeed": 15,
+            "accel": 0.1,
+            "drag": 0.1,
+            "range": 140,
+            "targetAir": True,
+            "targetGround": True,
             "weapons": [],
         }
 
@@ -70,6 +75,9 @@ class TemplateEngine:
             "drag": 0.06,
             "accel": 0.08,
             "rotateSpeed": 3,
+            "range": 140,
+            "targetAir": True,
+            "targetGround": True,
             "engineOffset": 5,
             "engineSize": 3,
             "weapons": [],
@@ -89,6 +97,11 @@ class TemplateEngine:
             "rotateMoveFirst": True,
             "squareShape": True,
             "rotateSpeed": 3,
+            "accel": 0.1,
+            "drag": 0.1,
+            "range": 140,
+            "targetAir": True,
+            "targetGround": True,
             "crushDamage": 1,
             "weapons": [],
         }
@@ -105,6 +118,11 @@ class TemplateEngine:
             "flying": False,
             "legCount": 4,
             "rotateSpeed": 5,
+            "accel": 0.1,
+            "drag": 0.1,
+            "range": 140,
+            "targetAir": True,
+            "targetGround": True,
             "weapons": [],
         }
 
@@ -117,6 +135,7 @@ class TemplateEngine:
             "health": 400,
             "size": 1,
             "armor": 0,
+            "description": "",
             "requirements": [
                 {"item": "copper", "amount": 6}
             ],
@@ -133,6 +152,8 @@ class TemplateEngine:
             "reload": 30,
             "targetAir": True,
             "targetGround": True,
+            "inaccuracy": 0,
+            "description": "",
             "ammoTypes": {
                 "copper": {
                     "type": "BasicBulletType",
@@ -157,6 +178,8 @@ class TemplateEngine:
             "reload": 40,
             "targetAir": True,
             "targetGround": True,
+            "inaccuracy": 0,
+            "description": "",
             "shootType": {
                 "type": "LaserBulletType",
                 "damage": 20,

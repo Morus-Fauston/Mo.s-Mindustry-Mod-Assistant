@@ -33,7 +33,7 @@ from .widgets.toast import Toast
 from .widgets.reference_panel import ReferencePanel, _ReferencePicker
 
 # 应用版本号（与 pyproject.toml 同步）
-APP_VERSION = "0.2.4.batch1"
+APP_VERSION = "0.2.4.batch2"
 
 
 class _StatusBar(QStatusBar):
@@ -452,6 +452,8 @@ class MainWindow(QMainWindow):
             validator=self._validator,
             project=self._project,
         )
+        # v0.2.4.batch2：抬头重命名信号 → 文件树重命名逻辑
+        panel.rename_requested.connect(self._file_tree._rename_content_by_name)
         idx = self._tabs.addTab(panel, name)
         self._add_tab_close_button(idx, panel)
         self._tabs.setCurrentIndex(idx)

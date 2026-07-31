@@ -31,6 +31,13 @@ class FieldPlan:
     deletable: bool  # False for required fields in locked groups
 
 
+# 能力开关组名单（v0.2.4.batch2）
+CAPABILITY_GROUPS = {"mining", "building", "boost", "capacity"}
+
+# 单向联动：勾选 key → 自动勾选 value
+CAPABILITY_LINKAGE = {"mining": "capacity"}
+
+
 @dataclass
 class GroupPlan:
     """A group of fields to render as a collapsible section."""
@@ -40,6 +47,7 @@ class GroupPlan:
     expanded: bool
     fields: list[FieldPlan] = field(default_factory=list)
     has_optional: bool = False  # True if group has more fields available via '+'
+    capability: bool = False  # True = 能力开关组（▾ ☐ 标题）
 
 
 # ── Public interface ───────────────────────────────────────────────────
@@ -112,9 +120,11 @@ def compute_form_plan(
         # Empty-group hiding: show group only if it has required fields
         # or at least one visible field.  Groups with only default/optional
         # and nothing in data stay hidden (user adds via header button).
-        if required or visible:
+        # Exception: capability groups always render (user needs the checkbox).
+        is_cap = group_name in CAPABILITY_GROUPS
+        if required or visible or is_cap:
             locked = is_group_locked(group_name, group_def, content_type, data)
-            expanded = is_group_expanded(group_name, expanded_state, required)
+            expanded = is_group_expanded(group_name, expanded_state, bool(required))
             required_set = set(required)
 
             field_plans = [
@@ -129,6 +139,7 @@ def compute_form_plan(
                 expanded=expanded,
                 fields=field_plans,
                 has_optional=bool(optional) or bool(default),
+                capability=group_name in CAPABILITY_GROUPS,
             ))
 
     # Render extra fields from JSON (not in any group) → "其他"
@@ -211,10 +222,13 @@ def is_group_expanded(
 
     Default: groups with required fields are expanded;
     groups with only default/optional are collapsed.
+
+    Always returns a plain bool: callers must be able to pass
+    has_required directly to QWidget.setVisible without coercion.
     """
     if expanded_state is not None and group_name in expanded_state:
-        return expanded_state[group_name]
-    return has_required
+        return bool(expanded_state[group_name])
+    return bool(has_required)
 
 
 def type_default(field_def: FieldDef) -> Any:

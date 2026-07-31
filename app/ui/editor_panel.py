@@ -60,6 +60,13 @@ from .theme import field_type_property
 # 默认只展开 basic 组（见 _is_group_expanded）。
 _EXPANDED_STATE: dict[str, dict[str, bool]] = {}
 
+# 删组/禁用能力组时的字段值缓存：{content_name: {group_name: {field: value}}}
+_CACHED_VALUES: dict[str, dict[str, dict[str, Any]]] = {}
+
+# 手动删除的组集合：{content_name: set(group_name)}
+# 能力组默认始终显示，只有手动删除才消失。
+_DELETED_GROUPS: dict[str, set[str]] = {}
+
 
 class EditorPanel(QWidget):
     """Generates a form from metadata for editing a single content item.
@@ -224,12 +231,14 @@ class EditorPanel(QWidget):
         self._field_widgets.clear()
 
         expanded_state = _EXPANDED_STATE.get(self._content.name)
+        deleted_groups = _DELETED_GROUPS.get(self._content.name, set())
         plan = compute_form_plan(
             class_def=self._class_def,
             data=self._content.data,
             field_groups=self._field_groups,
             expanded_state=expanded_state,
             group_labels=self.GROUP_LABELS,
+            deleted_groups=deleted_groups,
         )
 
         for group_plan in plan:
@@ -366,8 +375,8 @@ class EditorPanel(QWidget):
     def _on_capability_toggled(self, group_name: str, enabled: bool) -> None:
         """能力开关组复选框状态变化。
 
-        勾选 → 写入该组 defaults 字段到 data；
-        取消 → 从 data 移除该组字段（值缓存到 editor_state）。
+        勾选 → 从缓存恢复字段值（无缓存则用 defaults）；
+        取消 → 缓存当前字段值，然后从 data 移除。
         联动：勾 mining → 自动勾 capacity（单向）。
         """
         from ..core.form_plan import CAPABILITY_LINKAGE
@@ -380,19 +389,24 @@ class EditorPanel(QWidget):
             + list(group_def.get("default", []))
             + list(group_def.get("optional", []))
         )
+        content_name = self._content.name
 
         if enabled:
-            # 写入 defaults 值（只写 data 中不存在的字段）
+            # 从缓存恢复（Bug1 修复）
+            cached = _CACHED_VALUES.get(content_name, {}).get(group_name, {})
             defaults = group_def.get("defaults", {})
             for field_name in all_fields:
                 if field_name not in self._content.data:
-                    val = defaults.get(field_name)
-                    if val is None:
+                    # 优先用缓存值，其次 defaults，最后 type_default
+                    if field_name in cached:
+                        val = cached[field_name]
+                    elif field_name in defaults:
+                        val = defaults[field_name]
+                    else:
                         field_def = next(
                             (f for f in self._class_def.fields if f.name == field_name), None
                         ) if self._class_def else None
                         val = type_default(field_def) if field_def else None
-                    # 只写 required + default 级字段（optional 等用户手动加）
                     if field_name in group_def.get("required", []) or field_name in group_def.get("default", []):
                         cmd = SetFieldCommand(
                             data=self._content.data,
@@ -401,12 +415,22 @@ class EditorPanel(QWidget):
                             on_change=self._mark_dirty,
                         )
                         self._commands.execute(cmd)
+            # 恢复 optional 级缓存字段（用户之前手动添加的）
+            for field_name, val in cached.items():
+                if field_name not in self._content.data and field_name in group_def.get("optional", []):
+                    cmd = SetFieldCommand(
+                        data=self._content.data,
+                        path=field_name,
+                        new_value=val,
+                        on_change=self._mark_dirty,
+                    )
+                    self._commands.execute(cmd)
 
             # 单向联动
             linked = CAPABILITY_LINKAGE.get(group_name)
             if linked and linked not in self._get_enabled_capabilities():
-                # 触发 linked 组的勾选（通过 rebuild 自动检测）
                 linked_def = groups_config.get(linked, {})
+                linked_cached = _CACHED_VALUES.get(content_name, {}).get(linked, {})
                 linked_defaults = linked_def.get("defaults", {})
                 linked_fields = (
                     list(linked_def.get("required", []))
@@ -414,7 +438,7 @@ class EditorPanel(QWidget):
                 )
                 for fn in linked_fields:
                     if fn not in self._content.data:
-                        val = linked_defaults.get(fn)
+                        val = linked_cached.get(fn, linked_defaults.get(fn))
                         if val is None:
                             fd = next(
                                 (f for f in self._class_def.fields if f.name == fn), None
@@ -428,7 +452,14 @@ class EditorPanel(QWidget):
                         )
                         self._commands.execute(cmd)
         else:
-            # 移除该组所有字段（软删除：值缓存在 editor_state）
+            # 缓存当前值（Bug1 修复）
+            cache = {}
+            for field_name in all_fields:
+                if field_name in self._content.data:
+                    cache[field_name] = self._content.data[field_name]
+            if cache:
+                _CACHED_VALUES.setdefault(content_name, {})[group_name] = cache
+            # 移除该组所有字段
             for field_name in all_fields:
                 if field_name in self._content.data:
                     cmd = DeleteFieldCommand(
@@ -461,6 +492,8 @@ class EditorPanel(QWidget):
         """删除整组字段（通过 CommandStack 可撤销）。
 
         v0.2.4.batch2：包含 default 字段；弹确认对话框。
+        Bug1 修复：缓存字段值。
+        Bug2 修复：记入 _DELETED_GROUPS（能力组手动删除后才消失）。
         """
         from PySide6.QtWidgets import QMessageBox
         label = self.GROUP_LABELS.get(group_name, group_name)
@@ -482,6 +515,19 @@ class EditorPanel(QWidget):
             + list(group_def.get("default", []))
             + list(group_def.get("optional", []))
         )
+        content_name = self._content.name
+
+        # Bug1：缓存当前值
+        cache = {}
+        for name in names:
+            if name in self._content.data:
+                cache[name] = self._content.data[name]
+        if cache:
+            _CACHED_VALUES.setdefault(content_name, {})[group_name] = cache
+
+        # Bug2：记入已删除集合
+        _DELETED_GROUPS.setdefault(content_name, set()).add(group_name)
+
         deleted = False
         for name in names:
             if name in self._content.data:
@@ -524,10 +570,17 @@ class EditorPanel(QWidget):
             menu.addAction("(无更多可用字段)").setEnabled(False)
 
         # Position the menu near the '+' button that was clicked
+        # Bug3 修复：sender 是 CollapsibleGroup（信号转发），
+        # 需要找到组内的 _add_btn 来定位。
         sender = self.sender()
-        if sender and isinstance(sender, QPushButton):
+        pos = None
+        if isinstance(sender, CollapsibleGroup):
+            add_btn = getattr(sender, '_add_btn', None)
+            if add_btn:
+                pos = add_btn.mapToGlobal(add_btn.rect().bottomLeft())
+        elif isinstance(sender, QPushButton):
             pos = sender.mapToGlobal(sender.rect().bottomLeft())
-        else:
+        if pos is None:
             pos = self.mapToGlobal(self.rect().center())
 
         chosen = menu.exec(pos)
@@ -984,25 +1037,50 @@ class EditorPanel(QWidget):
         ))
         if chosen and chosen.data():
             group_name = chosen.data()
-            # 写入一个 required 字段（如果有的话）或第一个 default/optional 字段到 data
+            content_name = self._content.name
             group_def = groups_config.get(group_name, {})
-            fields_to_add = group_def.get("required", []) or group_def.get("default", []) or group_def.get("optional", [])
-            if fields_to_add:
-                first_field = fields_to_add[0]
-                if first_field not in self._content.data:
-                    field_def = next(
-                        (f for f in self._class_def.fields if f.name == first_field), None
-                    )
-                    if field_def:
-                        default_val = self._get_group_default(group_name, first_field)
-                        new_value = default_val if default_val is not None else type_default(field_def)
+
+            # Bug2：从已删除集合移除
+            _DELETED_GROUPS.get(content_name, set()).discard(group_name)
+
+            # Bug1：从缓存恢复字段值
+            cached = _CACHED_VALUES.get(content_name, {}).get(group_name, {})
+            defaults = group_def.get("defaults", {})
+            all_fields = (
+                list(group_def.get("required", []))
+                + list(group_def.get("default", []))
+                + list(group_def.get("optional", []))
+            )
+            # 恢复 required + default 级字段
+            for field_name in all_fields:
+                if field_name not in self._content.data:
+                    if field_name in cached:
+                        val = cached[field_name]
+                    elif field_name in defaults:
+                        val = defaults[field_name]
+                    else:
+                        field_def = next(
+                            (f for f in self._class_def.fields if f.name == field_name), None
+                        ) if self._class_def else None
+                        val = type_default(field_def) if field_def else None
+                    if field_name in group_def.get("required", []) or field_name in group_def.get("default", []):
                         cmd = SetFieldCommand(
                             data=self._content.data,
-                            path=first_field,
-                            new_value=new_value,
+                            path=field_name,
+                            new_value=val,
                             on_change=self._mark_dirty,
                         )
                         self._commands.execute(cmd)
+            # 恢复 optional 级缓存字段（用户之前手动添加的）
+            for field_name, val in cached.items():
+                if field_name not in self._content.data and field_name in group_def.get("optional", []):
+                    cmd = SetFieldCommand(
+                        data=self._content.data,
+                        path=field_name,
+                        new_value=val,
+                        on_change=self._mark_dirty,
+                    )
+                    self._commands.execute(cmd)
             self._rebuild_form()
 
     # ── helpers ─────────────────────────────────────────────────────────

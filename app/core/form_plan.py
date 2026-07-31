@@ -59,6 +59,7 @@ def compute_form_plan(
     field_groups: dict[str, Any],
     expanded_state: dict[str, bool] | None = None,
     group_labels: dict[str, str] | None = None,
+    deleted_groups: set[str] | None = None,
 ) -> list[GroupPlan]:
     """Compute the full form plan for a content item.
 
@@ -120,10 +121,11 @@ def compute_form_plan(
         # Empty-group hiding: show group only if it has required fields
         # or at least one visible field.  Groups with only default/optional
         # and nothing in data stay hidden (user adds via header button).
-        # Capability groups render only when enabled (have fields in data)
-        # or when they have required fields (they don't, so effectively
-        # they hide when unchecked and data is clean).
-        if required or visible:
+        # Exception: capability groups always render (checkbox must be visible)
+        # unless manually deleted (handled by deleted_groups param).
+        is_cap = group_name in CAPABILITY_GROUPS
+        is_deleted = group_name in (deleted_groups or set())
+        if required or visible or (is_cap and not is_deleted):
             locked = is_group_locked(group_name, group_def, content_type, data)
             expanded = is_group_expanded(
                 group_name, expanded_state, bool(required),

@@ -117,3 +117,26 @@ class Project:
     def sprite_path(self, category: str, name: str, suffix: str = "") -> Path:
         """Get the expected sprite path for a content item."""
         return self.sprites_dir / category / f"{name}{suffix}.png"
+
+    def rename_sprites(self, category: str, old_name: str, new_name: str) -> None:
+        """Rename all sprite files associated with a content item.
+
+        Matches ``{old_name}.png`` and ``{old_name}-*.png`` (hyphen-separated
+        suffixes like -cell, -full, -treads, custom parts).  Does NOT match
+        ``{old_name}XYZ.png`` (no hyphen) which belongs to a different content
+        item (e.g. unit "坦候" must not rename weapon "坦候武器").
+        """
+        sprite_dir = self.sprites_dir / category
+        if not sprite_dir.is_dir():
+            return
+        # Collect all files to rename BEFORE renaming (avoid glob matching
+        # freshly-renamed files when old_name is a prefix of new_name).
+        renames: list[tuple[Path, Path]] = []
+        main = sprite_dir / f"{old_name}.png"
+        if main.exists():
+            renames.append((main, sprite_dir / f"{new_name}.png"))
+        for png in sorted(sprite_dir.glob(f"{old_name}-*.png")):
+            suffix = png.stem[len(old_name):]  # e.g. "-cell", "-full", "-盖子"
+            renames.append((png, sprite_dir / f"{new_name}{suffix}.png"))
+        for src, dst in renames:
+            src.rename(dst)

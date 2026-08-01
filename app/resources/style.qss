@@ -605,12 +605,11 @@ QComboBox[error="true"] {
     border-bottom: 1px solid @LINE@;
 }
 
-/* 编辑器内容标题 */
+/* 编辑器内容标题（v0.2.4.batch4：删 margin-bottom，修 AlignBottom 对齐错位） */
 #editorTitle {
     font-size: 16px;
     font-weight: 600;
     color: @INK@;
-    margin-bottom: 8px;
 }
 
 /* 灰色提示/只读占位文字（统一替代内联 setStyleSheet 灰字） */

@@ -232,7 +232,7 @@ class FileTreePanel(QWidget):
         self._do_rename(old_name, new_name, category)
 
     def _do_rename(self, old_name: str, new_name: str, category: str) -> None:
-        """执行重命名（校验 + 文件操作 + 信号）。"""
+        """执行重命名（校验 + 文件操作 + 精灵图跟改 + 信号）。"""
         if not _NAME_RE.match(new_name):
             QMessageBox.warning(
                 self, "重命名失败",
@@ -252,6 +252,8 @@ class FileTreePanel(QWidget):
                 content.data["name"] = new_name
             self._project.contents.save(new_name, content.data, category)
             self._project.contents.delete(old_name)
+            # F-81: 精灵图全跟改（主图 + 所有 -suffix 图）
+            self._project.rename_sprites(category, old_name, new_name)
             self.refresh()
             self.content_renamed.emit(old_name, new_name)
         except FileNotFoundError:
@@ -264,8 +266,8 @@ class FileTreePanel(QWidget):
             return
         import subprocess
         if os.name == "nt":
-            # explorer /select 精确选中文件
-            subprocess.Popen(["explorer", f"/select,{p}"])
+            # v0.2.4.batch4：字符串形式调 explorer，修中文/空格路径跳"文档"的 bug
+            subprocess.Popen(f'explorer /select,"{p}"')
         else:
             subprocess.Popen(["xdg-open", str(p.parent)])
 

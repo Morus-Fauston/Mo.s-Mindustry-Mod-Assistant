@@ -146,12 +146,16 @@ class MainWindow(QMainWindow):
         # v0.2.4.batch4：预览 SpinBox 改坐标 → 当前活动编辑器标 dirty + 刷新表单
         self._preview.content_modified.connect(self._on_preview_content_modified)
 
-        # QSplitter 三栏：左 200 / 中自适应 / 右 280
+        # QSplitter 三栏：左 200 / 中自适应 / 右 360
+        # 右栏 280→320→360：图层树为两列（图层名列 + 武器 x/y 输入框列），
+        # 输入框两 spin 需求 ≥112px。列 0 自适应内容后，320 宽时列 1 仅
+        # 112px 会把输入框压缩交叠；360 宽时列 1 ≈230px 输入框完整且
+        # 贴近文本（见 v0.2.5 图层树渲染修复）。
         self._splitter = QSplitter(Qt.Orientation.Horizontal)
         self._splitter.addWidget(self._file_tree)
         self._splitter.addWidget(self._center_stack)
         self._splitter.addWidget(self._preview)
-        self._splitter.setSizes([200, 920, 280])
+        self._splitter.setSizes([200, 840, 360])
         self._splitter.setStretchFactor(0, 0)
         self._splitter.setStretchFactor(1, 1)
         self._splitter.setStretchFactor(2, 0)

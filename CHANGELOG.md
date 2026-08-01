@@ -1,5 +1,65 @@
 # Changelog
 
+## v0.2.4.revised (2026-08-02 03:19) — 架构深化 + 图层树渲染修复 + 测试补全
+
+> 一次完整的架构审查驱动的重构：把渲染坐标公式、字段组操作、控件创建、颜色选择四块逻辑从 UI 层提取为可独立测试的深模块；修复图层树在 windows11 下的一串渲染问题；补齐图层树行为测试。测试从 219 → 258 全绿。
+
+### 架构改进
+
+- **渲染数学层**：新增 `app/core/preview_math.py`（不 import Qt）——PPU=4 坐标映射 / 武器 mirror 双份 / 引擎双圆几何提取为纯数据描述（`LayerSpec`/`CircleSpec`/`SceneSpec`），坐标公式脱离 Qt 可 pytest 直接验证（ADR-003 "渲染公式可提取"的落地）
+- **字段组操作层**：新增 `app/core/group_ops.py`（不 import Qt）——字段组的缓存/恢复/移除逻辑从 editor_panel 三处重复（能力勾选、能力联动、添加字段组）集中为 5 个纯函数，走 CommandStack 可撤销。历史 bug 高发区（Bug1/2/3）现在只需修一次
+- **控件工厂**：新增 `app/ui/widgets/field_widget_factory.py`——bool/int/float 控件创建从四处复制粘贴（editor_panel / polymorphic_editor / weapon_array_editor / preview_panel）收敛为 `create_value_widget()` 单点，统一 range/decimals/宽度/滚轮禁用/blockSignals 初始化
+- **颜色控件独立**：`_create_color_widget` 60 行内联代码提取为 `app/ui/widgets/color_picker.py`（`ColorPicker` 控件 + `parse_color` 纯函数），editor_panel 调用缩至 7 行。hex 解析 / rgba dict 转换 / QColorDialog 交互封装在控件内部
+
+### 修复（图层树渲染系列）
+
+- **复选框裸勾/勾不可见**：QSS 显式定义 `QTreeWidget::indicator`（16px 圆角方框 + `:hover`/`:checked`/`:disabled`），勾选态用 SVG 橙勾——windows11 风格叠加 QSS 后原生 indicator 丢外框，且原生勾在深色主题下几乎不可见
+- **图层名被裁、「引擎示意」截断成「引擎...」**：列 0 从 `ResizeToContents` 改 `Fixed` 220px——RTC 在带 itemWidget 的行上会把列算窄
+- **选中态双橙条**：图层树整体去掉选中态（`#layerTree::item:selected` 覆盖为透明）+ `:selected:focus` 去掉右侧边框
+- **双击复选框误触发「更换图片」**：viewport `eventFilter` 拦截落在 indicator 区域的双击，只 toggle 不换图
+- **编辑区武器 XY 修改静默失败**：控件信号只传一个值、裸 `_set_field`（两参数）→ TypeError 被 Qt 静默吞掉 → dict 永不更新。改用 `functools.partial` 绑定字段名
+- **编辑区武器修改不刷新预览/被覆写**：`WeaponArrayEditor.valueChanged` 补连 `data_changed`
+- **重建污染 dict**：图层树重建时 `spin.setValue` 触发 `valueChanged` 把默认值写进 dict → 重建期间 `blockSignals`
+- **数值框显示 bug**：`textFromValue` 用 `:g` 在 decimals 小时吞小数位（1.1→"1"）或产生科学计数法（10→"1e+01"）→ 改定点 `f` 格式 + 手动去尾零
+- **editor_panel 启动崩溃**：`_on_capability_toggled` docstring 未闭合（缺 `"""`）+ 丢失变量赋值行 → Python 把后续中文注释当代码 → SyntaxError。补回闭合引号 + import + 赋值
+
+### 体验优化
+
+- **武器 x/y 输入框加长**：55→70px，显示更宽松
+- **图层行状态文本移列 1**：列 0 只留图层名，`[有]/[可选]/[缺失]` 右对齐到列 1，输入框不再被挤远
+- **preview 武器 spin 换 NumDoubleSpinBox**：获得滚轮保护（不再误改值）+ 去尾零显示
+
+### 测试（219 → 258 全绿）
+
+- **`test_preview_math.py`**（+17）：坐标公式脱离 Qt 验证——PPU 缩放 / y 翻转 / mirror 对称 / 引用回退 / 引擎圆半径+z 切换+颜色归一化
+- **`test_group_ops.py`**（+15）：字段组缓存/恢复/移除脱离 Qt 验证——缓存优先级 / 存在标记 / optional 恢复 / 撤销对称性
+- **`test_preview_panel.py`**（+24）：图层树行为覆盖——树结构 / 主体 checkbox 显隐联动场景 / 武器逐把独立 key / spin 写回 dict + 信号 / visible_for 子类型过滤 / engineSize=0 无引擎层 / required 缺图标 [缺失] / QSS 配置回归
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/core/preview_math.py` | **新增** — 渲染纯数学层（坐标/武器/引擎），不 import Qt |
+| `app/core/group_ops.py` | **新增** — 字段组缓存/恢复/移除，不 import Qt |
+| `app/ui/widgets/field_widget_factory.py` | **新增** — 控件工厂，消灭四处复制粘贴 |
+| `app/ui/widgets/color_picker.py` | **新增** — 颜色选择控件（色块+hex 输入） |
+| `tests/test_preview_math.py` | **新增** — 坐标公式测试 17 条 |
+| `tests/test_group_ops.py` | **新增** — 字段组操作测试 15 条 |
+| `tests/test_preview_panel.py` | **新增** — 图层树/武器行/行为测试 24 条 |
+| `app/resources/icons/check_copper.svg` | **新增** — 复选框 SVG 橙勾 |
+| `app/ui/editor_panel.py` | 重构 — group_ops 替换三处重复 + 颜色控件提取 + docstring 修复（净减 ~160 行） |
+| `app/ui/preview_panel.py` | 修改 — 列 0 Fixed 220 / 去选中态 / 双击拦截 / spin 70px+blockSignals / NumDoubleSpinBox |
+| `app/resources/style.qss` | 修改 — indicator 显式定义 + SVG 勾 + `#layerTree` 去选中态 |
+| `app/ui/widgets/weapon_array_editor.py` | 修改 — partial 修复 + 工厂重构 |
+| `app/ui/widgets/polymorphic_editor.py` | 修改 — 工厂重构 |
+| `app/ui/widgets/num_spin.py` | 修改 — 定点格式去尾零（修 :g 科学计数法） |
+| `app/ui/theme.py` | 修改 — `@CHECK_ICON@` 绝对路径注入 |
+| `app/ui/main_window.py` | 修改 — 右栏 280→360 |
+| `app/ui/widgets/__init__.py` | 修改 — 导出 create_value_widget |
+| `AGENTS.md` | **新增** — 项目硬约束文档 |
+
+---
+
 ## v0.2.4 (2026-08-01) — 下半 Batch 4：预览渲染纠正 + 武器图层树 + 子类型过滤 + 交互增强
 
 > grill 收敛 9 项设计决策 + 003 调研报告落地。纠正 Batch 3 的坐标/引擎/图层多处与游戏不符，新增武器行内编辑、子类型图层过滤、图层双击替换/右键菜单。

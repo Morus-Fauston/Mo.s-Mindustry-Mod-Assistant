@@ -120,6 +120,12 @@ def load_qss(theme: str | None = None) -> str:
     tokens = get_tokens(theme)
     for key, value in tokens.items():
         template = template.replace(f"@{key}@", value)
+    # 树复选框勾图标：QSS 的 url() 相对路径基于进程 cwd 不可靠，且不接受
+    # file:// 协议（会被当相对路径拼到 cwd 前），故用绝对盘符路径
+    # （as_posix）替换 @CHECK_ICON@（v0.2.5 图层树渲染修复）。
+    check_icon = _RESOURCES / "icons" / "check_copper.svg"
+    if check_icon.exists():
+        template = template.replace("@CHECK_ICON@", f"url({check_icon.as_posix()})")
     return template
 
 

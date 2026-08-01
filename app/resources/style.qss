@@ -183,8 +183,42 @@ QTreeWidget::item:selected, QTreeView::item:selected {
 }
 QTreeWidget::item:selected:focus, QTreeView::item:selected:focus {
     background-color: @SEL_BG@;
-    border: 1px solid @SEL_FOCUS@;
+    border-top: 1px solid @SEL_FOCUS@;
+    border-bottom: 1px solid @SEL_FOCUS@;
     border-left: 3px solid @COPPER@;
+}
+/* 图层树（#layerTree）不需要选中态：全透明、无左条、无边框、不加粗。
+   文件树等其它树仍保留上方选中态样式（v0.2.5 用户决策：图层树去掉选中态）。 */
+#layerTree::item:selected, #layerTree::item:selected:focus {
+    background-color: transparent;
+    color: @INK@;
+    font-weight: 400;
+    border: none;
+    border-left: none;
+}
+/* 树内勾选框 indicator：windows11 风格下原生 indicator 叠加 QSS 的
+   QTreeView::item 规则后丢失外框，且原生勾形过淡/深色主题下几乎不可见。
+   显式定义子控件 + checked 用 SVG 橙勾（@CHECK_ICON@ 由 theme.py 替换为
+   绝对路径），保证任何主题下勾清晰可见（v0.2.5 图层树渲染修复）。
+   勾选态白底 + 橙勾，不再整块橙底填充（避免与选中行左橙条成"双框"）。 */
+QTreeWidget::indicator, QTreeView::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid @INK2@;
+    border-radius: 3px;
+    background-color: @CANVAS@;
+}
+QTreeWidget::indicator:hover, QTreeView::indicator:hover {
+    border-color: @COPPER@;
+}
+QTreeWidget::indicator:checked, QTreeView::indicator:checked {
+    background-color: @CANVAS@;
+    border-color: @COPPER_DEEP@;
+    image: @CHECK_ICON@;
+}
+QTreeWidget::indicator:disabled, QTreeView::indicator:disabled {
+    border-color: @LINE@;
+    background-color: @PANEL@;
 }
 
 /* ── 滚动区（白底，跟 HTML .body 一致；组卡片靠边框分隔） ── */

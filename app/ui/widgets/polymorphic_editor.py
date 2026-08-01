@@ -36,6 +36,7 @@ from ...core.commands import CommandStack, SetFieldCommand
 from .check_toggle import CheckToggle
 from .num_spin import NumSpinBox, NumDoubleSpinBox
 from .auto_width_edit import AutoWidthEdit
+from .field_widget_factory import create_value_widget
 from .label_helper import rich_label
 from ...core.config_loader import (
     display_name,
@@ -213,30 +214,12 @@ class PolymorphicTypeEditor(QGroupBox):
 
     def _create_widget(self, fname: str, val: Any) -> QWidget | None:
         """Create the appropriate widget for a field value."""
-        if isinstance(val, bool):
-            cb = CheckToggle()
-            cb.setChecked(val)
-            cb.toggled.connect(lambda v, n=fname: self._set_field(n, v))
-            self._widgets[fname] = cb
-            return cb
-        elif isinstance(val, float):
-            spin = NumDoubleSpinBox()
-            spin.setRange(-999999.0, 999999.0)
-            spin.setDecimals(3)
-            spin.setFixedWidth(70)
-            spin.setValue(val)
-            spin.valueChanged.connect(lambda v, n=fname: self._set_field(n, v))
-            self._widgets[fname] = spin
-            return spin
-        elif isinstance(val, int):
-            spin = NumSpinBox()
-            spin.setRange(-999999, 999999)
-            spin.setFixedWidth(70)
-            spin.setValue(val)
-            spin.valueChanged.connect(lambda v, n=fname: self._set_field(n, v))
-            self._widgets[fname] = spin
-            return spin
-        elif isinstance(val, str):
+        # bool/int/float 走统一工厂（range/decimals/宽度/滚轮/防误触全在内）
+        w = create_value_widget(val, lambda v, n=fname: self._set_field(n, v))
+        if w is not None:
+            self._widgets[fname] = w
+            return w
+        if isinstance(val, str):
             edit = AutoWidthEdit()
             edit.setText(val)
             edit.textChanged.connect(
@@ -244,8 +227,7 @@ class PolymorphicTypeEditor(QGroupBox):
             )
             self._widgets[fname] = edit
             return edit
-        else:
-            # Unsupported type: show read-only label
-            label = QLabel(str(val) if val is not None else "(空)")
-            label.setObjectName("mutedText")
-            return label
+        # Unsupported type: show read-only label
+        label = QLabel(str(val) if val is not None else "(空)")
+        label.setObjectName("mutedText")
+        return label

@@ -143,6 +143,8 @@ class MainWindow(QMainWindow):
 
         # 右侧：预览 + 图层
         self._preview = PreviewPanel()
+        # v0.2.4.batch4：预览 SpinBox 改坐标 → 当前活动编辑器标 dirty + 刷新表单
+        self._preview.content_modified.connect(self._on_preview_content_modified)
 
         # QSplitter 三栏：左 200 / 中自适应 / 右 280
         self._splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -454,6 +456,8 @@ class MainWindow(QMainWindow):
         )
         # v0.2.4.batch2：抬头重命名信号 → 文件树重命名逻辑
         panel.rename_requested.connect(self._file_tree._rename_content_by_name)
+        # v0.2.4.batch4：数据变更 → 预览实时刷新
+        panel.data_changed.connect(lambda p=panel: self._preview.show_content(p.content, self._project))
         idx = self._tabs.addTab(panel, name)
         self._add_tab_close_button(idx, panel)
         self._tabs.setCurrentIndex(idx)
@@ -474,13 +478,26 @@ class MainWindow(QMainWindow):
             index, QTabBar.ButtonPosition.RightSide, btn
         )
 
+    def _on_preview_content_modified(self) -> None:
+        """v0.2.4.batch4：预览 SpinBox 改坐标后，标记当前活动编辑器 dirty + 刷新表单。"""
+        idx = self._tabs.currentIndex()
+        if idx < 0:
+            return
+        panel = self._tabs.widget(idx)
+        if isinstance(panel, EditorPanel):
+            panel._mark_dirty()
+            panel.refresh_from_data()
+
     def _on_content_renamed(self, old_name: str, new_name: str) -> None:
-        """内容重命名后，同步已打开的标签页（名称 + 标题）。"""
+        """内容重命名后，同步已打开的标签页（名称 + 标题）+ 刷新预览。"""
         for i in range(self._tabs.count()):
             panel = self._tabs.widget(i)
             if isinstance(panel, EditorPanel) and panel.content.name == old_name:
                 panel.content.name = new_name
                 self._tabs.setTabText(i, new_name)
+                # F-81: 重命名后预览/图层树立即显示新名
+                if self._tabs.currentIndex() == i:
+                    self._preview.show_content(panel.content, self._project)
 
     def _close_tab(self, index: int) -> None:
         panel = self._tabs.widget(index)

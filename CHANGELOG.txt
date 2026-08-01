@@ -1,3 +1,37 @@
+v0.2.4 (2026-08-01) 下半Batch4: 预览渲染纠正+武器图层树+子类型过滤+交互增强
+  新增: 武器图层树每把独立行+行内SpinBox编辑xy(D1) / SpinBox实时预览延迟提交(D7) / 引用武器默认值解析(D2) / 子类型图层过滤visible_for(R3) / 图层双击替换+右键菜单(D8) / data_changed信号→预览实时刷新(D4)
+  纠正: 坐标PPU=4(R1,修Batch3武器偏小4倍) / 引擎双实心圆+engineColor+默认z在主体下(D6) / 武器每把独立scene key
+  修复: 抬头对齐错位(删margin-bottom,D5) / explorer中文路径跳文档(字符串形式调explorer,D9)
+  测试: 202 pytest全绿(0.89s) + offscreen冒烟
+  文件: 修改6文件(preview_panel重写+sprite_layers/editor_panel/main_window/style.qss/file_tree)
+
+====
+
+v0.2.4 (2026-08-01) 下半Batch3: 预览增强+重命名修复
+  新增: 预览武器/引擎叠加(weapons数组xy定位+mirror双份+悬浮显名+引擎示意圆,F-72) / 图层树PS式眼睛开关(checkbox+缓存,F-73) / 多层精灵合成(主体+cell+full+treads居中对齐) / 武器精灵三级查找(weapons目录→同目录→递归) / 重命名精灵图全跟改(rename_sprites先收集再批量改名,F-81) / 重命名后预览刷新
+  修复: rename_sprites双重改名bug(先收集再批量,避免glob匹配已改名文件)
+  测试: 202 pytest全绿(0.94s) + offscreen冒烟 + probe验证(武器坐标/mirror/引擎圆/图层隐藏/rename_sprites全过,probe已删)
+  文件: 修改4文件(preview_panel重写+project/file_tree/main_window)
+
+====
+
+v0.2.4 (2026-08-01) 下半Batch2: 字段组交互系统+抬头+标签+能力开关组
+  新增: 添加/删除字段组(抬头按钮+确认弹窗+值缓存恢复) / 能力开关组(mining/building/boost/capacity复选框+单向联动+未勾选禁用态) / 模板补全(8种default级字段) / 抬头重设计(名字双击编辑+类型小字底对齐) / name只读(镜像文件名)
+  调整: 标签固定180px+英文截断+tooltip / 重命名信号解耦(rename_requested+ADR-009不注入)
+  修复×3轮: Round1(movement/combat加locked+能力组展开参数) / Round2(值缓存+能力组可见性+菜单定位) / Round3结构性根因(required+default为空→_ENABLED_GROUPS独立追踪+capability_enabled+optional存在标记+locked_for) / 跳顶根治(不再rebuild整个表单→_refresh_group原地刷新+_populate_group_body拆分)
+  测试: 202 pytest全绿(0.85s) + offscreen冒烟
+  文件: 修改13文件(editor_panel重写+collapsible_group/label_helper/form_plan/template/field_groups/file_tree/main_window/style.qss/field_names_zh/field_docs/test_form_plan)
+
+====
+
+v0.2.4 (2026-08-01) 下半Batch1: 配置驱动+渲染逻辑+视觉快赢
+  新增: 字段三级可见性(required始终+default新建/data中+optional仅data中) / 字段组可见性过滤(visible_for+空组隐藏) / Qt全局中文翻译(qtbase_zh_CN.qm)
+  调整: 预览分割6:4 / 设置菜单独立 / fieldBar圆角1.1px / 选中态重设计(铜橙左条+中性背景+冷蓝聚焦框+加粗, SEL_BG/SEL_FOCUS令牌)
+  测试: 200 pytest全绿 + offscreen冒烟
+  文件: 修改10文件(field_groups/form_plan/main/style.qss/theme/preview_panel/main_window/CONTEXT/test_form_plan/pyproject)
+
+====
+
 v0.2.4 (2026-07-31 19:55) 上半补充3: 问题7真根因(spinbox内部偏移)
   修复: 用户实测换字体后数字左留白仍大于名称→推翻字体假设, probe证实QSS后代选择器无法命中spinbox内部QLineEdit, windows11样式下内部lineEdit继承border+padding文本起点10px vs 6px→num_spin.py构造时lineEdit()局部样式padding:0+border:none, 实测6=6对齐 / 删无效QSS规则
   测试: 200 pytest全绿(0.84s) + offscreen+windows11冒烟对齐6=6
@@ -5,8 +39,10 @@ v0.2.4 (2026-07-31 19:55) 上半补充3: 问题7真根因(spinbox内部偏移)
 
 ====
 
-v0.2.4 (2026-07-31 19:40) 上半补充2: 问题7字体统一(方案C)
-  调整: 数值框字体JetBrains Mono等宽→统一MiSans(消除等宽/比例字形左缘差异, 颜色hex框等宽保留) / 左留白8→5px(文本起点9→6px, 实测全部6px一致) / 删死规则QSpinBox QLineEdit
+v0.2.4 (2026-07-31 19:40
+0.) 上半补充2: 问题7字体统一(方案C)
+  
+  .0调整: 数值框字体JetBrains Mono等宽→统一MiSans(消除等宽/比例字形左缘差异, 颜色hex框等宽保留) / 左留白8→5px(文本起点9→6px, 实测全部6px一致) / 删死规则QSpinBox QLineEdit
   测试: 200 pytest全绿(0.88s) + offscreen冒烟(容器起点6px统一+字体族MiSans)
   文件: 修改1文件(style.qss)
 

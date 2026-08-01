@@ -153,6 +153,8 @@ class EditorPanel(QWidget):
 
     # 重命名信号（抬头双击编辑 / 右键重命名）
     rename_requested = Signal(str, str)  # (old_name, new_name)
+    # v0.2.4.batch4：数据变更信号（通知预览实时刷新）
+    data_changed = Signal()
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -956,6 +958,8 @@ class EditorPanel(QWidget):
 
         # Real-time validation: red border + tooltip on error
         self._validate_field_widget(field_name, new_value)
+        # v0.2.4.batch4：通知预览实时刷新
+        self.data_changed.emit()
 
     def _validate_field_widget(self, field_name: str, value: Any) -> None:
         """Apply validation styling to the widget for a specific field."""

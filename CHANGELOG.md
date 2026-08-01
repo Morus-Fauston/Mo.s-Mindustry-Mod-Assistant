@@ -1,5 +1,169 @@
 # Changelog
 
+## v0.2.4 (2026-08-01) — 下半 Batch 4：预览渲染纠正 + 武器图层树 + 子类型过滤 + 交互增强
+
+> grill 收敛 9 项设计决策 + 003 调研报告落地。纠正 Batch 3 的坐标/引擎/图层多处与游戏不符，新增武器行内编辑、子类型图层过滤、图层双击替换/右键菜单。
+
+### 新增
+
+- **武器图层树每把独立行**（D1）：每把武器独立一行，行内嵌 `QDoubleSpinBox` 编辑 x/y（范围 -40~40，步长 0.1）
+- **SpinBox 实时预览/延迟提交**（D7）：`valueChanged` 直接改 dict + 实时重绘预览（不入 CommandStack）；`editingFinished` 发射 `content_modified` 信号标记 dirty
+- **引用武器默认值解析**（D2）：引用武器 x/y 无覆盖时自动读被引用武器 JSON 的默认值
+- **子类型图层过滤**（R3）：`sprite_layers.json` 加 `visible_for` 字段，飞行单位不显示腿/履带图层，坦克不显示腿图层等
+- **图层双击替换**（D8）：已存在精灵图双击打开文件选择对话框替换
+- **图层右键菜单**（D8）：替换精灵图 / 在文件管理器中打开 / 删除精灵图
+- **`data_changed` 信号**（D4）：`editor_panel` 字段变更后发射信号，`main_window` 连接预览实时刷新，修复"添加武器后图层树不出现"和"引擎切标签才生效"
+
+### 纠正（003 调研结论落地）
+
+- **坐标 PPU=4**（R1）：武器/引擎偏移从 1:1 改为 4 像素=1 世界单位，修正 Batch 3 武器位置偏小 4 倍的错误
+- **引擎双实心圆**（D6）：从半透明蓝圈改为外圈 `engineColor`（未设置→亮黄/橙占位）+ 内圈 `engineColorInner`（默认白色），内圈沿 rotation 偏移形成喷口感
+- **引擎 z-order 修正**：默认 `engineLayer ≤ 0` 时引擎画在主体**下方**（zValue=-1），`engineLayer > 0` 才提升到主体上方
+- **武器每把独立 scene key**：从笼统 `__weapons__` 改为 `__weapon_{i}__`，支持逐武器显隐控制
+
+### 修复
+
+- **抬头对齐错位**（D5）：删 `#editorTitle` 的 `margin-bottom: 8px`，修复小字上缘对齐大字下缘的视觉 bug
+- **explorer 中文路径跳"文档"**（D9）：`_reveal_in_file_manager` 改用字符串形式调 `explorer /select,"{path}"`，修复中文/空格路径下 explorer 参数解析失败
+
+### 测试
+
+- 202 个 pytest 全绿（0.89s）
+- offscreen 冒烟测试通过
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/ui/preview_panel.py` | **重写** — PPU=4 坐标、引擎双圆、武器独立行+SpinBox、引用武器默认值、visible_for 过滤、双击替换、右键菜单 |
+| `app/config/sprite_layers.json` | 修改 — UnitType 加 `visible_for` + 新增 `-leg-base`/`-joint`/`-joint-base`/`-foot`/`-base` 图层 |
+| `app/ui/editor_panel.py` | 修改 — 新增 `data_changed` 信号 + `_on_field_changed` 末尾发射 |
+| `app/ui/main_window.py` | 修改 — 连接 `data_changed` → 预览刷新 |
+| `app/resources/style.qss` | 修改 — 删 `#editorTitle` 的 `margin-bottom` |
+| `app/ui/file_tree.py` | 修改 — `_reveal_in_file_manager` 改字符串形式调 explorer |
+
+---
+
+## v0.2.4 (2026-08-01) — 下半 Batch 3：预览增强 + 重命名修复
+
+> 预览里能看到武器装在哪、引擎发光；重命名不再丢图。
+
+### 新增
+
+- **预览武器/引擎叠加**（F-72）：读 `weapons` 数组按 x/y 叠加武器 png + mirror 水平翻转双份 + 悬浮显武器名 tooltip；按 `engineOffset`/`engineSize` 画引擎示意圆
+- **图层树 PS 式眼睛开关**（F-73）：每层 checkbox 控制预览中该层显隐；`_layer_visibility` 缓存跨刷新保持
+- **多层精灵合成**：预览从单张主体图改为多层合成（主体 + `-cell`/`-full`/`-treads` 等按 `sprite_layers.json` 加载并居中对齐）
+- **武器精灵三级查找**：`sprites/weapons/{name}.png` → 单位精灵同目录 → `sprites/` 递归 rglob
+- **重命名精灵图全跟改**（F-81）：`Project.rename_sprites()` 先收集所有 `{old}.png` + `{old}-*.png` 再批量改名（修复 glob 匹配已改名文件的 bug）；不误改 `{old}XYZ.png`（如"坦候"不改"坦候武器"）
+- **重命名后预览刷新**：`_on_content_renamed` 触发 `preview.show_content`，重命名后图层树立即显示新名
+
+### 修复
+
+- **rename_sprites 双重改名 bug**：先收集再批量改名，避免 `old_name` 是 `new_name` 前缀时 glob 匹配已改名文件
+
+### 测试
+
+- 202 个 pytest 全绿（0.94s）
+- offscreen 冒烟测试通过
+- probe 验证：武器坐标/mirror/引擎圆/图层隐藏/rename_sprites 全过（probe 已删）
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/ui/preview_panel.py` | **重写** — 多层合成 + 武器叠加 + 引擎圆 + 图层 checkbox + `_scene_items` 跟踪 |
+| `app/core/project.py` | 修改 — 新增 `rename_sprites()` 方法 |
+| `app/ui/file_tree.py` | 修改 — `_do_rename` 加 `rename_sprites` 调用 |
+| `app/ui/main_window.py` | 修改 — `_on_content_renamed` 加预览刷新 |
+
+---
+
+## v0.2.4 (2026-08-01) — 下半 Batch 2：字段组交互系统 + 抬头 + 标签 + 能力开关组
+
+> 让字段组“能加能删能开关”，抬头从静态标签变成可交互名片，长标签不再顶控件。含 3 轮 bug 修复（结构性根因：能力组 required+default 为空导致勾选/添加后 data 无新字段，rebuild 后组状态丢失）。
+
+### 新增
+
+- **添加/删除字段组**（F-68）：抬头右侧 [添加字段组] 按钮，菜单列出当前未显示的可见组；删组 = 确认弹窗 → JSON 移除 → 值缓存 → 重新添加时恢复
+- **能力开关组**（F-69）：mining/building/boost/capacity 四组带复选框，组头 = ▾ ☐ 标题；未勾选 = 禁用态 + 组体不渲染；勾 mining → 自动勾 capacity（单向联动）
+- **模板补全**（F-71）：8 种模板补全 default 级字段（range/targetAir/targetGround/accel/drag/inaccuracy/description 等）
+- **抬头排版重设计**（F-80）：名字大字粗 + 双击原地编辑 + 右键重命名；类型小字 12px 淡化、同行底对齐、去括号
+- **name 字段只读**（F-82）：basic 组 name 字段不可编辑，显示 = 文件名 stem，tooltip 提示“名称由文件名决定”
+
+### 调整
+
+- **长字段名截断**（F-79）：标签固定列宽 180px，英文 `elidedText` 截断加 …，tooltip 含完整英文名
+- **重命名信号解耦**：抬头双击编辑发射 `rename_requested` 信号，由 `main_window` 连接 `file_tree._rename_content_by_name`；ADR-009 三恒等原则：仅在 JSON 已有 name 字段时跟改，不注入
+
+### 修复（3 轮）
+
+- **Round 1**：movement/combat 组显示删除按钮但实际不可删（required 字段重建后复活）→ 加 `locked: true`；能力组勾选后不展开（`has_required=False`）→ `is_group_expanded` 加 `is_capability` 参数
+- **Round 2**：禁用/删组后字段值丢失 → 新增 `_CACHED_VALUES` 缓存；能力组消失 → 恢复 `is_cap` 渲染 + `_DELETED_GROUPS`；添加字段菜单出现在屏幕中央 → `sender()` 返回 CollapsibleGroup 而非 QPushButton，改用 `sender._add_btn` 定位
+- **Round 3（结构性根因）**：能力组和大多数普通组 required+default 为空，勾选/添加时不写任何字段到 data，rebuild 后组状态丢失 → 新增 `_ENABLED_GROUPS` 独立追踪 + `GroupPlan.capability_enabled` + optional 存在标记 + `locked_for` 子类型锁定
+- **跳顶根治**：能力组切换不再调用 `_rebuild_form()` 销毁重建所有控件，改为 `_refresh_group()` 原地刷新受影响的组；拆分 `_render_group` 为 `_render_group` + `_populate_group_body`；`CollapsibleGroup` 新增 `set_capability_enabled` 公共方法
+
+### 测试
+
+- 202 个 pytest 全绿（0.85s）
+- offscreen 冒烟测试通过
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/ui/editor_panel.py` | **重写** — 添加/删除组、能力开关、抬头、name 只读、原地刷新 |
+| `app/ui/widgets/collapsible_group.py` | 修改 — 能力复选框 + 点击语义 + `set_capability_enabled` |
+| `app/ui/widgets/label_helper.py` | 修改 — 固定 180px + 英文截断 + tooltip |
+| `app/core/form_plan.py` | 修改 — `CAPABILITY_GROUPS`/`CAPABILITY_LINKAGE` + `capability_enabled` + `enabled_groups` 参数 |
+| `app/core/template.py` | 修改 — 8 种模板补全 default 级字段 |
+| `app/config/field_groups.json` | 修改 — `defaults` + `locked` + `locked_for` |
+| `app/ui/file_tree.py` | 修改 — `_do_rename` 提取 + `_rename_content_by_name` |
+| `app/ui/main_window.py` | 修改 — `rename_requested` 信号连接 |
+| `app/resources/style.qss` | 修改 — `#editorTypeLabel` + `#addGroupBtn` 样式 |
+| `app/config/field_names_zh.json` | 修改 — 新增字段中文名 |
+| `app/config/field_docs.json` | 修改 — 新增字段提示文本 |
+| `tests/test_form_plan.py` | 修改 — `is_group_expanded` 新参数 |
+
+---
+
+## v0.2.4 (2026-08-01) — 下半 Batch 1：配置驱动 + 渲染逻辑 + 视觉快赢
+
+> 让字段组“该出现的出现、不该出现的不出现”，同时把视觉打磨中“改一行 QSS 就见效”的快赢项一次性收掉。
+
+### 新增
+
+- **字段三级可见性**（F-70）：`field_groups.json` 每组加 `default` 列表；`form_plan.py` 渲染逻辑改为 required 始终 + default 新建/data 中 + optional 仅 data 中
+- **字段组可见性过滤**（F-67）：子类型特征组加 `visible_for`；空组（required+default 都空且 JSON 无该组字段）不渲染
+- **Qt 全局中文翻译**（F-78）：`main.py` 启动时 `QTranslator` 加载 `qtbase_zh_CN.qm`，对话框按钮显示“确定/取消”
+
+### 调整
+
+- **预览分割比例**（F-74）：`preview_panel.py` 的 `setSizes` 从 [400, 200] 改为 [360, 240]（6:4）
+- **设置菜单独立**（F-75）：菜单栏加「设置(&S)」顶级菜单，工具菜单移除设置入口
+- **fieldBar 色条圆角**（F-76）：`#fieldBar` 加 `border-radius: 1.1px`
+- **选中态重设计**（F-77）：铜橙左条 + 中性背景 + 冷蓝聚焦框 + 加粗（双主题）；`theme.py` 新增 `SEL_BG`/`SEL_FOCUS` 令牌
+
+### 测试
+
+- 200 个 pytest 全绿
+- offscreen 冒烟测试通过
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/config/field_groups.json` | 修改 — 每组加 `default` 列表 + `visible_for` |
+| `app/core/form_plan.py` | 修改 — 三级字段渲染 + 空组隐藏 + `group_visible` |
+| `app/main.py` | 修改 — `_install_qt_translations()` 加载中文翻译 |
+| `app/resources/style.qss` | 修改 — 选中态三层 + fieldBar 圆角 |
+| `app/ui/theme.py` | 修改 — `SEL_BG`/`SEL_FOCUS` 令牌 |
+| `app/ui/preview_panel.py` | 修改 — 分割比例 6:4 |
+| `app/ui/main_window.py` | 修改 — 设置菜单独立 |
+| `CONTEXT.md` | 修改 — +5 术语（内容标识符/显示名/文件名/字段默认可见性/能力开关组） |
+| `tests/test_form_plan.py` | 修改 — 适配新参数 |
+
+---
+
 ## v0.2.4 (2026-07-31 19:55) — 上半补充 3：问题 7 真根因（spinbox 内部偏移）
 
 > 用户实测：换字体后数字左留白仍大于名称。推翻「字体差异」假设。probe 证实：QSS 后代选择器无法命中 QAbstractSpinBox 内部 QLineEdit；windows11 样式下内部 lineEdit 继承基础 QSS 的 border+padding，文本起点 = editfield(6) + border(1) + padding(4) = 10px vs 普通 QLineEdit 6px。

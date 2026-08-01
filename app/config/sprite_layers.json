@@ -5,8 +5,13 @@
     { "suffix": "-full", "label": "完整图", "required": false },
     { "suffix": "-outline", "label": "轮廓", "required": false, "autoGenerable": true },
     { "suffix": "-shadow", "label": "阴影", "required": false, "autoGenerable": true },
-    { "suffix": "-leg", "label": "腿 (多足)", "required": false },
-    { "suffix": "-treads", "label": "履带 (坦克)", "required": false }
+    { "suffix": "-leg", "label": "腿 (多足/机甲)", "required": false, "visible_for": ["legs", "mech"] },
+    { "suffix": "-leg-base", "label": "腿基 (多足)", "required": false, "visible_for": ["legs"] },
+    { "suffix": "-joint", "label": "关节 (多足)", "required": false, "visible_for": ["legs"] },
+    { "suffix": "-joint-base", "label": "基关节 (多足)", "required": false, "visible_for": ["legs"] },
+    { "suffix": "-foot", "label": "脚 (多足)", "required": false, "visible_for": ["legs"] },
+    { "suffix": "-treads", "label": "履带 (坦克)", "required": false, "visible_for": ["tank"] },
+    { "suffix": "-base", "label": "机甲基座", "required": false, "visible_for": ["mech"] }
   ],
   "ItemTurret": [
     { "suffix": "-base", "label": "底座", "required": true },

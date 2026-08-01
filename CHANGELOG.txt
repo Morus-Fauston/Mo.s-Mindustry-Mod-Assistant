@@ -1,3 +1,12 @@
+v0.2.4.revised (2026-08-02 03:19) 架构深化+图层树渲染修复+测试补全(219→258全绿)
+  架构: 渲染数学层preview_math(坐标公式脱离Qt,ADR-003落地) / 字段组操作层group_ops(三处重复→5纯函数,走命令栈可撤销) / 控件工厂field_widget_factory(四处复制粘贴→单点) / 颜色控件color_picker(60行内联→独立控件+parse_color纯函数)
+  修复: 复选框裸勾→QSS显式indicator+SVG橙勾 / 图层名被裁→列0 Fixed220 / 双橙条→图层树去选中态 / 双击误触→eventFilter拦截indicator区 / 武器XY静默失败→partial绑定 / 武器修改不刷新→连data_changed / 重建污染dict→blockSignals / 数值框:g吞小数+科学计数法→定点去尾零 / editor_panel启动崩溃(docstring未闭合)
+  体验: 武器xy框55→70 / 状态文本移列1 / preview spin换NumDoubleSpinBox(滚轮保护)
+  测试: +17坐标公式(test_preview_math) +15字段组(test_group_ops) +24图层树行为(test_preview_panel)
+  文件: 修改12+新增8(preview_math/group_ops/field_widget_factory/color_picker/test_preview_math/test_group_ops/test_preview_panel/check_copper.svg)
+
+====
+
 v0.2.4 (2026-08-01) 下半Batch4: 预览渲染纠正+武器图层树+子类型过滤+交互增强
   新增: 武器图层树每把独立行+行内SpinBox编辑xy(D1) / SpinBox实时预览延迟提交(D7) / 引用武器默认值解析(D2) / 子类型图层过滤visible_for(R3) / 图层双击替换+右键菜单(D8) / data_changed信号→预览实时刷新(D4)
   纠正: 坐标PPU=4(R1,修Batch3武器偏小4倍) / 引擎双实心圆+engineColor+默认z在主体下(D6) / 武器每把独立scene key

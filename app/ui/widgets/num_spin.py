@@ -45,8 +45,12 @@ class NumDoubleSpinBox(QDoubleSpinBox):
         self.lineEdit().setStyleSheet(_INNER_EDIT_STYLE)
 
     def textFromValue(self, value: float) -> str:  # noqa: N802
-        # :g 格式自动去尾零，精度用当前 decimals 限制
-        return f"{value:.{self.decimals()}g}"
+        # 定点格式 + 去尾零。不用 :g（有效数字格式）——decimals 小时
+        # 会吞小数位（1.1→"1"）或产生科学计数法（10→"1e+01"）。
+        s = f"{value:.{self.decimals()}f}"
+        if "." in s:
+            s = s.rstrip("0").rstrip(".")
+        return s
 
     def wheelEvent(self, event) -> None:  # noqa: N802
         # 彻底禁用滚轮改值：事件交给父级（滚动页面），数值不变

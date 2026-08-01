@@ -41,6 +41,12 @@ from ..core.form_plan import (
     get_addable_fields,
     type_default,
 )
+from ..core.group_ops import (
+    cache_group_fields,
+    group_field_names,
+    remove_group_fields,
+    restore_group_fields,
+)
 from ..core.metadata import ClassDef, FieldDef, Metadata
 from ..core.project import Project
 from ..core.validator import Validator
@@ -52,6 +58,8 @@ from .widgets.field_row import FieldRow
 from .widgets.reserved_panel import ReservedPanel
 from .widgets.num_spin import NumSpinBox, NumDoubleSpinBox
 from .widgets.auto_width_edit import AutoWidthEdit
+from .widgets.color_picker import ColorPicker
+from .widgets.field_widget_factory import create_value_widget
 from .widgets.label_helper import rich_label
 from .theme import field_type_property
 
@@ -450,108 +458,38 @@ class EditorPanel(QWidget):
         content_type = self._content.data.get("type", "")
         groups_config = self._field_groups.get(content_type, {})
         group_def = groups_config.get(group_name, {})
-        all_fields = (
-            list(group_def.get("required", []))
-            + list(group_def.get("default", []))
-            + list(group_def.get("optional", []))
-        )
         content_name = self._content.name
 
         if enabled:
-            # 从缓存恢复（Bug1 修复）
+            # 从缓存恢复（Bug1 修复）—— 字段写回逻辑集中在 core.group_ops
             cached = _CACHED_VALUES.get(content_name, {}).get(group_name, {})
-            defaults = group_def.get("defaults", {})
-            for field_name in all_fields:
-                if field_name not in self._content.data:
-                    # 优先用缓存值，其次 defaults，最后 type_default
-                    if field_name in cached:
-                        val = cached[field_name]
-                    elif field_name in defaults:
-                        val = defaults[field_name]
-                    else:
-                        field_def = next(
-                            (f for f in self._class_def.fields if f.name == field_name), None
-                        ) if self._class_def else None
-                        val = type_default(field_def) if field_def else None
-                    if field_name in group_def.get("required", []) or field_name in group_def.get("default", []):
-                        cmd = SetFieldCommand(
-                            data=self._content.data,
-                            path=field_name,
-                            new_value=val,
-                            on_change=self._mark_dirty,
-                        )
-                        self._commands.execute(cmd)
-            # 恢复 optional 级缓存字段（用户之前手动添加的）
-            for field_name, val in cached.items():
-                if field_name not in self._content.data and field_name in group_def.get("optional", []):
-                    cmd = SetFieldCommand(
-                        data=self._content.data,
-                        path=field_name,
-                        new_value=val,
-                        on_change=self._mark_dirty,
-                    )
-                    self._commands.execute(cmd)
-
-            # 若 required+default 都为空且无缓存，写第一个 optional 作为存在标记
-            written = any(fn in self._content.data for fn in all_fields)
-            if not written and group_def.get("optional"):
-                first_opt = group_def["optional"][0]
-                if first_opt not in self._content.data:
-                    val = cached.get(first_opt) or defaults.get(first_opt)
-                    if val is None:
-                        fd = next((f for f in self._class_def.fields if f.name == first_opt), None) if self._class_def else None
-                        val = type_default(fd) if fd else None
-                    cmd = SetFieldCommand(
-                        data=self._content.data, path=first_opt,
-                        new_value=val, on_change=self._mark_dirty,
-                    )
-                    self._commands.execute(cmd)
+            restore_group_fields(
+                self._content.data, group_def, cached, self._class_def,
+                self._commands, self._mark_dirty,
+            )
 
             # 记入 _ENABLED_GROUPS
             _ENABLED_GROUPS.setdefault(content_name, set()).add(group_name)
 
-            # 单向联动
+            # 单向联动（mining → capacity）：只补 required+default，不写存在标记
             linked = CAPABILITY_LINKAGE.get(group_name)
             if linked and linked not in self._get_enabled_capabilities():
                 linked_def = groups_config.get(linked, {})
                 linked_cached = _CACHED_VALUES.get(content_name, {}).get(linked, {})
-                linked_defaults = linked_def.get("defaults", {})
-                linked_fields = (
-                    list(linked_def.get("required", []))
-                    + list(linked_def.get("default", []))
+                restore_group_fields(
+                    self._content.data, linked_def, linked_cached, self._class_def,
+                    self._commands, self._mark_dirty,
+                    restore_optional=False, existence_marker=False,
                 )
-                for fn in linked_fields:
-                    if fn not in self._content.data:
-                        val = linked_cached.get(fn, linked_defaults.get(fn))
-                        if val is None:
-                            fd = next(
-                                (f for f in self._class_def.fields if f.name == fn), None
-                            ) if self._class_def else None
-                            val = type_default(fd) if fd else None
-                        cmd = SetFieldCommand(
-                            data=self._content.data,
-                            path=fn,
-                            new_value=val,
-                            on_change=self._mark_dirty,
-                        )
-                        self._commands.execute(cmd)
         else:
             # 缓存当前值（Bug1 修复）
-            cache = {}
-            for field_name in all_fields:
-                if field_name in self._content.data:
-                    cache[field_name] = self._content.data[field_name]
+            cache = cache_group_fields(self._content.data, group_def)
             if cache:
                 _CACHED_VALUES.setdefault(content_name, {})[group_name] = cache
             # 移除该组所有字段
-            for field_name in all_fields:
-                if field_name in self._content.data:
-                    cmd = DeleteFieldCommand(
-                        data=self._content.data,
-                        path=field_name,
-                        on_change=self._mark_dirty,
-                    )
-                    self._commands.execute(cmd)
+            remove_group_fields(
+                self._content.data, group_def, self._commands, self._mark_dirty,
+            )
             # 从 _ENABLED_GROUPS 移除
             _ENABLED_GROUPS.get(content_name, set()).discard(group_name)
 
@@ -606,18 +544,11 @@ class EditorPanel(QWidget):
         content_type = self._content.data.get("type", "")
         groups_config = self._field_groups.get(content_type, {})
         group_def = groups_config.get(group_name, {})
-        names = (
-            list(group_def.get("required", []))
-            + list(group_def.get("default", []))
-            + list(group_def.get("optional", []))
-        )
+        names = group_field_names(group_def)
         content_name = self._content.name
 
         # Bug1：缓存当前值
-        cache = {}
-        for name in names:
-            if name in self._content.data:
-                cache[name] = self._content.data[name]
+        cache = cache_group_fields(self._content.data, group_def)
         if cache:
             _CACHED_VALUES.setdefault(content_name, {})[group_name] = cache
 
@@ -625,14 +556,9 @@ class EditorPanel(QWidget):
         _DELETED_GROUPS.setdefault(content_name, set()).add(group_name)
         _ENABLED_GROUPS.get(content_name, set()).discard(group_name)
 
-        for name in names:
-            if name in self._content.data:
-                cmd = DeleteFieldCommand(
-                    data=self._content.data,
-                    path=name,
-                    on_change=self._mark_dirty,
-                )
-                self._commands.execute(cmd)
+        remove_group_fields(
+            self._content.data, group_def, self._commands, self._mark_dirty,
+        )
 
         # 原地移除组控件（不重建整个表单）
         group_widget = self._find_group_widget(group_name)
@@ -739,37 +665,23 @@ class EditorPanel(QWidget):
     def _create_primitive_widget(self, field_def: FieldDef, value: Any) -> QWidget:
         java_type = field_def.java_type
 
+        # bool/int/float 走统一工厂（range/decimals/宽度/滚轮/防误触全在内）
         if java_type == "boolean":
-            cb = CheckToggle()
-            cb.setChecked(bool(value) if value is not None else False)
-            cb.toggled.connect(
-                lambda checked, n=field_def.name: self._on_field_changed(n, checked)
+            coerced: Any = bool(value) if value is not None else False
+        elif java_type in ("int", "long", "short"):
+            coerced = int(value) if value is not None else 0
+        elif java_type in ("float", "double"):
+            coerced = float(value) if value is not None else 0.0
+        else:
+            coerced = None
+        if coerced is not None or java_type == "boolean":
+            w = create_value_widget(
+                coerced,
+                lambda v, n=field_def.name: self._on_field_changed(n, v),
             )
-            self._field_widgets[field_def.name] = cb
-            return cb
-
-        if java_type in ("int", "long", "short"):
-            spin = NumSpinBox()
-            spin.setRange(-999999, 999999)
-            spin.setFixedWidth(70)  # 短值档
-            spin.setValue(int(value) if value is not None else 0)
-            spin.valueChanged.connect(
-                lambda v, n=field_def.name: self._on_field_changed(n, v)
-            )
-            self._field_widgets[field_def.name] = spin
-            return spin
-
-        if java_type in ("float", "double"):
-            spin = NumDoubleSpinBox()
-            spin.setRange(-999999.0, 999999.0)
-            spin.setDecimals(3)
-            spin.setFixedWidth(70)  # 短值档
-            spin.setValue(float(value) if value is not None else 0.0)
-            spin.valueChanged.connect(
-                lambda v, n=field_def.name: self._on_field_changed(n, v)
-            )
-            self._field_widgets[field_def.name] = spin
-            return spin
+            if w is not None:
+                self._field_widgets[field_def.name] = w
+                return w
 
         if java_type == "Color":
             return self._create_color_widget(field_def, value)
@@ -826,74 +738,13 @@ class EditorPanel(QWidget):
         return combo
 
     def _create_color_widget(self, field_def: FieldDef, value: Any) -> QWidget:
-        """Create a color picker button for Color fields.
-
-        Mindustry stores colors as hex strings (e.g. 'ff7700') or
-        rgba objects {'r': 1, 'g': 0.5, 'b': 0, 'a': 1}.
-        We display a clickable color swatch button that opens QColorDialog.
-        """
-        from PySide6.QtGui import QColor
-        from PySide6.QtWidgets import QColorDialog
-
-        container = QWidget()
-        h_layout = QHBoxLayout(container)
-        h_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Parse current color value
-        color = QColor(255, 255, 255)
-        display_text = ""
-        if isinstance(value, str) and value:
-            display_text = value
-            hex_str = value.lstrip("#")
-            if len(hex_str) == 6:
-                color = QColor(f"#{hex_str}")
-            elif len(hex_str) == 8:
-                color = QColor(f"#{hex_str[:6]}")
-        elif isinstance(value, dict):
-            r = int(value.get("r", 1) * 255)
-            g = int(value.get("g", 1) * 255)
-            b = int(value.get("b", 1) * 255)
-            color = QColor(r, g, b)
-            display_text = f"{r:02x}{g:02x}{b:02x}"
-
-        # Color swatch button（背景色动态 hex 为唯一内联例外，描边/圆角走 QSS）
-        swatch = QPushButton()
-        swatch.setObjectName("colorSwatch")
-        swatch.setFixedSize(48, 24)
-        swatch.setStyleSheet(f"background-color: {color.name()};")
-
-        # Text label showing the hex value
-        hex_label = QLineEdit(display_text)
-        hex_label.setMaximumWidth(100)
-
-        def on_swatch_click():
-            chosen = QColorDialog.getColor(color, self, "选择颜色")
-            if chosen.isValid():
-                hex_val = chosen.name().lstrip("#")
-                hex_label.setText(hex_val)
-                swatch.setStyleSheet(f"background-color: {chosen.name()};")
-                self._on_field_changed(field_def.name, hex_val)
-
-        def on_text_edit(text: str):
-            text = text.strip().lstrip("#")
-            if len(text) == 6:
-                try:
-                    int(text, 16)
-                    c = QColor(f"#{text}")
-                    swatch.setStyleSheet(f"background-color: {c.name()};")
-                    self._on_field_changed(field_def.name, text)
-                except ValueError:
-                    pass
-
-        swatch.clicked.connect(on_swatch_click)
-        hex_label.textChanged.connect(on_text_edit)
-
-        h_layout.addWidget(swatch)
-        h_layout.addWidget(hex_label)
-        h_layout.addStretch()
-
-        self._field_widgets[field_def.name] = container
-        return container
+        """Color 字段 → ColorPicker 控件（色块 + hex 输入）。"""
+        picker = ColorPicker(value)
+        picker.valueChanged.connect(
+            lambda hex_val, n=field_def.name: self._on_field_changed(n, hex_val)
+        )
+        self._field_widgets[field_def.name] = picker
+        return picker
 
     def _create_weapons_widget(self) -> QWidget:
         """Create a WeaponArrayEditor for the weapons field."""
@@ -909,6 +760,9 @@ class EditorPanel(QWidget):
             project=self._project,
         )
         editor.valueChanged.connect(self._mark_dirty)
+        # 武器列表（含 x/y）修改 → 通知预览/图层树实时刷新（v0.2.5 修复：
+        # 否则图层树 spin 显示旧值，保存时被旧值覆写）。
+        editor.valueChanged.connect(self.data_changed.emit)
         self._field_widgets["weapons"] = editor
         return editor
 
@@ -1147,59 +1001,12 @@ class EditorPanel(QWidget):
             # Bug2：从已删除集合移除
             _DELETED_GROUPS.get(content_name, set()).discard(group_name)
 
-            # Bug1：从缓存恢复字段值
+            # Bug1/Bug3：从缓存恢复字段值（含存在标记）—— 逻辑集中在 core.group_ops
             cached = _CACHED_VALUES.get(content_name, {}).get(group_name, {})
-            defaults = group_def.get("defaults", {})
-            all_fields = (
-                list(group_def.get("required", []))
-                + list(group_def.get("default", []))
-                + list(group_def.get("optional", []))
+            restore_group_fields(
+                self._content.data, group_def, cached, self._class_def,
+                self._commands, self._mark_dirty,
             )
-            # 恢复 required + default 级字段
-            for field_name in all_fields:
-                if field_name not in self._content.data:
-                    if field_name in cached:
-                        val = cached[field_name]
-                    elif field_name in defaults:
-                        val = defaults[field_name]
-                    else:
-                        field_def = next(
-                            (f for f in self._class_def.fields if f.name == field_name), None
-                        ) if self._class_def else None
-                        val = type_default(field_def) if field_def else None
-                    if field_name in group_def.get("required", []) or field_name in group_def.get("default", []):
-                        cmd = SetFieldCommand(
-                            data=self._content.data,
-                            path=field_name,
-                            new_value=val,
-                            on_change=self._mark_dirty,
-                        )
-                        self._commands.execute(cmd)
-            # 恢复 optional 级缓存字段（用户之前手动添加的）
-            for field_name, val in cached.items():
-                if field_name not in self._content.data and field_name in group_def.get("optional", []):
-                    cmd = SetFieldCommand(
-                        data=self._content.data,
-                        path=field_name,
-                        new_value=val,
-                        on_change=self._mark_dirty,
-                    )
-                    self._commands.execute(cmd)
-
-            # Bug3 修复：若 required+default 都为空且无缓存，写第一个 optional 作为存在标记
-            written = any(fn in self._content.data for fn in all_fields)
-            if not written and group_def.get("optional"):
-                first_opt = group_def["optional"][0]
-                if first_opt not in self._content.data:
-                    val = cached.get(first_opt) or defaults.get(first_opt)
-                    if val is None:
-                        fd = next((f for f in self._class_def.fields if f.name == first_opt), None) if self._class_def else None
-                        val = type_default(fd) if fd else None
-                    cmd = SetFieldCommand(
-                        data=self._content.data, path=first_opt,
-                        new_value=val, on_change=self._mark_dirty,
-                    )
-                    self._commands.execute(cmd)
 
             # 能力组：记入 _ENABLED_GROUPS
             from ..core.form_plan import CAPABILITY_GROUPS

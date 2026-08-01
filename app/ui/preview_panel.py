@@ -18,18 +18,21 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QPen, QPixmap, QTransform
 from PySide6.QtWidgets import (
-    QDoubleSpinBox,
+    QAbstractItemView,
     QFileDialog,
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QMenu,
     QPushButton,
     QSplitter,
+    QStyle,
+    QStyleOptionViewItem,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -39,6 +42,8 @@ from PySide6.QtWidgets import (
 from ..core.config_loader import get_sprite_layers
 from ..core.content_store import ContentData
 from ..core.project import Project
+from .theme import get_tokens
+from .widgets.num_spin import NumDoubleSpinBox
 
 
 class SpriteView(QGraphicsView):
@@ -158,12 +163,26 @@ class PreviewPanel(QWidget):
         layer_layout.addWidget(layer_label)
 
         self._layer_tree = QTreeWidget()
+        self._layer_tree.setObjectName("layerTree")
         self._layer_tree.setColumnCount(2)
         self._layer_tree.setHeaderHidden(True)
+        # 图层树不需要选中态（用户决策）：NoSelection 从根源上阻止 Qt 绘制
+        # 任何选中视觉（windows11 原生选中框 QSS 覆盖不掉），右键/双击均用
+        # itemAt 或 item 参数，不依赖选中。
+        self._layer_tree.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        # 列0 固定 220px：容纳最深缩进的复选框 + 最宽图层名（含"引擎示意"
+        # 等 4 字名），不再按内容自适应（RTC 在带 itemWidget 的行上会算窄，
+        # 导致名称被截断成"引擎..."）。列1 保持默认拉伸吃剩余。
+        self._layer_tree.header().setSectionResizeMode(
+            0, QHeaderView.ResizeMode.Fixed
+        )
+        self._layer_tree.setColumnWidth(0, 220)
         self._layer_tree.itemDoubleClicked.connect(self._on_layer_double_clicked)
         self._layer_tree.itemChanged.connect(self._on_layer_check_changed)
         self._layer_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._layer_tree.customContextMenuRequested.connect(self._show_layer_context_menu)
+        # 拦截复选框区域的双击：点击复选框 toggle 不应触发"更换图片"（D8）。
+        self._layer_tree.viewport().installEventFilter(self)
         layer_layout.addWidget(self._layer_tree)
 
         self._splitter.addWidget(layer_area)
@@ -177,6 +196,34 @@ class PreviewPanel(QWidget):
         self._project = project
         self._refresh_preview()
         self._refresh_layer_tree()
+
+    def eventFilter(self, obj, event) -> bool:  # noqa: ANN001
+        """拦截图层树 viewport 的双击：若双击落在复选框 indicator 上，
+        吞掉事件（只 toggle 复选框），不触发「更换图片」（D8）。"""
+        if (
+            obj is self._layer_tree.viewport()
+            and event.type() == QEvent.Type.MouseButtonDblClick
+        ):
+            pos = event.position().toPoint()
+            item = self._layer_tree.itemAt(pos)
+            if item is not None and (
+                item.flags() & Qt.ItemFlag.ItemIsUserCheckable
+            ):
+                r = self._layer_tree.visualItemRect(item)
+                opt = QStyleOptionViewItem()
+                opt.initFrom(self._layer_tree)
+                opt.rect = r
+                opt.features = QStyleOptionViewItem.ViewItemFeature.HasCheckIndicator
+                opt.checkState = item.checkState(0)
+                opt.text = item.text(0)
+                opt.index = self._layer_tree.indexFromItem(item)
+                ind = self._layer_tree.style().subElementRect(
+                    QStyle.SubElement.SE_ItemViewItemCheckIndicator,
+                    opt, self._layer_tree,
+                )
+                if ind.adjusted(-6, -6, 6, 6).contains(pos):
+                    return True
+        return super().eventFilter(obj, event)
 
     # ── 预览渲染 ─────────────────────────────────────────────────────────
 
@@ -485,7 +532,15 @@ class PreviewPanel(QWidget):
             exists = sprite_path.exists()
             status = "有" if exists else ("缺失" if required else "可选")
 
-            item = QTreeWidgetItem(root, [f"{label}  [{status}]", ""])
+            # 列0 只放图层名（状态 [有]/[可选]/[缺失] 移到列1，避免把列0
+            # 撑宽导致武器行输入框远离文本 / 被压缩交叠，见 v0.2.5 修复）
+            item = QTreeWidgetItem(root, [label, f"[{status}]"])
+            item.setTextAlignment(
+                1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+            )
+            tokens = get_tokens()
+            status_color = QColor(tokens["ERR"]) if not exists else QColor(tokens["INK2"])
+            item.setForeground(1, status_color)
             item.setData(0, self._ROLE_PATH, str(sprite_path))
             item.setData(0, self._ROLE_SUFFIX, suffix)
             item.setData(0, self._ROLE_WEAPON_INDEX, -1)
@@ -538,30 +593,38 @@ class PreviewPanel(QWidget):
             spin_layout.setContentsMargins(0, 0, 0, 0)
             spin_layout.setSpacing(2)
 
-            spin_x = QDoubleSpinBox()
+            # NumDoubleSpinBox：滚轮只滚页面不改值 + 去尾零（与主面板一致）
+            spin_x = NumDoubleSpinBox()
             spin_x.setRange(-40, 40)
             spin_x.setSingleStep(0.1)
             spin_x.setDecimals(1)
-            spin_x.setValue(wx)
-            spin_x.setFixedWidth(55)
+            spin_x.setFixedWidth(70)
             spin_x.setPrefix("x ")
             spin_x.setProperty("weapon_idx", i)
             spin_x.setProperty("coord", "x")
             spin_x.valueChanged.connect(self._on_weapon_spin_changed)
             spin_x.editingFinished.connect(self._on_weapon_spin_finished)
+            # 先 connect 再 block+setValue：重建期间 setValue 不得触发
+            # valueChanged 写回 dict（否则把编辑区已修改的 XY 覆写为旧值，
+            # 或把引用武器默认值污染进 dict，v0.2.5 修复）
+            spin_x.blockSignals(True)
+            spin_x.setValue(wx)
+            spin_x.blockSignals(False)
             spin_layout.addWidget(spin_x)
 
-            spin_y = QDoubleSpinBox()
+            spin_y = NumDoubleSpinBox()
             spin_y.setRange(-40, 40)
             spin_y.setSingleStep(0.1)
             spin_y.setDecimals(1)
-            spin_y.setValue(wy)
-            spin_y.setFixedWidth(55)
+            spin_y.setFixedWidth(70)
             spin_y.setPrefix("y ")
             spin_y.setProperty("weapon_idx", i)
             spin_y.setProperty("coord", "y")
             spin_y.valueChanged.connect(self._on_weapon_spin_changed)
             spin_y.editingFinished.connect(self._on_weapon_spin_finished)
+            spin_y.blockSignals(True)
+            spin_y.setValue(wy)
+            spin_y.blockSignals(False)
             spin_layout.addWidget(spin_y)
 
             self._layer_tree.setItemWidget(item, 1, spin_container)

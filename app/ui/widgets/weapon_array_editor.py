@@ -40,6 +40,7 @@ from PySide6.QtWidgets import (
 from .check_toggle import CheckToggle
 from .num_spin import NumSpinBox, NumDoubleSpinBox
 from .auto_width_edit import AutoWidthEdit
+from .field_widget_factory import create_value_widget
 from .label_helper import rich_label
 from .field_row import FieldRow
 from .polymorphic_editor import BULLET_TYPES
@@ -480,7 +481,14 @@ class WeaponCard(QGroupBox):
         val = self._weapon_data.get(fname)
         if val is None:
             return None
-        return self._create_widget_for_value(fname, val, self._set_field)
+        # partial 绑定 field_name：控件信号（valueChanged/toggled/textChanged）
+        # 只带一个值参数，_set_field 需要 (field_name, new_value) 两参数。
+        # 若直接传裸方法会 TypeError 被 Qt 吞掉 → dict 永不更新、预览不刷新、
+        # 保存被旧值覆写（v0.2.5 第三轮修复根因）。
+        from functools import partial
+        return self._create_widget_for_value(
+            fname, val, partial(self._set_field, fname)
+        )
 
     @staticmethod
     def _field_type_for_value(val: Any) -> str:
@@ -496,28 +504,9 @@ class WeaponCard(QGroupBox):
         on_change: Any,
     ) -> QWidget | None:
         """创建控件并用 FieldRow 包裹（v0.2.4：与主面板一致的马卡龙着色 + 色条）。"""
-        control: QWidget | None = None
-        if isinstance(val, bool):
-            cb = CheckToggle()
-            cb.setChecked(val)
-            cb.toggled.connect(on_change)
-            control = cb
-        elif isinstance(val, float):
-            spin = NumDoubleSpinBox()
-            spin.setRange(-999999.0, 999999.0)
-            spin.setDecimals(3)
-            spin.setFixedWidth(70)
-            spin.setValue(val)
-            spin.valueChanged.connect(on_change)
-            control = spin
-        elif isinstance(val, int):
-            spin = NumSpinBox()
-            spin.setRange(-999999, 999999)
-            spin.setFixedWidth(70)
-            spin.setValue(val)
-            spin.valueChanged.connect(on_change)
-            control = spin
-        elif isinstance(val, str):
+        # bool/int/float 走统一工厂（range/decimals/宽度/滚轮/防误触全在内）
+        control: QWidget | None = create_value_widget(val, on_change)
+        if control is None and isinstance(val, str):
             edit = AutoWidthEdit()
             edit.setText(val)
             edit.textChanged.connect(on_change)

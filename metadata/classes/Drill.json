@@ -1,0 +1,195 @@
+{
+  "name": "Drill",
+  "fullName": "mindustry.world.blocks.production.Drill",
+  "parent": "Block",
+  "fields": [
+    {
+      "name": "hardnessDrillMultiplier",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "oreCount",
+      "javaType": "ObjectIntMap",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "itemArray",
+      "javaType": "Seq",
+      "mode": "ARRAY",
+      "nullable": false,
+      "default": null,
+      "elementType": "Item",
+      "polymorphic": false
+    },
+    {
+      "name": "tier",
+      "javaType": "int",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0
+    },
+    {
+      "name": "drillTime",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "liquidBoostIntensity",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "warmupSpeed",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "blockedItem",
+      "javaType": "Item",
+      "mode": "STRING_REF",
+      "nullable": true,
+      "default": null,
+      "refSource": "Items"
+    },
+    {
+      "name": "blockedItems",
+      "javaType": "Seq",
+      "mode": "ARRAY",
+      "nullable": true,
+      "default": null,
+      "elementType": "Item",
+      "polymorphic": false
+    },
+    {
+      "name": "returnItem",
+      "javaType": "Item",
+      "mode": "STRING_REF",
+      "nullable": true,
+      "default": null,
+      "refSource": "Items"
+    },
+    {
+      "name": "returnCount",
+      "javaType": "int",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0
+    },
+    {
+      "name": "drawMineItem",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "drillEffect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "drillEffectRnd",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "drillEffectChance",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "rotateSpeed",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "updateEffect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "updateEffectChance",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "drillMultipliers",
+      "javaType": "ObjectFloatMap",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "drawRim",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "drawSpinSprite",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "heatColor",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "rimRegion",
+      "javaType": "TextureRegion",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "rotatorRegion",
+      "javaType": "TextureRegion",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "topRegion",
+      "javaType": "TextureRegion",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "itemRegion",
+      "javaType": "TextureRegion",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    }
+  ]
+}

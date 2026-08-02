@@ -1,0 +1,21 @@
+{
+  "name": "RegenAbility",
+  "fullName": "mindustry.entities.abilities.RegenAbility",
+  "parent": "Ability",
+  "fields": [
+    {
+      "name": "percentAmount",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "amount",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

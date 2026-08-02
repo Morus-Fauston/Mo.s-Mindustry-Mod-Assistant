@@ -1,0 +1,118 @@
+{
+  "name": "GenericCrafter",
+  "fullName": "mindustry.world.blocks.production.GenericCrafter",
+  "parent": "Block",
+  "fields": [
+    {
+      "name": "outputItem",
+      "javaType": "ItemStack",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "outputItems",
+      "javaType": "ItemStack[]",
+      "mode": "ARRAY",
+      "nullable": true,
+      "default": null,
+      "elementType": "ItemStack",
+      "polymorphic": false
+    },
+    {
+      "name": "outputLiquid",
+      "javaType": "LiquidStack",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "outputLiquids",
+      "javaType": "LiquidStack[]",
+      "mode": "ARRAY",
+      "nullable": true,
+      "default": null,
+      "elementType": "LiquidStack",
+      "polymorphic": false
+    },
+    {
+      "name": "liquidOutputDirections",
+      "javaType": "int[]",
+      "mode": "ARRAY",
+      "nullable": false,
+      "default": null,
+      "elementType": "int",
+      "polymorphic": false
+    },
+    {
+      "name": "dumpExtraLiquid",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "ignoreLiquidFullness",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "craftTime",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "craftEffect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "updateEffect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "updateEffectChance",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "updateEffectSpread",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "warmupSpeed",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "legacyReadWarmup",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "drawer",
+      "javaType": "DrawBlock",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    }
+  ]
+}

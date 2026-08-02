@@ -126,6 +126,11 @@ def load_qss(theme: str | None = None) -> str:
     check_icon = _RESOURCES / "icons" / "check_copper.svg"
     if check_icon.exists():
         template = template.replace("@CHECK_ICON@", f"url({check_icon.as_posix()})")
+    # 下拉箭头图标：@ARROW_ICON@（v0.2.5 修复——border transparent 三角在
+    # windows11 editable QComboBox 上渲染成黑块矩形）。
+    arrow_icon = _RESOURCES / "icons" / "arrow_down.svg"
+    if arrow_icon.exists():
+        template = template.replace("@ARROW_ICON@", f"url({arrow_icon.as_posix()})")
     return template
 
 

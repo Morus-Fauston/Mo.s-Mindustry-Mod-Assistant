@@ -31,7 +31,13 @@ public class ClassExtractor {
     /** Additional block subclasses to extract */
     private static final List<Class<?>> BLOCK_SUBCLASSES = List.of(
             mindustry.world.blocks.defense.Wall.class,
-            mindustry.world.blocks.defense.turrets.ItemTurret.class
+            mindustry.world.blocks.defense.turrets.ItemTurret.class,
+            // v0.2.5 F-22: 5 种新方块
+            mindustry.world.blocks.production.GenericCrafter.class,
+            mindustry.world.blocks.production.Drill.class,
+            mindustry.world.blocks.distribution.Conveyor.class,
+            mindustry.world.blocks.power.Battery.class,
+            mindustry.world.blocks.defense.MendProjector.class
     );
 
     /** BulletType subclasses for inline bullet editing (v1.1) */
@@ -41,6 +47,26 @@ public class ClassExtractor {
             MissileBulletType.class,
             ArtilleryBulletType.class,
             FlakBulletType.class
+    );
+
+    /** Ability subclasses for the abilities editor (v0.2.5 F-49) */
+    private static final List<Class<?>> ABILITY_SUBCLASSES = List.of(
+            mindustry.entities.abilities.Ability.class,
+            mindustry.entities.abilities.ArmorPlateAbility.class,
+            mindustry.entities.abilities.EnergyFieldAbility.class,
+            mindustry.entities.abilities.ForceFieldAbility.class,
+            mindustry.entities.abilities.LiquidExplodeAbility.class,
+            mindustry.entities.abilities.LiquidRegenAbility.class,
+            mindustry.entities.abilities.MoveEffectAbility.class,
+            mindustry.entities.abilities.MoveLightningAbility.class,
+            mindustry.entities.abilities.RegenAbility.class,
+            mindustry.entities.abilities.RepairFieldAbility.class,
+            mindustry.entities.abilities.ShieldArcAbility.class,
+            mindustry.entities.abilities.ShieldRegenFieldAbility.class,
+            mindustry.entities.abilities.SpawnDeathAbility.class,
+            mindustry.entities.abilities.StatusFieldAbility.class,
+            mindustry.entities.abilities.SuppressionFieldAbility.class,
+            mindustry.entities.abilities.UnitSpawnAbility.class
     );
 
     public Map<String, ClassDef> extract() {
@@ -55,6 +81,9 @@ public class ClassExtractor {
         for (Class<?> clazz : BULLET_SUBCLASSES) {
             extractClass(clazz, result);
         }
+        for (Class<?> clazz : ABILITY_SUBCLASSES) {
+            extractClass(clazz, result);
+        }
 
         return result;
     }
@@ -66,7 +95,11 @@ public class ClassExtractor {
         // Extract parent first (recursion)
         String parentName = null;
         Class<?> parent = clazz.getSuperclass();
-        if (parent != null && parent != Object.class && Content.class.isAssignableFrom(parent)) {
+        // Content 继承链，或 Ability 继承链（Ability 不继承 Content，需单独放行）
+        boolean validParent = parent != null && parent != Object.class
+                && (Content.class.isAssignableFrom(parent)
+                    || mindustry.entities.abilities.Ability.class.isAssignableFrom(parent));
+        if (validParent) {
             parentName = parent.getSimpleName();
             extractClass(parent, result);
         }

@@ -1,0 +1,28 @@
+{
+  "name": "Battery",
+  "fullName": "mindustry.world.blocks.power.Battery",
+  "parent": "PowerDistributor",
+  "fields": [
+    {
+      "name": "drawer",
+      "javaType": "DrawBlock",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "emptyLightColor",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "fullLightColor",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    }
+  ]
+}

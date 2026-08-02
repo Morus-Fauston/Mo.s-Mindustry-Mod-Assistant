@@ -1,0 +1,43 @@
+{
+  "name": "SpawnDeathAbility",
+  "fullName": "mindustry.entities.abilities.SpawnDeathAbility",
+  "parent": "Ability",
+  "fields": [
+    {
+      "name": "unit",
+      "javaType": "UnitType",
+      "mode": "INLINE_OBJECT",
+      "nullable": false,
+      "default": null,
+      "inlineType": "UnitType"
+    },
+    {
+      "name": "amount",
+      "javaType": "int",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0
+    },
+    {
+      "name": "randAmount",
+      "javaType": "int",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0
+    },
+    {
+      "name": "spread",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "faceOutwards",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    }
+  ]
+}

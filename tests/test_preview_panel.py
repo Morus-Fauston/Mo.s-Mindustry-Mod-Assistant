@@ -448,3 +448,61 @@ class TestLayerTreeBehavior:
         main_item = self._find_by_text(panel, "主体")
         assert main_item is not None
         assert main_item.text(1) == "[缺失]"
+
+
+class TestShadowZOrder:
+    """shadow/outline 渲染层级回归（v0.2.5 修复）。
+
+    背景：预览曾把所有图层 z 从 1 递增，阴影被画在主体之上（半透明黑盖住
+    主体），用户验收"shadow 应位于底部区域"失败。修复 = -shadow z=-3、
+    -outline z=-2，均低于主体 z=0。
+    """
+
+    def _make_panel_with_layers(self, qapp, suffixes: list[str]):
+        """带指定后缀 png 的预览面板。"""
+        from PySide6.QtGui import QColor, QImage
+
+        from app.core.content_store import ContentData
+        from app.core.project import Project
+
+        import tempfile
+        tmp = Path(tempfile.mkdtemp(prefix="moma_test_"))
+        Project.create(tmp, "probe-mod", "探针模组")
+        project = Project.open(tmp / "probe-mod")
+        sprite_dir = project.sprites_dir / "units"
+        sprite_dir.mkdir(parents=True, exist_ok=True)
+        for suffix in ["", *suffixes]:
+            img = QImage(8, 8, QImage.Format.Format_RGBA8888)
+            img.fill(QColor(200, 80, 80, 255))
+            assert img.save(str(sprite_dir / f"fly{suffix}.png"), "PNG")
+
+        content = ContentData(name="fly", category="units", data={"type": "UnitType"})
+        panel = PreviewPanel()
+        panel.show_content(content, project)
+        panel.show()
+        qapp.processEvents()
+        return panel
+
+    def test_shadow_z_below_base(self, qapp):
+        """-shadow 图层 z 值必须低于主体（z=0），不被画在主体上方。"""
+        panel = self._make_panel_with_layers(qapp, ["-shadow"])
+        items = panel._scene_items.get("-shadow", [])
+        assert items, "应有 shadow 场景项"
+        for it in items:
+            assert it.zValue() < 0, f"shadow z 应为负（主体下），实际 {it.zValue()}"
+
+    def test_outline_z_below_base(self, qapp):
+        """-outline 图层 z 值必须低于主体（z=0）。"""
+        panel = self._make_panel_with_layers(qapp, ["-outline"])
+        items = panel._scene_items.get("-outline", [])
+        assert items, "应有 outline 场景项"
+        for it in items:
+            assert it.zValue() < 0
+
+    def test_regular_layer_above_base(self, qapp):
+        """普通图层（如 -cell）仍在主体之上（z>0），不受影响。"""
+        panel = self._make_panel_with_layers(qapp, ["-cell"])
+        items = panel._scene_items.get("-cell", [])
+        assert items
+        for it in items:
+            assert it.zValue() > 0

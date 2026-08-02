@@ -1,0 +1,37 @@
+{
+  "items": {
+    "beryllium": "铍",
+    "blast-compound": "爆破混合物",
+    "carbide": "碳化物",
+    "coal": "煤",
+    "copper": "铜",
+    "dormant-cyst": "休眠孢囊",
+    "fissile-matter": "裂变物质",
+    "graphite": "石墨",
+    "lead": "铅",
+    "metaglass": "玻璃",
+    "oxide": "氧化物",
+    "phase-fabric": "相织布",
+    "plastanium": "塑钢",
+    "pyratite": "燃烧混合物",
+    "sand": "沙",
+    "scrap": "废料",
+    "silicon": "硅",
+    "spore-pod": "孢子荚",
+    "surge-alloy": "涌流合金",
+    "thorium": "钍",
+    "titanium": "钛",
+    "tungsten": "钨"
+  },
+  "liquids": {
+    "water": "水",
+    "slag": "熔渣",
+    "oil": "油",
+    "cryofluid": "冷冻液",
+    "neoplasm": "增生体",
+    "arkycite": "亚克赛特",
+    "ozone": "臭氧",
+    "hydrogen": "氢气",
+    "nitrogen": "氮气"
+  }
+}

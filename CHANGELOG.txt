@@ -1,3 +1,12 @@
+v0.2.5 (2026-08-02 17:09) 功能填充: 5新方块+Abilities+资源控件+精灵图生成(258→327全绿)
+  新增: F-22五种方块(GenericCrafter/Drill/Conveyor/Battery/MendProjector,全模板+字段组+元数据) / F-49能力编辑器(15子类卡片式,懒初始化走命令栈) / F-50资源科技控件(ResourceList/Slot/TechRef/Consumes全走命令栈) / F-20精灵图生成(Pillow outline/shadow/full) / 资源中文名表resource_names_zh(铜(copper)显示,英文落盘)
+  修复: 资源编辑器双重命令(committed=True) / consumes不渲染(synthetic_field_def合成FieldDef) / 能力字段全空(_get_nested嵌套读取) / 嵌套路径+添加失效(4处getter/setter改_nested) / 下拉黑块三角(SVG箭头arrow_down.svg) / 文字右对齐(光标归位) / consumes添加失效(占位项) / 阴影盖主体(z=-3)
+  体验: 字段名+75 / 新建方块按大类分组 / 设置接线(F-54显示名/自动保存/缩放) / 下拉弹出宽度
+  测试: +69(test_sprite_generator/test_ability_array_editor/test_editor_panel,含嵌套路径/阴影z/synthetic)
+  文件: 修改16+新增26(ability_array_editor/sprite_generator/resource_names_zh/arrow_down.svg/metadata类/tests)
+
+====
+
 v0.2.4.revised (2026-08-02 03:19) 架构深化+图层树渲染修复+测试补全(219→258全绿)
   架构: 渲染数学层preview_math(坐标公式脱离Qt,ADR-003落地) / 字段组操作层group_ops(三处重复→5纯函数,走命令栈可撤销) / 控件工厂field_widget_factory(四处复制粘贴→单点) / 颜色控件color_picker(60行内联→独立控件+parse_color纯函数)
   修复: 复选框裸勾→QSS显式indicator+SVG橙勾 / 图层名被裁→列0 Fixed220 / 双橙条→图层树去选中态 / 双击误触→eventFilter拦截indicator区 / 武器XY静默失败→partial绑定 / 武器修改不刷新→连data_changed / 重建污染dict→blockSignals / 数值框:g吞小数+科学计数法→定点去尾零 / editor_panel启动崩溃(docstring未闭合)

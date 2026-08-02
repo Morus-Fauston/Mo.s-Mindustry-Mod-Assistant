@@ -21,6 +21,34 @@ from typing import Any
 from .metadata import ClassDef, FieldDef
 
 
+# ── Synthetic field defs (v0.2.5 F-22) ────────────────────────────────
+
+
+def synthetic_field_def(name: str, value: Any) -> FieldDef:
+    """为 JSON 中存在但提取元数据缺失的字段构造 FieldDef。
+
+    背景：`consumes` 等字段在部分游戏版本的反射提取中缺失，导致模板生成的
+    数据无法渲染（field 不在 class_def → 组被隐藏）。此函数按值的运行时类型
+    推断 mode/java_type，让这类字段仍走正常渲染（含 widgets 路由）。
+
+    Returns:
+        一个可渲染的 FieldDef；mode 依 value 推断。
+    """
+    if isinstance(value, bool):
+        mode, jt = "PRIMITIVE", "boolean"
+    elif isinstance(value, int):
+        mode, jt = "PRIMITIVE", "int"
+    elif isinstance(value, float):
+        mode, jt = "PRIMITIVE", "float"
+    elif isinstance(value, list):
+        mode, jt = "ARRAY", "List"
+    elif isinstance(value, dict):
+        mode, jt = "INLINE_OBJECT", "Object"
+    else:
+        mode, jt = "PRIMITIVE", "String"
+    return FieldDef(name=name, java_type=jt, mode=mode, nullable=True)
+
+
 # ── Data structures ────────────────────────────────────────────────────
 
 
@@ -118,7 +146,14 @@ def compute_form_plan(
             if n in data:
                 visible_names.append(n)
 
-        visible = [all_fields[n] for n in visible_names if n in all_fields]
+        visible = []
+        for n in visible_names:
+            if n in all_fields:
+                visible.append(all_fields[n])
+            elif n in data:
+                # 模板/JSON 中存在但元数据缺失的字段（如 consumes）：
+                # 合成 FieldDef 保证仍可渲染（v0.2.5 F-22）
+                visible.append(synthetic_field_def(n, data[n]))
 
         # Empty-group hiding: show group only if it has required fields
         # or at least one visible field.  Groups with only default/optional

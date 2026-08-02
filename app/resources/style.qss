@@ -384,15 +384,14 @@ QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
 
 QComboBox::drop-down {
     border: none;
+    background: transparent;
     width: 20px;
 }
 QComboBox::down-arrow {
-    image: none;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid @INK2@;
-    width: 0; height: 0;
-    margin-right: 6px;
+    image: @ARROW_ICON@;
+    width: 10px;
+    height: 6px;
+    margin-right: 5px;
 }
 QComboBox QAbstractItemView {
     background-color: @CANVAS@;

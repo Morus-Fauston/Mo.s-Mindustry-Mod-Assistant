@@ -1,0 +1,43 @@
+{
+  "name": "LiquidRegenAbility",
+  "fullName": "mindustry.entities.abilities.LiquidRegenAbility",
+  "parent": "Ability",
+  "fields": [
+    {
+      "name": "liquid",
+      "javaType": "Liquid",
+      "mode": "STRING_REF",
+      "nullable": false,
+      "default": null,
+      "refSource": "Liquids"
+    },
+    {
+      "name": "slurpSpeed",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "regenPerSlurp",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "slurpEffectChance",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "slurpEffect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    }
+  ]
+}

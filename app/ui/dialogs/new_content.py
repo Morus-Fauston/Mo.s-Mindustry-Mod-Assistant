@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -11,6 +16,22 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QVBoxLayout,
 )
+
+# 已有模板的方块类型（与 TemplateEngine.create 的 generators 保持一致）
+_BLOCK_TEMPLATES = {
+    "Wall", "ItemTurret", "PowerTurret",
+    "GenericCrafter", "Drill", "Conveyor", "Battery", "MendProjector",
+}
+
+
+def _load_block_categories() -> list[dict]:
+    """读取 block_categories.json 的大类/子类结构。"""
+    path = Path(__file__).parent.parent.parent / "config" / "block_categories.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data.get("categories", [])
+    except (OSError, json.JSONDecodeError):
+        return []
 
 
 class NewUnitDialog(QDialog):
@@ -61,13 +82,10 @@ class NewUnitDialog(QDialog):
 
 
 class NewBlockDialog(QDialog):
-    """Dialog for creating a new block (asks for type first)."""
+    """Dialog for creating a new block (asks for type first).
 
-    BLOCK_TYPES = [
-        ("Wall", "墙"),
-        ("ItemTurret", "物品炮台"),
-        ("PowerTurret", "电力炮台"),
-    ]
+    类型列表按 block_categories.json 的大类分组显示，只列出已有模板的类型。
+    """
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -78,8 +96,7 @@ class NewBlockDialog(QDialog):
         form = QFormLayout()
 
         self._type_combo = QComboBox()
-        for type_id, label in self.BLOCK_TYPES:
-            self._type_combo.addItem(f"{label} ({type_id})", type_id)
+        self._populate_types()
         form.addRow("类型:", self._type_combo)
 
         self._name_edit = QLineEdit()
@@ -97,6 +114,36 @@ class NewBlockDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def _populate_types(self) -> None:
+        """按大类分组填充类型下拉，只列已有模板的类型。"""
+        model = QStandardItemModel(self)
+        first_real_index = None
+        row = 0
+        for cat in _load_block_categories():
+            # 收集本大类下已有模板的类型
+            entries: list[tuple[str, str]] = []
+            for sub in cat.get("subCategories", []):
+                for t in sub.get("types", []):
+                    if t in _BLOCK_TEMPLATES:
+                        entries.append((t, sub.get("name", t)))
+            if not entries:
+                continue
+            # 大类分组标题（不可选）
+            header = QStandardItem(cat.get("name", ""))
+            header.setFlags(Qt.ItemFlag.NoItemFlags)
+            model.appendRow(header)
+            row += 1
+            for type_id, label in entries:
+                item = QStandardItem(f"    {label} ({type_id})")
+                item.setData(type_id, Qt.ItemDataRole.UserRole)
+                model.appendRow(item)
+                if first_real_index is None:
+                    first_real_index = row
+                row += 1
+        self._type_combo.setModel(model)
+        if first_real_index is not None:
+            self._type_combo.setCurrentIndex(first_real_index)
 
     def get_result(self) -> tuple[str, str]:
         """Returns (block_type, name)."""

@@ -605,10 +605,33 @@ class MainWindow(QMainWindow):
         dialog = SettingsDialog(self)
         # 主题切换即时生效
         dialog.theme_changed.connect(lambda t: apply_theme(QApplication.instance(), t))
+        dialog.settings_applied.connect(self._on_settings_applied)
         if dialog.exec():
             dialog.apply_settings()
             # 确保最终主题与设置一致
             apply_theme(QApplication.instance(), get_current_theme())
+
+    def _on_settings_applied(self) -> None:
+        """设置面板确定后，联动刷新各组件。"""
+        from ..core.config_loader import set_display_mode
+        from ..core.settings import get_settings
+
+        settings = get_settings()
+
+        # 显示名模式
+        mode = settings.get("display_name_mode", "zh_en")
+        set_display_mode(mode)
+        self._refresh_all_editors()
+
+        # 自动保存间隔
+        interval = int(settings.get("auto_save_interval", 180))
+        self._auto_save_timer.stop()
+        if interval > 0:
+            self._auto_save_timer.start(interval * 1000)
+
+        # 预览缩放
+        zoom = int(settings.get("sprite_zoom", 4))
+        self._preview.set_base_zoom(zoom)
 
     def _about(self) -> None:
         QMessageBox.about(

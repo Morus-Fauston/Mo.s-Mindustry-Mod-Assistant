@@ -1,0 +1,6 @@
+{
+  "name": "PowerBlock",
+  "fullName": "mindustry.world.blocks.power.PowerBlock",
+  "parent": "Block",
+  "fields": []
+}

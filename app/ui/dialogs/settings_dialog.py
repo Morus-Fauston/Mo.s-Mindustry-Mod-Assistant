@@ -57,6 +57,7 @@ class SettingsDialog(QDialog):
     """设置面板。主题切换即时生效并发出 theme_changed 信号。"""
 
     theme_changed = Signal(str)
+    settings_applied = Signal()  # 确定后发射，通知主窗口刷新
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -126,14 +127,12 @@ class SettingsDialog(QDialog):
         self._theme_combo.currentIndexChanged.connect(self._on_theme_changed)
         form.addRow("主题", self._theme_combo)
 
-        # 显示名模式（占位）
+        # 显示名模式
         self._display_mode_combo = QComboBox()
         for value, label in _DISPLAY_MODES:
             self._display_mode_combo.addItem(label, value)
         self._display_mode_combo.setFixedWidth(200)
-        self._display_mode_combo.setEnabled(False)
-        self._display_mode_combo.setToolTip(_PLACEHOLDER_TIP)
-        form.addRow(self._labeled("显示名模式"), self._display_mode_combo)
+        form.addRow("显示名模式", self._display_mode_combo)
 
         page.layout().addLayout(form)
         page.layout().addStretch(1)
@@ -145,11 +144,10 @@ class SettingsDialog(QDialog):
         form.setSpacing(12)
 
         self._autosave_spin = QSpinBox()
-        self._autosave_spin.setRange(30, 3600)
+        self._autosave_spin.setRange(0, 3600)
         self._autosave_spin.setSuffix(" 秒")
+        self._autosave_spin.setSpecialValueText("关闭")
         self._autosave_spin.setFixedWidth(120)
-        self._autosave_spin.setEnabled(False)
-        self._autosave_spin.setToolTip(_PLACEHOLDER_TIP)
         form.addRow("自动保存间隔", self._autosave_spin)
 
         page.layout().addLayout(form)
@@ -165,10 +163,8 @@ class SettingsDialog(QDialog):
         self._zoom_slider = QSlider(Qt.Orientation.Horizontal)
         self._zoom_slider.setRange(1, 8)
         self._zoom_slider.setFixedWidth(160)
-        self._zoom_slider.setEnabled(False)
-        self._zoom_slider.setToolTip(_PLACEHOLDER_TIP)
+        self._zoom_slider.valueChanged.connect(self._on_zoom_changed)
         self._zoom_label = QLabel("×4")
-        self._zoom_label.setEnabled(False)
         zoom_row.addWidget(self._zoom_slider)
         zoom_row.addWidget(self._zoom_label)
         zoom_row.addStretch(1)
@@ -246,6 +242,9 @@ class SettingsDialog(QDialog):
             # 即时生效
             self.theme_changed.emit(theme)
 
+    def _on_zoom_changed(self, value: int) -> None:
+        self._zoom_label.setText(f"×{value}")
+
     # ── 值的加载与收集 ─────────────────────────────────────────────────
 
     def _load_values(self) -> None:
@@ -257,7 +256,7 @@ class SettingsDialog(QDialog):
             self._theme_combo.setCurrentIndex(idx)
             self._theme_combo.blockSignals(False)
 
-        # 显示名模式（占位，仅回填显示）
+        # 显示名模式
         mode = self._settings.get("display_name_mode", "zh_en")
         midx = self._display_mode_combo.findData(mode)
         if midx >= 0:
@@ -267,11 +266,15 @@ class SettingsDialog(QDialog):
         self._autosave_spin.setValue(int(self._settings.get("auto_save_interval", 180)))
 
         # 缩放倍率
-        self._zoom_slider.setValue(4)
+        self._zoom_slider.setValue(int(self._settings.get("sprite_zoom", 4)))
 
     def apply_settings(self) -> None:
         """确定时持久化设置（主题已在切换时即时生效）。"""
         theme = self._theme_combo.currentData()
         if theme:
             self._settings.set("theme", theme)
+        self._settings.set("display_name_mode", self._display_mode_combo.currentData())
+        self._settings.set("auto_save_interval", self._autosave_spin.value())
+        self._settings.set("sprite_zoom", self._zoom_slider.value())
         self._settings.save()
+        self.settings_applied.emit()

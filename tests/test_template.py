@@ -24,7 +24,7 @@ def engine(metadata):
 class TestUnitTemplates:
     def test_ground_unit(self, engine):
         t = engine.create("UnitType", "test-unit")
-        assert t["type"] == "UnitType"
+        assert t["type"] == "mech"
         assert t["name"] == "test-unit"
         assert t["health"] > 0
         assert t["speed"] > 0
@@ -32,18 +32,21 @@ class TestUnitTemplates:
 
     def test_flying_unit(self, engine):
         t = engine.create("UnitType-flying", "test-flyer")
+        assert t["type"] == "flying"
         assert t["flying"] is True
         assert t["health"] > 0
         assert "engineOffset" in t
 
     def test_tank_unit(self, engine):
         t = engine.create("UnitType-tank", "test-tank")
+        assert t["type"] == "tank"
         assert t["squareShape"] is True
         assert t["crushDamage"] >= 1
         assert t["health"] > 0
 
     def test_legs_unit(self, engine):
         t = engine.create("UnitType-legs", "test-spider")
+        assert t["type"] == "legs"
         assert t["legCount"] >= 4
         assert t["health"] > 0
 

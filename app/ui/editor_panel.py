@@ -47,7 +47,7 @@ from ..core.group_ops import (
     remove_group_fields,
     restore_group_fields,
 )
-from ..core.metadata import ClassDef, FieldDef, Metadata
+from ..core.metadata import ClassDef, FieldDef, Metadata, normalize_content_type
 from ..core.project import Project
 from ..core.validator import Validator
 from .widgets.weapon_array_editor import WeaponArrayEditor
@@ -364,7 +364,7 @@ class EditorPanel(QWidget):
         rows_layout.setSpacing(4)
 
         # 获取当前组的 widgets 配置（F-50 资源控件路由）
-        content_type = self._content.data.get("type", "")
+        content_type = normalize_content_type(self._content.data.get("type", ""))
         groups_config = self._field_groups.get(content_type, {})
         group_cfg = groups_config.get(plan.group_name, {})
         widgets_cfg = group_cfg.get("widgets", {}) if isinstance(group_cfg, dict) else {}
@@ -516,7 +516,7 @@ class EditorPanel(QWidget):
         """
         from ..core.form_plan import CAPABILITY_LINKAGE
 
-        content_type = self._content.data.get("type", "")
+        content_type = normalize_content_type(self._content.data.get("type", ""))
         groups_config = self._field_groups.get(content_type, {})
         group_def = groups_config.get(group_name, {})
         content_name = self._content.name
@@ -569,7 +569,7 @@ class EditorPanel(QWidget):
     def _get_enabled_capabilities(self) -> set[str]:
         """返回当前 data 中已启用的能力组名集合。"""
         from ..core.form_plan import CAPABILITY_GROUPS
-        content_type = self._content.data.get("type", "")
+        content_type = normalize_content_type(self._content.data.get("type", ""))
         groups_config = self._field_groups.get(content_type, {})
         enabled = set()
         for gname in CAPABILITY_GROUPS:
@@ -602,7 +602,7 @@ class EditorPanel(QWidget):
         if reply != QMessageBox.StandardButton.Yes:
             return
 
-        content_type = self._content.data.get("type", "")
+        content_type = normalize_content_type(self._content.data.get("type", ""))
         groups_config = self._field_groups.get(content_type, {})
         group_def = groups_config.get(group_name, {})
         names = group_field_names(group_def)
@@ -698,7 +698,7 @@ class EditorPanel(QWidget):
 
     def _get_group_default(self, group_name: str, field_name: str) -> Any:
         """Look up a configured default value for a field in a group."""
-        content_type = self._content.data.get("type", "")
+        content_type = normalize_content_type(self._content.data.get("type", ""))
         groups_config = self._field_groups.get(content_type, {})
         group_def = groups_config.get(group_name, {})
         defaults = group_def.get("defaults", {})
@@ -1134,7 +1134,7 @@ class EditorPanel(QWidget):
         if self._class_def is None:
             return
 
-        content_type = self._content.data.get("type", "")
+        content_type = normalize_content_type(self._content.data.get("type", ""))
         groups_config = self._field_groups.get(content_type, {})
         from ..core.form_plan import infer_subtype, group_visible
         subtype = infer_subtype(content_type, self._content.data)

@@ -1,3 +1,12 @@
+v0.2.6.revised.2 (2026-08-02 22:18) 修复单位type不被游戏识别(致命)+验证器误报(388全绿)
+  修复: 单位模板type写死"UnitType"(Java类名)游戏不认→报Invalid unit type→改游戏子类型值(地面mech/飞行flying/坦克tank/多足legs)
+  架构: 编辑器内部查配置键是"UnitType",直接改子类型会查空→metadata新增normalize_content_type统一收敛+form_plan.infer_subtype识别子类型+editor/preview查配置前规范化(visible_for仍用游戏值)
+  修复: 验证器把内联武器(含bullet键)当外部引用误报→含bullet跳过引用检查
+  验证: 388全绿(+1内联武器回归),示例模组重打包type=flying/mech/tank+validator 0问题+offscreen冒烟OK
+  文件: 修改7(.gitignore/template/metadata/form_plan/validator/editor_panel/preview_panel)+测试5
+
+====
+
 特殊更新 (2026-08-02 18:23) 新增CI自动化测试(不计入软件版本号)
   新增: GitHub Actions工作流(ci.yml)——push到main或PR自动跑全部386测试,Ubuntu无头装Qt系统库+QT_QPA_PLATFORM=offscreen,metadata已入库clone即可跑
   说明: 真机验证仍是人工流程,CI负责单元测试层

@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.2.6.revised.2 (2026-08-02 22:18) — 修复单位 type 不被游戏识别（致命）
+
+> 用户实测：用 MoMA 生成的示例模组导入游戏，所有单位报错 `Invalid unit type: 'UnitType'`。根因是单位模板把 `type` 字段写成 Java 类名 `UnitType`，而游戏解析单位时 `type` 必须是实体子类型字符串（flying/mech/legs/tank/naval/payload/missile/tether/crawl）——游戏源码 `ContentParser.unitType()` 的 switch 里没有 `UnitType`。方块/武器的 `type` 是类名、正确，只有单位特殊。顺带修复验证器把内联武器误报为「引用不存在」。
+
+### 修复
+
+- **单位 type 字段游戏不认（致命）**：现象 → 新建任何单位导入游戏全部报 `Invalid unit type: 'UnitType'`；根因 → `app/core/template.py` 四个单位模板把 `type` 写死为 `UnitType`（Java 类名），游戏单位 `type` 必须是实体子类型字符串；修复 → 模板写入游戏值：地面 `mech` / 飞行 `flying` / 坦克 `tank` / 多足 `legs`
+- **编辑器兼容子类型 type**：MoMA 内部多处用 `data["type"]` 查配置（键是类名 `UnitType`），直接改成子类型会让编辑器查空 → `metadata.py` 新增 `normalize_content_type()`（子类型→`UnitType`）统一收敛，`form_plan.py` 的 `infer_subtype` 识别游戏子类型字符串，`editor_panel`/`preview_panel` 查 field_groups/sprite_layers 前规范化（图层 visible_for 过滤仍用原始游戏值）
+- **验证器内联武器误报**：内联武器（含 `bullet` 键的完整定义）带 name 是合法标识，`_check_weapon_refs` 却当外部引用检查 → 报「武器引用不存在」；修复 = 含 bullet 键的条目跳过引用检查（只查纯引用模式）
+
+### 技术
+
+- **metadata 子类型别名补全**：`_TYPE_ALIASES` 新增 `flying`/`missile`/`tether`/`crawl`（此前只有 mech/tank/legs/payload/naval/hover/crawler），`get_class("mech")` 等映射回 `UnitType` 类定义
+
+### 验证
+
+- 388 测试全绿（+1 内联武器回归测试；测试 helper 改为按 `ROLE_WEAPON_INDEX` 定位武器行，不受图层生成按钮干扰）
+- 示例模组重新打包：单位 type = flying/mech/tank，validator 0 问题，offscreen 冒烟编辑器正常渲染所有内容
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/core/template.py` | 修改 — 单位模板 type 改为游戏子类型值（mech/flying/tank/legs） |
+| `app/core/metadata.py` | 修改 — 新增 `normalize_content_type()` + 子类型别名补全 |
+| `app/core/form_plan.py` | 修改 — content_type 规范化 + infer_subtype 识别子类型 |
+| `app/ui/editor_panel.py` | 修改 — 6 处 field_groups 查询规范化 |
+| `app/ui/preview_panel.py` | 修改 — 图层配置查询规范化 |
+| `app/core/validator.py` | 修改 — 内联武器跳过引用检查 |
+| `.gitignore` | 修改 — 忽略生成脚本与示例模组输出 |
+| `tests/*` | 修改 — 断言更新 + 内联武器回归测试 + helper 修复 |
+
+---
+
 ## 特殊更新 (2026-08-02 18:23) — 新增 CI 自动化测试
 
 > 工程基础设施更新，不计入软件版本号（不影响软件功能）。首次引入 GitHub Actions：每次 push 到 main 或提交 PR 时，云端自动跑全部 386 个测试。真机验证仍是人工流程（offscreen 验不出观感），CI 负责单元测试层。

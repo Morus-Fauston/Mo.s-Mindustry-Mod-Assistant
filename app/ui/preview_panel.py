@@ -41,6 +41,7 @@ from PySide6.QtWidgets import (
 
 from ..core.config_loader import get_sprite_layers
 from ..core.content_store import ContentData
+from ..core.metadata import normalize_content_type
 from ..core.project import Project
 from .theme import get_tokens
 from .widgets.num_spin import NumDoubleSpinBox
@@ -280,7 +281,7 @@ class PreviewPanel(QWidget):
 
         category = self._content.category
         name = self._content.name
-        content_type = self._content.data.get("type", "")
+        content_type = normalize_content_type(self._content.data.get("type", ""))
 
         # 获取该类型的图层配置
         layers = self._sprite_layers_config.get(content_type, [])
@@ -549,8 +550,8 @@ class PreviewPanel(QWidget):
             self._layer_tree.blockSignals(False)
             return
 
-        content_type = self._content.data.get("type", "")
-        subtype = self._content.data.get("type", "")  # tank/flying/legs/...
+        content_type = normalize_content_type(self._content.data.get("type", ""))
+        subtype = self._content.data.get("type", "")  # tank/flying/legs/...（游戏值）
         layers = self._sprite_layers_config.get(content_type, [])
         if not layers:
             layers = [{"suffix": "", "label": "主体", "required": True}]

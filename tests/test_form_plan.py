@@ -85,6 +85,13 @@ class TestInferSubtype:
         """squareShape checked before flying."""
         assert infer_subtype("UnitType", {"squareShape": True, "flying": True}) == "UnitType-tank"
 
+    def test_game_subtype_strings(self):
+        """v0.2.6: type 字段存游戏子类型字符串（mech/flying/tank/legs）。"""
+        assert infer_subtype("mech", {}) == "UnitType-mech"
+        assert infer_subtype("flying", {"flying": True}) == "UnitType-flying"
+        assert infer_subtype("tank", {}) == "UnitType-tank"
+        assert infer_subtype("legs", {}) == "UnitType-legs"
+
 
 # ── group_visible ──────────────────────────────────────────────────────
 

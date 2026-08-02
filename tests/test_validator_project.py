@@ -110,6 +110,23 @@ class TestValidateProject:
         issues = validate_project(project, None)
         assert not any("武器引用不存在" in i.message for i in issues)
 
+    def test_inline_weapon_with_name_not_flagged(self, project):
+        """内联武器（含 bullet 键的完整定义）带 name 是合法标识，不做引用检查。
+
+        回归（v0.2.6）：模板生成的内联武器曾被误报"武器引用不存在"。
+        """
+        (project.root / "content" / "units" / "soldier.json").write_text(
+            json.dumps({
+                "type": "UnitType",
+                "weapons": [
+                    {"name": "内置炮", "bullet": {"type": "BasicBulletType", "damage": 10}},
+                ],
+            }),
+            encoding="utf-8",
+        )
+        issues = validate_project(project, None)
+        assert not any("武器引用不存在" in i.message for i in issues)
+
     def test_requirements_unknown_item_warning(self, project):
         (project.root / "content" / "units" / "soldier.json").write_text(
             json.dumps({

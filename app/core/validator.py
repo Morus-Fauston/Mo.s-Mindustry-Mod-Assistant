@@ -151,7 +151,12 @@ def _check_duplicate_names(categories, project, issues: list[Issue]) -> None:
 
 
 def _check_weapon_refs(project, cat, name, data, issues: list[Issue]) -> None:
-    """weapons 数组中的 name 引用的武器必须存在（error）。"""
+    """weapons 数组中的 name 引用的武器必须存在（error）。
+
+    只检查**引用模式**条目（无 bullet 键）。内联武器（含 bullet 键的完整
+    定义）带 name 是合法标识，游戏会以 modname-name 注册，不查外部文件
+    （v0.2.6 修复：模板生成的内联武器曾被误报"引用不存在"）。
+    """
     weapons = data.get("weapons")
     if not isinstance(weapons, list):
         return
@@ -161,6 +166,9 @@ def _check_weapon_refs(project, cat, name, data, issues: list[Issue]) -> None:
         known_weapons = {f.stem for f in wdir.glob("*.json")}
     for i, w in enumerate(weapons):
         if not isinstance(w, dict):
+            continue
+        # 内联武器：有 bullet 键的完整定义，不做引用检查
+        if "bullet" in w:
             continue
         wname = w.get("name", "")
         if wname and wname not in known_weapons:

@@ -90,7 +90,7 @@ class TestCreateContent:
         path = project_dir / "content" / "units" / "my-unit.json"
         assert path.exists()
         data = json.loads(path.read_text(encoding="utf-8"))
-        assert data["type"] == "UnitType"
+        assert data["type"] == "mech"
 
     def test_create_without_project_raises(self, session):
         with pytest.raises(RuntimeError, match="No project open"):

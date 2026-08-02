@@ -60,9 +60,11 @@ def main() -> None:
 
 
 def _find_metadata_dir() -> Path | None:
-    """Search for metadata/ directory in likely locations."""
+    """Search for metadata/ directory in likely locations (F-53 统一路径)."""
+    from .core.paths import data_dir
+
     candidates = [
-        Path(__file__).parent.parent / "metadata",  # project root
+        data_dir() / "metadata",  # 开发 = 项目根；打包 = _MEIPASS
         Path.cwd() / "metadata",
         Path(sys.argv[0]).parent / "metadata",
     ]

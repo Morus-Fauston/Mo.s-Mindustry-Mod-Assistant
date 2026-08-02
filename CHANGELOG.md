@@ -1,5 +1,68 @@
 # Changelog
 
+## v0.2.6 (2026-08-02 17:40) — 工程化三件套：文件监听 + 全量验证 + 外部参考 + 渲染统一
+
+> v0.2.6 是「工程化」版本：让编辑器从单方块编辑走向工程级工作流——精灵图改动自动刷新预览、一键校验整个项目、可从外部 mod 导入参考对照；同时把字段渲染统一成单一推断函数 + 复合字段色条容器，并完成 PyInstaller 打包的路径基建。测试从 327 → 383 全绿。
+
+### 新增
+
+- **精灵图文件监听（F-21）**：新增 `sprite_watcher.py`（递归监听工程 `sprites/`，300ms 防抖合并）。新建/打开/恢复工程自动开始监听，关闭工程停止；当前 content 精灵图被外部修改 → 自动刷新预览，目录结构变化（增删文件）→ 刷新图层树
+- **项目级全量验证（F-51）**：`validator.py` 新增 `validate_project()`——检查 mod.json（存在/可解析/name 合法）、每个 content JSON 可解析 + type 存在、同分类重名、武器引用存在、requirements 物品存在、精灵图缺失，error 排前 warning 排后；新增 `validate_report_dialog.py` 报告窗口（严重度/文件/消息表格，点击行跳转定位字段）
+- **外部 mod 参考导入（F-52）**：新增 `external_mod.py`（文件夹/zip 双来源解析，zip 一层包裹自动识别，临时目录用后清理）+ `external_mod_picker.py` 选择对话框；菜单「导入参考」改为子菜单（原版实例 / mod 文件夹 / mod zip）
+- **内容名总表（E-4）**：`tools/extract_content_names.py` 从官方汉化包提取 **524 条**内容名 → `content_names_zh.json`（items/liquids/blocks/units/status），作为科技引用双语搜索的数据源
+- **PyInstaller 打包基建（F-53）**：新增 `app/core/paths.py`（开发/冻结双模式路径解析）+ `moma.spec`（单文件 exe 配置，含 QtSvg）；settings/config_loader/theme/main 全部接入
+
+### 架构改进
+
+- **字段类型统一推断（E-1）**：新增 `field_type_for_value(value, hint=None)` 纯函数，editor_panel / weapon_card / polymorphic 三处重复推断全部收敛，hint 支持 ref/col 强制
+- **复合字段色条容器（E-2）**：新增 `group_bar.py`（4px 马卡龙原色色条 + 淡染容器 + fieldType 属性）+ QSS 选择器；requirements/consumes/outputItem 等复合字段统一包裹；按 widget_cfg 判 `is_compound`，修复 outputItem 这类 PRIMITIVE-mode 复合字段被当普通行渲染的问题
+- **卡片内部行统一（E-3）**：能力卡片内部行走同一推断函数
+- **科技引用双语搜索（E-5）**：TechRefEditor 下拉显示「中文名 (英文名)」，QCompleter 支持 Contains + 大小写不敏感过滤，选择后落盘存英文
+
+### 修复
+
+- **outputItem 不包色条**：输出物品在元数据里是 PRIMITIVE 模式（java=ItemStack）但走 resource_slot 控件路由 → 被当普通行渲染。按 widget_cfg 判 `is_compound`，复合字段统一包 GroupBar
+
+### 测试（327 → 383 全绿）
+
+- **`test_sprite_watcher.py`**（+7）：归属判定（主体 `-` 图层区分）/ 防抖合并 / 目录结构变化
+- **`test_validator_project.py`**（+13）：mod.json / 重名 / 引用 / 排序
+- **`test_external_mod.py`**（+10）：文件夹 / zip / 包裹结构 / 清理
+- **`test_theme_field_type.py`**（+9）：推断表
+- **`test_content_names.py`**（+8）：提取逻辑 / 双语显示 / completer
+- **`test_paths.py`**（+6）：开发 / 冻结双模式
+- **`test_editor_panel.py`**（+3）：GroupBar 渲染（requirements=arr / outputItem=ref / 色条容器）
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/ui/widgets/sprite_watcher.py` | **新增** — 精灵图文件监听（F-21） |
+| `app/ui/dialogs/validate_report_dialog.py` | **新增** — 全量验证报告窗口（F-51） |
+| `app/core/external_mod.py` | **新增** — 外部 mod 解析（F-52） |
+| `app/ui/dialogs/external_mod_picker.py` | **新增** — 参考选择对话框 |
+| `app/ui/widgets/group_bar.py` | **新增** — 复合字段色条容器（E-2） |
+| `app/core/paths.py` | **新增** — 路径双模式解析（F-53） |
+| `app/config/content_names_zh.json` | **新增** — 内容名总表 524 条（E-4） |
+| `tools/extract_content_names.py` | **新增** — 内容名提取脚本 |
+| `moma.spec` | **新增** — PyInstaller 打包配置 |
+| `app/core/validator.py` | 大改 — validate_project + Issue 定位字段（F-51） |
+| `app/ui/editor_panel.py` | 修改 — GroupBar 接入 + is_compound 判定 + highlight_field |
+| `app/ui/main_window.py` | 修改 — 监听/验证/导入子菜单接线 |
+| `app/ui/theme.py` | 修改 — field_type_for_value 统一推断 |
+| `app/ui/widgets/resource_editors.py` | 修改 — 双语显示 + completer（E-5） |
+| `app/ui/widgets/weapon_array_editor.py` | 修改 — 统一推断 |
+| `app/ui/widgets/polymorphic_editor.py` | 修改 — 统一推断 |
+| `app/resources/style.qss` | 修改 — groupBar 色条 + 容器样式 |
+| `app/core/config_loader.py` | 修改 — 路径接入 + content_names_zh |
+| `app/core/settings.py` | 修改 — 路径接入 |
+| `app/main.py` | 修改 — 路径接入 |
+| `pyproject.toml` | 修改 — 版本 0.2.6 + build 可选依赖 |
+| `tests/test_editor_panel.py` | 修改 — +3 GroupBar 测试（乱码修复） |
+| `tests/test_ability_array_editor.py` | 修改 — 尾行空白 |
+
+---
+
 ## v0.2.5 (2026-08-02 17:09) — 功能填充：更多方块 + Abilities + 资源控件 + 精灵图生成
 
 > v0.2.5 是功能填充版本：把 v0.2.1 预留的占位区域填成完整功能——5 种新方块类型、Abilities 能力编辑器、资源/科技复合控件、精灵图自动生成。同时修复了这一批功能暴露出的全部渲染与交互问题。测试从 258 → 327 全绿。

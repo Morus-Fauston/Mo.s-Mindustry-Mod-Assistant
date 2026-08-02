@@ -166,7 +166,7 @@ class PolymorphicTypeEditor(QGroupBox):
                     continue
                 widget = self._create_widget(fname, val)
                 if widget:
-                    self._add_field_row(fname, widget)
+                    self._add_field_row(fname, widget, val)
             return
 
         # Render groups: required always, optional only if present in data
@@ -185,12 +185,13 @@ class PolymorphicTypeEditor(QGroupBox):
                 val = obj_data.get(fname)
                 widget = self._create_widget(fname, val)
                 if widget:
-                    self._add_field_row(fname, widget)
+                    self._add_field_row(fname, widget, val)
 
-    def _add_field_row(self, fname: str, widget: QWidget) -> None:
+    def _add_field_row(self, fname: str, widget: QWidget, val: Any = None) -> None:
         """Add a labeled row to the field form with tooltip support.
 
-        v0.2.5：用 FieldRow 包裹（马卡龙色条 + 控件 fieldType），与主面板/武器卡片一致。
+        v0.2.5：用 FieldRow 包裹（马卡龙色条 + 控件 fieldType）。
+        v0.2.6（E-1）：fieldType 改用统一推断函数 field_type_for_value（ADR-012）。
         """
         zh = self._field_names_zh.get(fname, "")
         row_label = rich_label(zh, fname)
@@ -198,16 +199,9 @@ class PolymorphicTypeEditor(QGroupBox):
         if doc:
             row_label.setToolTip(doc)
             widget.setToolTip(doc)
-        # 按控件类型推断 fieldType：CheckToggle → bool，spin → num，编辑框 → str
-        from .check_toggle import CheckToggle
-        from .num_spin import NumDoubleSpinBox, NumSpinBox
+        from ..theme import field_type_for_value
 
-        if isinstance(widget, CheckToggle):
-            ft = "bool"
-        elif isinstance(widget, (NumSpinBox, NumDoubleSpinBox)):
-            ft = "num"
-        else:
-            ft = "str"
+        ft = field_type_for_value(val)
         self._field_form.addRow(row_label, FieldRow(widget, ft, deletable=False))
 
     # ── data mutation ────────────────────────────────────────────────────

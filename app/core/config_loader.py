@@ -17,7 +17,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-_CONFIG_DIR = Path(__file__).parent.parent / "config"
+from .paths import data_dir
+
+# 只读配置目录（F-53）：开发模式 = 项目 app/config；打包模式 = _MEIPASS/app/config
+_CONFIG_DIR = data_dir() / "app" / "config"
 
 # Module-level cache: loaded once per process lifetime.
 _cache: dict[str, Any] = {}
@@ -93,12 +96,25 @@ def get_sprite_layers() -> dict:
     return get_config("sprite_layers")
 
 
+def get_content_names_zh() -> dict:
+    """内容名总表（E-4 / ADR-013）：{category: {name: 中文名}}。
+
+    类别键：items / liquids / blocks / units / weapons / status。
+    """
+    return get_config("content_names_zh")
+
+
 # ── Editor state persistence ────────────────────────────────────────────
 
 
 def load_editor_state() -> dict[str, Any]:
-    """Load editor_state.json (bypasses cache — mutable file)."""
-    path = _CONFIG_DIR / "editor_state.json"
+    """Load editor_state.json (bypasses cache — mutable file).
+
+    F-53：打包模式写 %APPDATA%/MoMA/editor_state.json（用户级，可写）。
+    """
+    from .paths import user_config_dir
+
+    path = user_config_dir() / "editor_state.json"
     if not path.exists():
         return {}
     try:
@@ -109,10 +125,12 @@ def load_editor_state() -> dict[str, Any]:
 
 
 def save_editor_state(state: dict[str, Any]) -> None:
-    """Persist editor state to editor_state.json."""
+    """Persist editor state to editor_state.json (user config dir)."""
+    from .paths import ensure_user_config_dir
+
     try:
-        _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        (_CONFIG_DIR / "editor_state.json").write_text(
+        d = ensure_user_config_dir()
+        (d / "editor_state.json").write_text(
             json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
         )
     except OSError:

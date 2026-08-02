@@ -1,3 +1,12 @@
+v0.2.6 (2026-08-02 17:40) 工程化: 文件监听+全量验证+外部参考+渲染统一(327→383全绿)
+  新增: F-21精灵图监听(SpriteWatcher递归+300ms防抖,改动自动刷新预览/图层树) / F-51项目级全量验证(validate_project检查mod.json/重名/引用/精灵图+报告窗口点击跳转) / F-52外部mod参考导入(文件夹/zip,一层包裹识别,导入参考改子菜单) / E-4内容名总表content_names_zh(524条从汉化包提取) / F-53打包基建(paths.py双模式+moma.spec+QtSvg)
+  架构: E-1字段类型统一推断field_type_for_value(三处收敛) / E-2复合字段色条GroupBar(4px马卡龙原色+淡染容器+fieldType,requirements/consumes/outputItem全接入) / E-3卡片内部行统一 / E-5科技引用双语搜索(中文名(英文名)+Contains不区分大小写+落盘英文)
+  修复: outputItem不包色条(PRIMITIVE-mode复合字段被当普通行→按widget_cfg判is_compound)
+  测试: +56(test_sprite_watcher/test_validator_project/test_external_mod/test_theme_field_type/test_content_names/test_paths,editor_panel+3)
+  文件: 修改16+新增14(含tools/extract_content_names.py+moma.spec)
+
+====
+
 v0.2.5 (2026-08-02 17:09) 功能填充: 5新方块+Abilities+资源控件+精灵图生成(258→327全绿)
   新增: F-22五种方块(GenericCrafter/Drill/Conveyor/Battery/MendProjector,全模板+字段组+元数据) / F-49能力编辑器(15子类卡片式,懒初始化走命令栈) / F-50资源科技控件(ResourceList/Slot/TechRef/Consumes全走命令栈) / F-20精灵图生成(Pillow outline/shadow/full) / 资源中文名表resource_names_zh(铜(copper)显示,英文落盘)
   修复: 资源编辑器双重命令(committed=True) / consumes不渲染(synthetic_field_def合成FieldDef) / 能力字段全空(_get_nested嵌套读取) / 嵌套路径+添加失效(4处getter/setter改_nested) / 下拉黑块三角(SVG箭头arrow_down.svg) / 文字右对齐(光标归位) / consumes添加失效(占位项) / 阴影盖主体(z=-3)

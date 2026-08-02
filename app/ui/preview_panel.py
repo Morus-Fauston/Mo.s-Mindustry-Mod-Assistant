@@ -213,6 +213,25 @@ class PreviewPanel(QWidget):
         self._refresh_preview()
         self._refresh_layer_tree()
 
+    def is_showing(self, category: str, name: str) -> bool:
+        """当前预览是否正展示该 content（F-21 归属判定）。"""
+        return (
+            self._content is not None
+            and self._content.category == category
+            and self._content.name == name
+        )
+
+    def refresh(self) -> None:
+        """按当前 content/project 重新渲染预览 + 图层树（F-21 外部改图刷新）。
+
+        与 show_content 的区别：不重置可见性缓存、不换 content 引用，
+        只重读精灵文件并重建场景。
+        """
+        if self._content is None:
+            return
+        self._refresh_preview()
+        self._refresh_layer_tree()
+
     def eventFilter(self, obj, event) -> bool:  # noqa: ANN001
         """拦截图层树 viewport 的双击：若双击落在复选框 indicator 上，
         吞掉事件（只 toggle 复选框），不触发「更换图片」（D8）。"""

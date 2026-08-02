@@ -213,16 +213,18 @@ class TestWeaponRowDataSync:
 
         tree = panel._layer_tree
 
-        def find_row(item):
-            if tree.itemWidget(item, 1) is not None:
+        def find_weapon_row(item):
+            # 武器行通过 ROLE_WEAPON_INDEX >= 0 识别（避免被图层 [生成] 按钮
+            # 的 itemWidget 抢先命中，v0.2.6 normalize content_type 后图层变多）
+            if item.data(0, panel._ROLE_WEAPON_INDEX) is not None and item.data(0, panel._ROLE_WEAPON_INDEX) >= 0:
                 return item
             for c in range(item.childCount()):
-                r = find_row(item.child(c))
+                r = find_weapon_row(item.child(c))
                 if r:
                     return r
             return None
 
-        row = find_row(tree.topLevelItem(0))
+        row = find_weapon_row(tree.topLevelItem(0))
         if row is None:
             return []
         return tree.itemWidget(row, 1).findChildren(QDoubleSpinBox)
@@ -330,16 +332,18 @@ class TestLayerTreeBehavior:
 
         tree = panel._layer_tree
 
-        def find_row(item):
-            if tree.itemWidget(item, 1) is not None:
+        def find_weapon_row(item):
+            # 武器行通过 ROLE_WEAPON_INDEX >= 0 识别（避免被图层 [生成] 按钮
+            # 的 itemWidget 抢先命中，v0.2.6 normalize content_type 后图层变多）
+            if item.data(0, panel._ROLE_WEAPON_INDEX) is not None and item.data(0, panel._ROLE_WEAPON_INDEX) >= 0:
                 return item
             for c in range(item.childCount()):
-                r = find_row(item.child(c))
+                r = find_weapon_row(item.child(c))
                 if r:
                     return r
             return None
 
-        row = find_row(tree.topLevelItem(0))
+        row = find_weapon_row(tree.topLevelItem(0))
         if row is None:
             return []
         return tree.itemWidget(row, 1).findChildren(QDoubleSpinBox)
@@ -422,13 +426,17 @@ class TestLayerTreeBehavior:
         assert fired
 
     def test_subtype_visible_for_filters_layers(self, qapp, monkeypatch):
-        """sprite_layers 的 visible_for 必须过滤不适用于当前子类型的图层。"""
+        """sprite_layers 的 visible_for 必须过滤不适用于当前子类型的图层。
+
+        v0.2.6：配置键是类名 "UnitType"（normalize 后），visible_for 是游戏
+        子类型值（"tank"/"legs"），subtype 用原始 data["type"]（游戏值）。
+        """
         panel, *_ = self._make_panel(qapp, content_type="tank", weapons=[])
         monkeypatch.setattr(
             panel,
             "_sprite_layers_config",
             {
-                "tank": [
+                "UnitType": [
                     {"suffix": "", "label": "主体", "required": True},
                     {"suffix": "-treads", "label": "履带", "visible_for": ["tank"]},
                     {"suffix": "-leg", "label": "腿", "visible_for": ["legs"]},

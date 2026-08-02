@@ -18,7 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .metadata import ClassDef, FieldDef
+from .metadata import ClassDef, FieldDef, GAME_UNIT_TYPE_TO_SUBTYPE, normalize_content_type
 
 
 # ── Synthetic field defs (v0.2.5 F-22) ────────────────────────────────
@@ -104,7 +104,7 @@ def compute_form_plan(
         Ordered list of GroupPlan, including an "_other" group for
         fields present in data but not in any configured group.
     """
-    content_type = data.get("type", "")
+    content_type = normalize_content_type(data.get("type", ""))
     groups_config = field_groups.get(content_type, {})
     all_fields = {f.name: f for f in class_def.fields}
     subtype = infer_subtype(content_type, data)
@@ -210,9 +210,13 @@ def infer_subtype(content_type: str, data: dict[str, Any]) -> str:
     For UnitType, checks data flags (flying, legCount, squareShape, etc.)
     to determine which subtype template was used.
     Returns e.g. 'UnitType-tank', 'UnitType-flying', 'UnitType-legs', 'UnitType'.
+
+    Also accepts game entity subtype strings (mech/flying/tank/legs) as
+    content_type — since v0.2.6 the unit JSON `type` field stores the game
+    value, not the Java class name — and maps them to MoMA subtype keys.
     """
-    if content_type != "UnitType":
-        return content_type
+    if content_type not in ("UnitType", ""):
+        return GAME_UNIT_TYPE_TO_SUBTYPE.get(content_type, content_type)
 
     if data.get("squareShape") or data.get("crushDamage") is not None:
         return "UnitType-tank"

@@ -48,9 +48,9 @@ class TemplateEngine:
     # ── Unit templates ──────────────────────────────────────────────────
 
     def _unit_ground_template(self, name: str) -> dict[str, Any]:
-        """Standard ground unit (bipedal)."""
+        """Standard ground unit (bipedal mech)."""
         return {
-            "type": "UnitType",
+            "type": "mech",
             "name": name,
             "health": 150,
             "armor": 0,
@@ -69,7 +69,7 @@ class TemplateEngine:
     def _unit_flying_template(self, name: str) -> dict[str, Any]:
         """Flying unit with engine."""
         return {
-            "type": "UnitType",
+            "type": "flying",
             "name": name,
             "health": 200,
             "armor": 0,
@@ -91,7 +91,7 @@ class TemplateEngine:
     def _unit_tank_template(self, name: str) -> dict[str, Any]:
         """Tank/tread unit."""
         return {
-            "type": "UnitType",
+            "type": "tank",
             "name": name,
             "health": 300,
             "armor": 5,
@@ -114,7 +114,7 @@ class TemplateEngine:
     def _unit_legs_template(self, name: str) -> dict[str, Any]:
         """Multi-legged (spider) unit."""
         return {
-            "type": "UnitType",
+            "type": "legs",
             "name": name,
             "health": 200,
             "armor": 2,

@@ -14,6 +14,30 @@ from pathlib import Path
 from typing import Any
 
 
+# 游戏单位 JSON 的 type 字段合法值（Mindustry ContentParser.unitType 的 switch case）
+# → MoMA 内部子类型键（field_groups.json 的 visible_for / locked_for）。
+# 关键背景：单位 JSON 的 type 是**实体子类型字符串**（mech/flying/tank/legs），
+# 不是 Java 类名；而 MoMA 的 field_groups / sprite_layers 配置以类名 "UnitType" 为键。
+GAME_UNIT_TYPE_TO_SUBTYPE: dict[str, str] = {
+    "mech": "UnitType-mech",
+    "flying": "UnitType-flying",
+    "tank": "UnitType-tank",
+    "legs": "UnitType-legs",
+}
+
+
+def normalize_content_type(raw: str) -> str:
+    """把 JSON 里的 type 字段规范化成 MoMA 内部配置键。
+
+    单位 JSON 的 type 是游戏实体子类型字符串（mech/flying/tank/legs），
+    但 MoMA 的 field_groups / sprite_layers 等配置以类名 "UnitType" 为键。
+    此函数把游戏子类型字符串归一成 "UnitType"，其余类型原样返回。
+    """
+    if raw in GAME_UNIT_TYPE_TO_SUBTYPE:
+        return "UnitType"
+    return raw
+
+
 @dataclass
 class FieldDef:
     name: str
@@ -85,6 +109,10 @@ class Metadata:
         "mech": "UnitType",
         "legs": "UnitType",
         "hover": "UnitType",
+        "flying": "UnitType",
+        "missile": "UnitType",
+        "tether": "UnitType",
+        "crawl": "UnitType",
         "Liquid": "UnlockableContent",
     }
 

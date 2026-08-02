@@ -1,3 +1,11 @@
+v0.2.6.revised (2026-08-02 17:46) 修复参考面板关闭+新增导出Mod(383→386全绿)
+  修复: 参考对比dock无关闭按钮(NoDockWidgetFeatures→DockWidgetClosable,固定右栏仍禁浮动)
+  新增: 导出Mod(F-55,文件菜单)整工程打包Mindustry可导入zip(mod.json在根,跳过.git/__pycache__/隐藏文件,导出前自动保存,开工程启用关工程禁用)
+  测试: +3(test_project: zip含mod.json/content/跳过隐藏/空工程)
+  文件: 修改3(project.export_zip/main_window/menu+dock/test_project)
+
+====
+
 v0.2.6 (2026-08-02 17:40) 工程化: 文件监听+全量验证+外部参考+渲染统一(327→383全绿)
   新增: F-21精灵图监听(SpriteWatcher递归+300ms防抖,改动自动刷新预览/图层树) / F-51项目级全量验证(validate_project检查mod.json/重名/引用/精灵图+报告窗口点击跳转) / F-52外部mod参考导入(文件夹/zip,一层包裹识别,导入参考改子菜单) / E-4内容名总表content_names_zh(524条从汉化包提取) / F-53打包基建(paths.py双模式+moma.spec+QtSvg)
   架构: E-1字段类型统一推断field_type_for_value(三处收敛) / E-2复合字段色条GroupBar(4px马卡龙原色+淡染容器+fieldType,requirements/consumes/outputItem全接入) / E-3卡片内部行统一 / E-5科技引用双语搜索(中文名(英文名)+Contains不区分大小写+落盘英文)

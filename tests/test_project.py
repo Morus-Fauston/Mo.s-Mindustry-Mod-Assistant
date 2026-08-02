@@ -46,6 +46,53 @@ class TestOpen:
             Project.open(root)
 
 
+class TestExportZip:
+    """导出 Mod 为 Mindustry 可导入的 zip（F-55）。"""
+
+    def test_export_zip_contains_mod_json_and_content(self, tmp_path):
+        import zipfile
+
+        root = _make_project(tmp_path)
+        (root / "content" / "blocks" / "foo.json").write_text("{}", encoding="utf-8")
+        project = Project.open(root)
+        dest = tmp_path / "out" / "my-mod.zip"
+        project.export_zip(dest)
+        assert dest.exists()
+        with zipfile.ZipFile(dest) as zf:
+            names = zf.namelist()
+        assert "mod.json" in names, "zip 根目录应含 mod.json"
+        assert "content/blocks/foo.json" in names
+
+    def test_export_zip_skips_hidden_and_cache(self, tmp_path):
+        import zipfile
+
+        root = _make_project(tmp_path)
+        (root / ".git" / "objects").mkdir(parents=True)
+        (root / ".git" / "HEAD").write_text("ref", encoding="utf-8")
+        (root / "content" / "__pycache__" / "x.pyc").mkdir(parents=True)
+        (root / "content" / "__pycache__" / "x.pyc").touch()
+        project = Project.open(root)
+        dest = tmp_path / "out.zip"
+        project.export_zip(dest)
+        with zipfile.ZipFile(dest) as zf:
+            names = zf.namelist()
+        assert not any(".git" in n for n in names), "应跳过 .git"
+        assert not any("__pycache__" in n for n in names), "应跳过 __pycache__"
+
+    def test_export_zip_empty_project(self, tmp_path):
+        import zipfile
+
+        root = tmp_path / "empty"
+        root.mkdir()
+        (root / "mod.json").write_text('{"name": "e"}', encoding="utf-8")
+        project = Project.open(root)
+        dest = tmp_path / "empty.zip"
+        project.export_zip(dest)
+        with zipfile.ZipFile(dest) as zf:
+            names = zf.namelist()
+        assert names == ["mod.json"]
+
+
 class TestCreate:
     def test_create_valid(self, tmp_path):
         project = Project.create(tmp_path, "new-mod", "New Mod", "me")

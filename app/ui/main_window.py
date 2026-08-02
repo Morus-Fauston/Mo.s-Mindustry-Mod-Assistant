@@ -182,6 +182,10 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         self._add_action(file_menu, "保存", self._save, "Ctrl+S")
         file_menu.addSeparator()
+        # F-55: 导出 Mod 为 Mindustry 可导入的 zip
+        self._export_action = self._add_action(file_menu, "导出 Mod...", self._export_mod)
+        self._export_action.setEnabled(False)
+        file_menu.addSeparator()
         self._close_project_action = self._add_action(file_menu, "关闭工程", self._close_project)
         self._close_project_action.setEnabled(False)
         file_menu.addSeparator()
@@ -265,9 +269,10 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "打开失败", str(e))
 
     def _enter_project_view(self) -> None:
-        """切换到标签页视图并启用关闭工程。"""
+        """切换到标签页视图并启用关闭工程/导出。"""
         self._center_stack.setCurrentIndex(1)
         self._close_project_action.setEnabled(True)
+        self._export_action.setEnabled(True)
         if self._project is not None:
             self._welcome.set_last_project(str(self._project.root))
 
@@ -300,6 +305,7 @@ class MainWindow(QMainWindow):
         self._external_mods = []
         self._center_stack.setCurrentIndex(0)
         self._close_project_action.setEnabled(False)
+        self._export_action.setEnabled(False)
         self.statusBar().showMessage("未打开工程")
 
     def _has_unsaved(self) -> bool:
@@ -342,6 +348,26 @@ class MainWindow(QMainWindow):
         if self._project and self._project.is_dirty:
             self._save()
             self._toast.show_message("已自动保存")
+
+    def _export_mod(self) -> None:
+        """文件 → 导出 Mod...：把工程打包为 Mindustry 可导入的 zip。"""
+        if self._project is None:
+            return
+        # 先保存未落盘的修改，避免导出旧数据
+        if self._has_unsaved():
+            self._save()
+        default_name = f"{self._project.mod_info.name}.zip"
+        path, _ = QFileDialog.getSaveFileName(
+            self, "导出 Mod", str(Path.home() / default_name), "ZIP 压缩包 (*.zip)"
+        )
+        if not path:
+            return
+        try:
+            self._project.export_zip(path)
+        except OSError as e:
+            QMessageBox.warning(self, "导出失败", str(e))
+            return
+        self._toast.show_message(f"已导出 · {Path(path).name}")
 
     def _jump_to_first_error(self) -> None:
         """切换到含错误的标签页并滚动高亮第一个错误字段。"""
@@ -721,7 +747,10 @@ class MainWindow(QMainWindow):
             self._ref_panel = ReferencePanel(self._metadata)
             self._ref_dock = QDockWidget("参考对比", self)
             self._ref_dock.setWidget(self._ref_panel)
-            self._ref_dock.setFeatures(QDockWidget.DockWidgetFeature.NoDockWidgetFeatures)
+            # 保留关闭按钮，但禁止浮动/移动/停靠（固定右栏）
+            self._ref_dock.setFeatures(
+                QDockWidget.DockWidgetFeature.DockWidgetClosable
+            )
             self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._ref_dock)
         else:
             self._ref_dock.show()

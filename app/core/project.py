@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -140,3 +141,24 @@ class Project:
             renames.append((png, sprite_dir / f"{new_name}{suffix}.png"))
         for src, dst in renames:
             src.rename(dst)
+
+    def export_zip(self, dest: str | Path) -> Path:
+        """打包工程为 Mindustry 可导入的 zip（mod.json 位于压缩包根目录）。
+
+        覆盖 mod.json / content / sprites / scripts / maps 等全部工程文件，
+        跳过隐藏目录（.git/.idea 等）与 __pycache__。
+        """
+        dest = Path(dest)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        skip_dirs = {".git", ".idea", ".vscode", "__pycache__", ".venv"}
+        with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
+            for p in sorted(self.root.rglob("*")):
+                if p.is_dir():
+                    continue
+                rel = p.relative_to(self.root)
+                if any(part in skip_dirs for part in rel.parts):
+                    continue
+                if rel.name.startswith("."):
+                    continue
+                zf.write(p, rel.as_posix())
+        return dest

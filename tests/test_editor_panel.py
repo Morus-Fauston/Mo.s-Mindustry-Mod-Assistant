@@ -470,3 +470,64 @@ class TestNestedPathValue:
         rl.value = [{"item": "copper", "amount": 1}]
         assert "consumes.items" not in data, "不得创建字面键"
         assert data["consumes"]["items"] == [{"item": "copper", "amount": 1}]
+
+
+class TestGroupBarRendering:
+    """复合字段容器渲染测试（E-2 / ADR-012 19.3）"""
+
+    def _make_panel(self, qapp, project, data):
+        meta = Metadata(METADATA_DIR)
+        panel = EditorPanel(
+            content=ContentData(name="probe", category="blocks", data=data),
+            metadata=meta,
+            command_stack=CommandStack(),
+            validator=Validator(meta),
+            project=project,
+        )
+        panel.show()
+        qapp.processEvents()
+        return panel
+
+    def test_requirements_wrapped_in_group_bar(self, qapp, project):
+        """requirements 走 resource_list 路由，应被 GroupBar 包裹且 fieldType=arr"""
+        from app.ui.widgets.group_bar import GroupBar
+
+        data = TemplateEngine(Metadata(METADATA_DIR)).create("GenericCrafter", "测试方块")
+        panel = self._make_panel(qapp, project, data)
+        bars = panel.findChildren(GroupBar)
+        assert bars, "面板上应有 GroupBar"
+        req_bar = next(
+            (b for b in bars if b.editor and isinstance(b.editor, ResourceListEditor)
+             and b.editor._path == "requirements"),
+            None,
+        )
+        assert req_bar is not None, "requirements 应包在 GroupBar 里"
+        assert req_bar.field_type == "arr", f"requirements 应为 arr，实际 {req_bar.field_type}"
+
+    def test_output_item_group_bar_ref(self, qapp, project):
+        """outputItem 走 resource_slot 路由，GroupBar fieldType=ref"""
+        from app.ui.widgets.group_bar import GroupBar
+
+        data = TemplateEngine(Metadata(METADATA_DIR)).create("GenericCrafter", "测试方块")
+        panel = self._make_panel(qapp, project, data)
+        bars = panel.findChildren(GroupBar)
+        slot_bar = next(
+            (b for b in bars if b.editor and isinstance(b.editor, ResourceSlotEditor)
+             and b.editor._path == "outputItem"),
+            None,
+        )
+        assert slot_bar is not None, "outputItem 应包在 GroupBar 里"
+        assert slot_bar.field_type == "ref"
+
+    def test_group_bar_has_bar_and_container(self, qapp, project):
+        """GroupBar 应含 4px 色条 + 容器 + 编辑器"""
+        from app.ui.widgets.group_bar import GroupBar
+
+        data = TemplateEngine(Metadata(METADATA_DIR)).create("GenericCrafter", "测试方块")
+        panel = self._make_panel(qapp, project, data)
+        bars = panel.findChildren(GroupBar)
+        assert bars
+        bar = bars[0]
+        from PySide6.QtWidgets import QFrame
+        assert bar.findChildren(QFrame), "GroupBar 应含色条/容器 QFrame"
+        assert bar.editor is not None

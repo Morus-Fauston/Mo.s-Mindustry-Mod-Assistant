@@ -190,3 +190,4 @@ class TestCardRendering:
         stack.undo()
         qapp.processEvents()
         assert data["abilities"][0]["amount"] == 1.0, "撤销一次应恢复"
+

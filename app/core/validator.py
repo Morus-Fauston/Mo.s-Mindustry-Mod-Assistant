@@ -1,7 +1,8 @@
 """Unified validation engine.
 
-Interface (1 method):
-    validate(data, level) -> list[Issue]
+Interface:
+    validate(data, level) -> list[Issue]          — 单 content 验证
+    validate_project(project, metadata) -> list[Issue]  — 项目级全量验证（F-51）
 
 Levels:
     'field'   - type checks only (for real-time input validation)
@@ -11,10 +12,14 @@ Levels:
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
 from .metadata import Metadata, FieldDef
+
+# mod.json name 字段允许的字符（与 project.py 的 _MOD_ID_RE 一致）
+_MOD_NAME_RE = re.compile(r"^[a-z0-9-]+$")
 
 
 @dataclass
@@ -22,6 +27,184 @@ class Issue:
     path: str  # e.g. "weapons[0].bullet.damage"
     severity: str  # "error" | "warning"
     message: str
+    # 项目级验证附加信息（F-51）：用于报告窗口跳转到对应 content 标签页
+    content_name: str = ""  # 关联的 content 名（空 = 不关联）
+    field: str = ""  # 关联的字段（空 = 不定位字段）
+
+
+def validate_project(project, metadata: Metadata) -> list[Issue]:
+    """项目级全量验证（F-51）。
+
+    检查项（严重度见规格文档 18.9）：
+    - mod.json 存在 / 可解析 / name 非空且合法（error）
+    - 每个 content JSON 可解析 / type 存在（error）
+    - 同分类下文件名重复（error）
+    - 跨文件武器引用存在（error）
+    - requirements 物品存在于原版或工程（warning）
+    - 精灵图缺失（有 content 无主体 png）（warning）
+
+    不 import Qt（core 层约束）。返回按严重度排序（error 在前）的列表。
+    """
+    from .project import Project
+
+    if not isinstance(project, Project):
+        raise TypeError("validate_project 需要 Project 实例")
+
+    issues: list[Issue] = []
+
+    # ── mod.json ────────────────────────────────────────────────────────
+    mod_json = project.root / "mod.json"
+    if not mod_json.exists():
+        issues.append(Issue("mod.json", "error", "缺少 mod.json"))
+    else:
+        try:
+            import json as _json
+
+            mod_data = _json.loads(mod_json.read_text(encoding="utf-8"))
+            if not isinstance(mod_data, dict):
+                issues.append(Issue("mod.json", "error", "mod.json 应为 JSON 对象"))
+            else:
+                mod_name = mod_data.get("name", "")
+                if not mod_name:
+                    issues.append(Issue("mod.json", "error", "mod.json 缺少 name 字段"))
+                elif not _MOD_NAME_RE.match(mod_name):
+                    issues.append(Issue(
+                        "mod.json", "error",
+                        f"mod.json name 非法: {mod_name!r}（须小写字母/数字/连字符）",
+                    ))
+        except ValueError as e:
+            issues.append(Issue("mod.json", "error", f"mod.json 不是合法 JSON: {e}"))
+
+    # ── content 文件 ────────────────────────────────────────────────────
+    all_content: list = []
+    categories = _project_categories(project)
+    for cat in categories:
+        cat_dir = project.contents.content_dir / cat
+        if not cat_dir.is_dir():
+            continue
+        for f in sorted(cat_dir.glob("*.json")):
+            name = f.stem
+            all_content.append((cat, name, f))
+            try:
+                data = _load_json(f)
+            except ValueError as e:
+                issues.append(Issue(
+                    f"{cat}/{name}.json", "error", f"JSON 解析失败: {e}",
+                    content_name=name,
+                ))
+                continue
+            if not data.get("type"):
+                issues.append(Issue(
+                    f"{cat}/{name}.json", "error", "缺少 type 字段",
+                    content_name=name,
+                ))
+                continue
+            # 跨文件武器引用存在性（error）
+            _check_weapon_refs(project, cat, name, data, issues)
+            # requirements 物品存在性（warning）
+            _check_requirements(project, metadata, cat, name, data, issues)
+            # 精灵图缺失（warning）
+            _check_sprite_missing(project, cat, name, issues)
+
+    # 同分类文件名重复（error）
+    _check_duplicate_names(categories, project, issues)
+
+    # error 在前，warning 在后
+    issues.sort(key=lambda i: 0 if i.severity == "error" else 1)
+    return issues
+
+
+# ── 辅助 ────────────────────────────────────────────────────────────────
+
+
+def _load_json(path) -> dict:
+    import json as _json
+
+    return _json.loads(path.read_text(encoding="utf-8"))
+
+
+def _project_categories(project) -> list[str]:
+    """列出工程 content 下的所有分类目录。"""
+    d = project.contents.content_dir
+    if not d.is_dir():
+        return []
+    return sorted(p.name for p in d.iterdir() if p.is_dir())
+
+
+def _check_duplicate_names(categories, project, issues: list[Issue]) -> None:
+    """同分类下文件名重复（不同目录不算，如 units/x 与 blocks/x）。"""
+    for cat in categories:
+        cat_dir = project.contents.content_dir / cat
+        if not cat_dir.is_dir():
+            continue
+        seen: dict[str, Path] = {}
+        for f in sorted(cat_dir.glob("*.json")):
+            name = f.stem
+            if name in seen:
+                issues.append(Issue(
+                    f"{cat}/{name}.json", "error",
+                    f"同分类下文件名重复: {name}（{seen[name].name} 与 {f.name}）",
+                    content_name=name,
+                ))
+            else:
+                seen[name] = f
+
+
+def _check_weapon_refs(project, cat, name, data, issues: list[Issue]) -> None:
+    """weapons 数组中的 name 引用的武器必须存在（error）。"""
+    weapons = data.get("weapons")
+    if not isinstance(weapons, list):
+        return
+    known_weapons = set()
+    wdir = project.contents.content_dir / "weapons"
+    if wdir.is_dir():
+        known_weapons = {f.stem for f in wdir.glob("*.json")}
+    for i, w in enumerate(weapons):
+        if not isinstance(w, dict):
+            continue
+        wname = w.get("name", "")
+        if wname and wname not in known_weapons:
+            issues.append(Issue(
+                f"{cat}/{name}.json", "error",
+                f"武器引用不存在: {wname}（weapons[{i}].name）",
+                content_name=name, field="weapons",
+            ))
+
+
+def _check_requirements(project, metadata, cat, name, data, issues: list[Issue]) -> None:
+    """requirements 物品必须存在于原版或工程（warning）。"""
+    reqs = data.get("requirements")
+    if not isinstance(reqs, list):
+        return
+    items = {r.get("item") for r in reqs if isinstance(r, dict) and r.get("item")}
+    if not items:
+        return
+    known: set[str] = set()
+    try:
+        known = set(metadata.list_instances("Items"))
+    except Exception:
+        pass
+    idir = project.contents.content_dir / "items"
+    if idir.is_dir():
+        known |= {f.stem for f in idir.glob("*.json")}
+    for it in sorted(items):
+        if it not in known:
+            issues.append(Issue(
+                f"{cat}/{name}.json", "warning",
+                f"requirements 引用的物品不存在: {it}",
+                content_name=name, field="requirements",
+            ))
+
+
+def _check_sprite_missing(project, cat, name, issues: list[Issue]) -> None:
+    """有 content 无主体 png → warning。"""
+    sprite = project.sprite_path(cat, name)
+    if not sprite.exists():
+        issues.append(Issue(
+            f"{cat}/{name}.json", "warning",
+            f"缺少主体精灵图: {cat}/{name}.png",
+            content_name=name,
+        ))
 
 
 class Validator:

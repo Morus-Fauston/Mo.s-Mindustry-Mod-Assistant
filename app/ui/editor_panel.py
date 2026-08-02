@@ -61,7 +61,6 @@ from .widgets.auto_width_edit import AutoWidthEdit
 from .widgets.color_picker import ColorPicker
 from .widgets.field_widget_factory import create_value_widget
 from .widgets.label_helper import rich_label
-from .theme import field_type_property
 
 
 # 展开状态记忆：{content_name: {group_name: bool}}，跨标签页切换保持。
@@ -78,6 +77,32 @@ _DELETED_GROUPS: dict[str, set[str]] = {}
 # 能力组复选框启用状态：{content_name: set(group_name)}
 # 独立于 data 推导——勾选后即使 data 中暂无字段也保持启用。
 _ENABLED_GROUPS: dict[str, set[str]] = {}
+
+
+# widgets 路由 → 组色条 fieldType 映射（E-2 / ADR-012 19.3）
+_WIDGET_GROUP_TYPES = {
+    "resource_list": "arr",
+    "consumes": "obj",
+    "resource_slot": "ref",
+    "tech_ref": "ref",
+}
+
+
+def _group_bar_field_type(field_def, widget_cfg) -> str:
+    """复合字段的组色条 fieldType（E-2）。
+
+    widgets 路由优先（resource_list→arr 等）；无路由按字段模式：
+    ARRAY→arr，INLINE_OBJECT→obj，其余按值猜。
+    """
+    if isinstance(widget_cfg, dict):
+        wtype = widget_cfg.get("widget")
+        if wtype in _WIDGET_GROUP_TYPES:
+            return _WIDGET_GROUP_TYPES[wtype]
+    if field_def.mode == "ARRAY":
+        return "arr"
+    if field_def.mode == "INLINE_OBJECT":
+        return "obj"
+    return "obj"  # 兜底：复合字段多数是对象形态
 
 
 class EditorPanel(QWidget):
@@ -346,7 +371,8 @@ class EditorPanel(QWidget):
 
         for fp in plan.fields:
             f = fp.field_def
-            widget = self._create_field_widget(f, widgets_cfg.get(f.name))
+            widget_cfg = widgets_cfg.get(f.name)
+            widget = self._create_field_widget(f, widget_cfg)
             if widget is None:
                 continue
 
@@ -380,9 +406,28 @@ class EditorPanel(QWidget):
             label_widget.setFixedWidth(180)
             row_h.addWidget(label_widget)
 
-            is_plain_row = f.mode in ("PRIMITIVE", "STRING_REF")
+            # widgets 路由字段（requirements/consumes/research/outputItem 等）
+            # 即使是 PRIMITIVE mode（如 outputItem 元数据为 ItemStack），
+            # 也是复合编辑器 → 套 GroupBar（E-2），不算普通行。
+            is_compound = isinstance(widget_cfg, dict) and "widget" in widget_cfg
+            is_plain_row = (
+                not is_compound
+                and f.mode in ("PRIMITIVE", "STRING_REF")
+            )
             if is_plain_row:
-                ft = field_type_property(f.mode, f.java_type)
+                # E-1（ADR-012）：统一推断源。hint 来自元数据线索：
+                # STRING_REF → ref；Color → col；其余按值猜。
+                from .theme import field_type_for_value
+
+                if f.mode == "STRING_REF":
+                    hint = "ref"
+                elif f.java_type == "Color":
+                    hint = "col"
+                else:
+                    hint = None
+                ft = field_type_for_value(
+                    self._content.data.get(f.name), hint
+                )
                 field_row = FieldRow(widget, ft, deletable=fp.deletable)
                 if fp.deletable:
                     field_row.deleteRequested.connect(
@@ -390,7 +435,17 @@ class EditorPanel(QWidget):
                     )
                 row_h.addWidget(field_row)
             else:
-                row_h.addWidget(widget)
+                # E-2（ADR-012）：复合字段套组色条（4px 色条 + 淡染容器）。
+                # fieldType 按 widgets 路由推导；无路由按值/模式推断。
+                # 行首 label_widget 已显示字段名，GroupBar 内不再重复标签。
+                from .widgets.group_bar import GroupBar
+
+                gft = _group_bar_field_type(f, widget_cfg)
+                bar = GroupBar(
+                    widget, gft,
+                    label="", english=f.name,
+                )
+                row_h.addWidget(bar)
             row_h.addStretch()
             row_container = QWidget()
             row_container.setLayout(row_h)
@@ -995,6 +1050,22 @@ class EditorPanel(QWidget):
                 widget.style().polish(widget)
                 return True
         return False
+
+    def highlight_field(self, field_name: str) -> bool:
+        """F-51: 全量验证报告点击跳转——滚动并高亮指定字段。
+
+        字段控件可能被 FieldRow/GroupBar 包裹，直接找 _field_widgets 里的
+        原始控件即可（它已在滚动区内部）。
+        """
+        widget = self._field_widgets.get(field_name)
+        if widget is None:
+            return False
+        widget.setFocus()
+        self._scroll_to_widget(widget)
+        widget.setProperty("error", "true")
+        widget.style().unpolish(widget)
+        widget.style().polish(widget)
+        return True
 
     def _scroll_to_widget(self, widget: QWidget) -> None:
         """把控件滚动到编辑区可见范围。"""

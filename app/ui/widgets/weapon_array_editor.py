@@ -492,12 +492,10 @@ class WeaponCard(QGroupBox):
 
     @staticmethod
     def _field_type_for_value(val: Any) -> str:
-        """按 Python 值类型推断 fieldType（与主面板 field_type_property 对齐）。"""
-        if isinstance(val, bool):
-            return "bool"
-        if isinstance(val, (int, float)):
-            return "num"
-        return "str"
+        """按 Python 值类型推断 fieldType（ADR-012 统一推断源）。"""
+        from ..theme import field_type_for_value
+
+        return field_type_for_value(val)
 
     def _create_widget_for_value(
         self, fname: str, val: Any,

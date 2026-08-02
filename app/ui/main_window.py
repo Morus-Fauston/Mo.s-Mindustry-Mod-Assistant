@@ -31,9 +31,10 @@ from .preview_panel import PreviewPanel
 from .welcome_page import WelcomePage
 from .widgets.toast import Toast
 from .widgets.reference_panel import ReferencePanel, _ReferencePicker
+from .widgets.sprite_watcher import SpriteWatcher
 
 # 应用版本号（与 pyproject.toml 同步）
-APP_VERSION = "0.2.4.batch2"
+APP_VERSION = "0.2.6"
 
 
 class _StatusBar(QStatusBar):
@@ -146,6 +147,11 @@ class MainWindow(QMainWindow):
         # v0.2.4.batch4：预览 SpinBox 改坐标 → 当前活动编辑器标 dirty + 刷新表单
         self._preview.content_modified.connect(self._on_preview_content_modified)
 
+        # F-21: 精灵图目录监听（外部改图自动刷新预览/图层树）
+        self._sprite_watcher = SpriteWatcher(self)
+        self._sprite_watcher.sprite_changed.connect(self._on_sprite_changed)
+        self._sprite_watcher.sprites_restructured.connect(self._on_sprites_restructured)
+
         # QSplitter 三栏：左 200 / 中自适应 / 右 360
         # 右栏 280→320→360：图层树为两列（图层名列 + 武器 x/y 输入框列），
         # 输入框两 spin 需求 ≥112px。列 0 自适应内容后，320 宽时列 1 仅
@@ -192,7 +198,14 @@ class MainWindow(QMainWindow):
 
         # Tools menu
         tools_menu = menubar.addMenu("工具(&T)")
-        self._add_action(tools_menu, "导入参考...", self._import_reference)
+        # F-52: 导入参考改为子菜单（原版实例 / mod 文件夹 / mod zip）
+        import_menu = tools_menu.addMenu("导入参考")
+        self._add_action(import_menu, "从原版实例...", self._import_reference)
+        import_menu.addSeparator()
+        self._add_action(import_menu, "从 mod 文件夹...", self._import_external_folder)
+        self._add_action(import_menu, "从 mod zip...", self._import_external_zip)
+        tools_menu.addSeparator()
+        self._add_action(tools_menu, "全量验证...", self._run_project_validation)
 
         # Help menu
         help_menu = menubar.addMenu("帮助(&H)")
@@ -225,6 +238,9 @@ class MainWindow(QMainWindow):
             self._file_tree.set_project(self._project)
             self._enter_project_view()
             self.statusBar().showMessage(f"已创建工程: {mod_id}")
+            # F-21: 新建工程后也开始监听
+            if self._project is not None:
+                self._sprite_watcher.watch(self._project)
 
     def _open_project(self) -> None:
         path = QFileDialog.getExistingDirectory(self, "选择 mod 工程目录")
@@ -242,6 +258,9 @@ class MainWindow(QMainWindow):
             self._file_tree.set_project(self._project)
             self._enter_project_view()
             self.statusBar().showMessage(f"已打开: {self._project.mod_info.display_name}")
+            # F-21: 开始监听工程 sprites/ 目录
+            if self._project is not None:
+                self._sprite_watcher.watch(self._project)
         except (FileNotFoundError, ValueError) as e:
             QMessageBox.warning(self, "打开失败", str(e))
 
@@ -273,6 +292,12 @@ class MainWindow(QMainWindow):
         self._tabs.clear()
         self._session.close_project()
         self._file_tree.set_project(None)
+        # F-21: 停止监听
+        self._sprite_watcher.unwatch()
+        # F-52: 清理会话级外部 mod 临时目录
+        for mod in getattr(self, "_external_mods", []):
+            mod.cleanup()
+        self._external_mods = []
         self._center_stack.setCurrentIndex(0)
         self._close_project_action.setEnabled(False)
         self.statusBar().showMessage("未打开工程")
@@ -345,6 +370,9 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage(
                     f"已恢复上次工程: {self._project.mod_info.display_name}"
                 )
+                # F-21: 恢复工程后也开始监听
+                if self._project is not None:
+                    self._sprite_watcher.watch(self._project)
             except (OSError, FileNotFoundError, ValueError):
                 pass
 
@@ -492,6 +520,15 @@ class MainWindow(QMainWindow):
             panel._mark_dirty()
             panel.refresh_from_data()
 
+    def _on_sprite_changed(self, category: str, name: str) -> None:
+        """F-21: 当前 content 的精灵图被外部修改 → 刷新预览。"""
+        if self._preview.is_showing(category, name):
+            self._preview.refresh()
+
+    def _on_sprites_restructured(self) -> None:
+        """F-21: sprites/ 目录结构变化（新增/删除文件）→ 刷新图层树。"""
+        self._preview.refresh()
+
     def _on_content_renamed(self, old_name: str, new_name: str) -> None:
         """内容重命名后，同步已打开的标签页（名称 + 标题）+ 刷新预览。"""
         for i in range(self._tabs.count()):
@@ -561,6 +598,44 @@ class MainWindow(QMainWindow):
             # 切换标签时从数据重建表单，防止跨标签撤销/重做后显示过期值
             panel.refresh_from_data()
             self._preview.show_content(panel.content, self._project)
+            # F-21: 记录当前预览 content，供精灵变更归属判定
+            self._sprite_watcher.set_current_content(
+                panel.content.category, panel.content.name
+            )
+
+    def _run_project_validation(self) -> None:
+        """F-51: 工具 → 全量验证 → 弹窗报告 + 点击跳转。"""
+        if self._project is None:
+            QMessageBox.information(self, "提示", "请先打开一个工程")
+            return
+        from ..core.validator import validate_project
+        from .dialogs.validate_report_dialog import ValidateReportDialog
+
+        issues = validate_project(self._project, self._metadata)
+        dlg = ValidateReportDialog(issues, jump_to=self._jump_to_validate_issue, parent=self)
+        dlg.exec()
+
+    def _jump_to_validate_issue(self, issue) -> None:
+        """点击验证报告行 → 打开/切换到对应 content 标签页，定位字段。"""
+        name = issue.content_name
+        if not name:
+            return
+        # 已打开则切换到该标签
+        for i in range(self._tabs.count()):
+            panel = self._tabs.widget(i)
+            if isinstance(panel, EditorPanel) and panel.content.name == name:
+                self._tabs.setCurrentIndex(i)
+                if issue.field:
+                    panel.highlight_field(issue.field)
+                return
+        # 未打开则打开
+        self._open_content(name)
+        for i in range(self._tabs.count()):
+            panel = self._tabs.widget(i)
+            if isinstance(panel, EditorPanel) and panel.content.name == name:
+                if issue.field:
+                    panel.highlight_field(issue.field)
+                return
 
     def _import_reference(self) -> None:
         dlg = _ReferencePicker(self._metadata, self)
@@ -570,8 +645,62 @@ class MainWindow(QMainWindow):
             if category and name:
                 self._show_reference_comparison(category, name)
 
-    def _show_reference_comparison(self, category: str, name: str) -> None:
-        """Show comparison between current content and a reference instance."""
+    def _import_external_folder(self) -> None:
+        """F-52: 从 mod 文件夹导入参考。"""
+        path = QFileDialog.getExistingDirectory(self, "选择 mod 文件夹")
+        if not path:
+            return
+        self._import_external_mod(external_mod_path=path)
+
+    def _import_external_zip(self) -> None:
+        """F-52: 从 mod zip 导入参考。"""
+        path, _ = QFileDialog.getOpenFileName(
+            self, "选择 mod zip", "", "ZIP 压缩包 (*.zip)"
+        )
+        if not path:
+            return
+        self._import_external_mod(external_zip_path=path)
+
+    def _import_external_mod(self, external_mod_path=None, external_zip_path=None) -> None:
+        """F-52: 导入外部 mod → 选择 content → 对比。"""
+        from ..core.external_mod import ExternalMod
+        from .dialogs.external_mod_picker import ExternalModPicker
+
+        try:
+            if external_zip_path:
+                mod = ExternalMod.load_from_zip(external_zip_path)
+            else:
+                mod = ExternalMod.load_from_folder(external_mod_path)
+        except ValueError as e:
+            QMessageBox.warning(self, "导入失败", str(e))
+            return
+
+        if not mod.categories():
+            QMessageBox.warning(self, "导入失败", f"{mod.name} 中没有可读取的 content")
+            mod.cleanup()
+            return
+
+        dlg = ExternalModPicker(mod, self)
+        if dlg.exec():
+            category, name = dlg.selected_category, dlg.selected_name
+            if category and name:
+                ref_data = mod.get(category, name)
+                if ref_data is not None:
+                    self._show_reference_comparison(category, name, ref_data=ref_data)
+                    # 会话级保存，供关闭工程时统一清理
+                    self._external_mods = getattr(self, "_external_mods", [])
+                    self._external_mods.append(mod)
+                    return
+        # 取消或数据缺失 → 清理临时目录
+        mod.cleanup()
+
+    def _show_reference_comparison(
+        self, category: str, name: str, ref_data: dict | None = None
+    ) -> None:
+        """Show comparison between current content and a reference instance.
+
+        ref_data 提供时直接用（外部 mod 导入，F-52）；否则从原版 metadata 读。
+        """
         idx = self._tabs.currentIndex()
         if idx < 0:
             QMessageBox.information(self, "提示", "请先打开一个内容文件")
@@ -580,11 +709,12 @@ class MainWindow(QMainWindow):
         if not isinstance(panel, EditorPanel):
             return
 
-        try:
-            ref_data = self._metadata.get_instance(category, name)
-        except KeyError:
-            QMessageBox.warning(self, "错误", f"找不到参考实例: {category}/{name}")
-            return
+        if ref_data is None:
+            try:
+                ref_data = self._metadata.get_instance(category, name)
+            except KeyError:
+                QMessageBox.warning(self, "错误", f"找不到参考实例: {category}/{name}")
+                return
 
         # Create or reuse reference panel in right dock
         if not hasattr(self, '_ref_panel'):
@@ -674,4 +804,8 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.StandardButton.No:
                 event.ignore()
                 return
+        # F-52: 退出前清理外部 mod 临时目录
+        for mod in getattr(self, "_external_mods", []):
+            mod.cleanup()
+        self._external_mods = []
         event.accept()

@@ -474,6 +474,39 @@ QWidget[fieldType="obj"] {
 #fieldBar[fieldType="arr"] { background-color: @B_ARR@; }
 #fieldBar[fieldType="obj"] { background-color: @B_OBJ@; }
 
+/* ═══ 复合字段组色条（E-2 / ADR-012）═══
+   色条 4px 马卡龙原色；容器淡染背景（比字段控件淡底更淡一档） */
+#groupBar {
+    background-color: @LINE@;
+    border: none;
+    border-radius: 1.4px;
+    min-width: 4px;
+    max-width: 4px;
+}
+#groupBar[fieldType="arr"] { background-color: @B_ARR@; }
+#groupBar[fieldType="obj"] { background-color: @B_OBJ@; }
+#groupBar[fieldType="ref"] { background-color: @B_REF@; }
+#groupBar[fieldType="num"] { background-color: @B_NUM@; }
+#groupBar[fieldType="str"] { background-color: @B_STR@; }
+#groupBar[fieldType="col"] { background-color: @B_COL@; }
+
+#groupBarContainer {
+    background-color: transparent;
+    border: 1px solid @LINE@;
+    border-radius: 4px;
+}
+#groupBarContainer[fieldType="arr"] { background-color: @F_ARR@; border-color: @S_ARR@; }
+#groupBarContainer[fieldType="obj"] { background-color: @F_OBJ@; border-color: @S_OBJ@; }
+#groupBarContainer[fieldType="ref"] { background-color: @F_REF@; border-color: @S_REF@; }
+#groupBarContainer[fieldType="num"] { background-color: @F_NUM@; border-color: @S_NUM@; }
+#groupBarContainer[fieldType="str"] { background-color: @F_STR@; border-color: @S_STR@; }
+#groupBarContainer[fieldType="col"] { background-color: @F_COL@; border-color: @S_COL@; }
+
+#groupBarLabel {
+    color: @INK2@;
+    font-size: 12px;
+}
+
 /* 字段行删除按钮（可选字段，hover 浮现） */
 #fieldDeleteBtn {
     background: transparent;

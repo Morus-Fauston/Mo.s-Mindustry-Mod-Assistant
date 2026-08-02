@@ -17,9 +17,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-_CONFIG_DIR = Path(__file__).parent.parent / "config"
-_DEFAULT_FILE = _CONFIG_DIR / "settings_default.json"
-_USER_FILE = _CONFIG_DIR / "settings.json"
+from .paths import data_dir, user_config_dir
+
+# 只读默认配置（F-53）：开发 = 项目 app/config；打包 = _MEIPASS/app/config
+_DEFAULT_FILE = data_dir() / "app" / "config" / "settings_default.json"
+# 可写用户配置：开发 = 项目 app/config；打包 = %APPDATA%/MoMA
+_USER_FILE = user_config_dir() / "settings.json"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -57,7 +60,9 @@ class Settings:
             if self._defaults.get(k) != v
         }
         try:
-            _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+            from .paths import ensure_user_config_dir
+
+            ensure_user_config_dir()
             _USER_FILE.write_text(
                 json.dumps(diff, ensure_ascii=False, indent=2),
                 encoding="utf-8",

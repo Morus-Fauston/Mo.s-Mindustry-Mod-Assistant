@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -393,8 +393,28 @@ class ResourceSlotEditor(QWidget):
 # ── TechRefEditor ──────────────────────────────────────────────────────────
 
 
+def _tech_display(name: str) -> str:
+    """科技名 → 下拉显示串：'copper-wall' → '铜墙 (copper-wall)'。
+
+    中文名来自内容名总表（E-4 / ADR-013）；无中文则原样英文。
+    """
+    if not name:
+        return ""
+    zh_map = get_config("content_names_zh")
+    zh = ""
+    for cat_map in zh_map.values():
+        if isinstance(cat_map, dict) and name in cat_map:
+            zh = cat_map[name]
+            break
+    return f"{zh} ({name})" if zh else name
+
+
 class TechRefEditor(QWidget):
-    """Technology reference: string or list of strings."""
+    """Technology reference: string or list of strings.
+
+    E-5（ADR-013）：双语搜索——下拉项显示「中文名 (英文名)」，QCompleter
+    边打字边过滤（中文或英文均可命中）；存储值始终为英文内容名。
+    """
 
     valueChanged = Signal()
 
@@ -419,6 +439,11 @@ class TechRefEditor(QWidget):
                 self._options.extend(metadata.list_instances(cat))
             self._options.sort()
 
+        # 显示串 → 存储值（英文名）映射
+        self._display_to_value: dict[str, str] = {
+            _tech_display(n): n for n in self._options
+        }
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
@@ -433,18 +458,20 @@ class TechRefEditor(QWidget):
         self._combo.setEditable(True)
         self._combo.setFixedWidth(200)
         self._combo.setProperty("fieldType", "ref")  # QSS 马卡龙下拉样式
-        self._combo.addItems(self._options)
+        self._combo.addItems(self._display_to_value.keys())
+        self._install_completer()
         if not multi:
             current = self.value
             if isinstance(current, str):
-                idx = self._combo.findText(current)
+                display = _tech_display(current)
+                idx = self._combo.findText(display)
                 if idx >= 0:
                     self._combo.setCurrentIndex(idx)
                     le = self._combo.lineEdit()
                     if le is not None:
                         le.setCursorPosition(0)
                 else:
-                    _set_combo_text(self._combo, current)
+                    _set_combo_text(self._combo, display)
             self._combo.currentTextChanged.connect(self._on_single_changed)
         else:
             self._combo.setEditText("")
@@ -452,6 +479,16 @@ class TechRefEditor(QWidget):
             self._combo.lineEdit().returnPressed.connect(self._on_multi_add)
         _set_combo_view_width(self._combo)
         layout.addWidget(self._combo)
+
+    def _install_completer(self) -> None:
+        """QCompleter：Contains 匹配显示串（中文/英文均可），忽略大小写。"""
+        from PySide6.QtWidgets import QCompleter
+
+        completer = QCompleter(list(self._display_to_value.keys()), self._combo)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        self._combo.setCompleter(completer)
 
     @property
     def value(self) -> Any:
@@ -471,8 +508,10 @@ class TechRefEditor(QWidget):
         self.valueChanged.emit()
 
     def _on_single_changed(self, text: str) -> None:
+        # 显示串反解回英文存储值（双语搜索落盘英文名，E-5）
+        stored = self._display_to_value.get(text, text)
         cmd = SetFieldCommand(
-            self._data, self._path, text if text else None,
+            self._data, self._path, stored if stored else None,
             on_change=self.valueChanged.emit,
         )
         self._commands.execute(cmd)
@@ -481,11 +520,12 @@ class TechRefEditor(QWidget):
         text = self._combo.currentText().strip()
         if not text:
             return
+        stored = self._display_to_value.get(text, text)
         current = self.value
         items = list(current) if isinstance(current, list) else []
-        if text not in items:
+        if stored not in items:
             cmd = ArrayInsertCommand(
-                self._data, self._path, len(items), text,
+                self._data, self._path, len(items), stored,
                 on_change=self._rebuild_and_notify,
             )
             self._commands.execute(cmd)

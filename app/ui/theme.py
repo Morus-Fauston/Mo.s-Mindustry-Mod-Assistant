@@ -14,13 +14,16 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+from ..core.paths import resources_dir
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
 
-_RESOURCES = Path(__file__).parent.parent / "resources"
+from ..core.paths import resources_dir
+
+_RESOURCES = resources_dir()
 
 # ── 颜色令牌 ──────────────────────────────────────────────────────────────
 # 键名与 QSS 中的 @TOKEN@ 占位符一一对应。
@@ -176,4 +179,36 @@ def field_type_property(field_mode: str, java_type: str) -> str:
         return "num"
     if java_type == "Color":
         return "col"
+    return "str"
+
+
+def field_type_for_value(value: Any, hint: str | None = None) -> str:
+    """按值类型推断 fieldType（ADR-012 统一推断源）。
+
+    hint 是可选的元数据/路由线索：能说明"字符串其实是引用/颜色"时传入。
+
+    | value 类型 | hint | 结果 |
+    |-----------|------|------|
+    | bool       | —    | bool |
+    | int/float  | —    | num  |
+    | list       | —    | arr  |
+    | dict       | —    | obj  |
+    | str        | 无   | str  |
+    | str        | "ref"| ref  |
+    | str        | "col"| col  |
+
+    三处渲染（editor_panel / weapon_array_editor / polymorphic_editor）
+    全部改用此函数，消除 fieldType 推断不一致。
+    """
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, (int, float)):
+        return "num"
+    if isinstance(value, list):
+        return "arr"
+    if isinstance(value, dict):
+        return "obj"
+    # str 或未知类型：靠 hint 兜底
+    if hint in ("ref", "col"):
+        return hint
     return "str"

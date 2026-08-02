@@ -16,6 +16,11 @@ build = [
 [project.scripts]
 moma = "app.main:main"
 
+# 明确只打包 app 包（含子包），避免 setuptools 自动发现到
+# Docs/metadata/extractor 等顶层目录导致 editable 构建失败
+[tool.setuptools.packages.find]
+include = ["app*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

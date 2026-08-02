@@ -1,3 +1,11 @@
+v0.2.6.revised.1 (2026-08-02 17:57) 修复打包后exe崩溃(相对导入)
+  修复: 打包exe双击即崩(Failed to execute script 'main')→根因moma.spec入口app/main.py被当顶层脚本,相对导入失效→新增run.py顶层入口+spec改指向,app恢复包导入
+  技术: moma.spec入库(.gitignore的*.spec规则→!moma.spec放行,否则clone源码无法复现打包)
+  验证: 重打包52MB/启动8秒存活/pyi-archive_viewer确认run入口+数据完整
+  文件: 新增2(run.py/moma.spec)+修改1(.gitignore)
+
+====
+
 v0.2.6.revised (2026-08-02 17:46) 修复参考面板关闭+新增导出Mod(383→386全绿)
   修复: 参考对比dock无关闭按钮(NoDockWidgetFeatures→DockWidgetClosable,固定右栏仍禁浮动)
   新增: 导出Mod(F-55,文件菜单)整工程打包Mindustry可导入zip(mod.json在根,跳过.git/__pycache__/隐藏文件,导出前自动保存,开工程启用关工程禁用)

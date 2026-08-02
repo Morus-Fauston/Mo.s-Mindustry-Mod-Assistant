@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.2.6.revised.1 (2026-08-02 17:57) — 修复打包后 exe 崩溃（相对导入）
+
+> 用户实测：打包出的 MoMA.exe 双击即弹「Failed to execute script 'main'」。根因是 PyInstaller 把 `app/main.py` 当独立脚本执行，其内部相对导入（`from .ui.main_window import ...`）失效。新增顶层入口 `run.py` 解决，并放行 `moma.spec` 入库。
+
+### 修复
+
+- **打包后 exe 立即崩溃**：`moma.spec` 入口是 `app/main.py`，打包运行时被当顶层脚本（`__package__` 为空）→ 相对导入报 `attempted relative import with no known parent package`。新增 `run.py` 顶层入口（`from app.main import main`），spec 改为指向 `run.py`，`app` 恢复包方式导入
+
+### 技术
+
+- **`moma.spec` 入库**：`.gitignore` 有 `*.spec` 规则导致打包配置从未进 git，clone 源码无法复现打包。新增 `!moma.spec` 例外放行
+- **`run.py` 入库**：打包专用入口，含注释说明为何不能直接用 `app/main.py` 作入口
+
+### 验证
+
+- 重新打包成功：`dist/MoMA.exe`（52MB，<150MB 达标）
+- 启动 8 秒进程存活无崩溃（旧版瞬间弹错退出）
+- `pyi-archive_viewer` 确认 exe 内含 `run` 入口 + metadata/config/resources 数据完整
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `run.py` | **新增** — 打包顶层入口（修复相对导入崩溃） |
+| `moma.spec` | **新增** — PyInstaller 配置（入口改 run.py，入库） |
+| `.gitignore` | 修改 — 放行 moma.spec（`!moma.spec`） |
+
+---
+
 ## v0.2.6.revised (2026-08-02 17:46) — 修复参考面板关闭 + 新增导出 Mod
 
 > 用户实测反馈两个问题：参考对比面板没有关闭按钮、工程缺少导出功能。本次修复 dock 特性并新增「导出 Mod」打包功能。测试 383 → 386 全绿。

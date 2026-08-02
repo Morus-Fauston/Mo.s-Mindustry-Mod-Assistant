@@ -28,7 +28,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e . pytest
 
+      - name: Import smoke test
+        run: |
+          python -c "
+          import os
+          os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+          from PySide6.QtWidgets import QApplication
+          app = QApplication([])
+          from app.core.metadata import Metadata
+          from pathlib import Path
+          m = Metadata(Path('metadata'))
+          print('smoke OK, instances:', len(m.list_instance_categories()))
+          "
+
       - name: Run tests
         env:
           QT_QPA_PLATFORM: offscreen
-        run: pytest tests/ -q
+        run: pytest tests/ -q --tb=short

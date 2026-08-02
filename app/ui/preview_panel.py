@@ -94,6 +94,12 @@ class SpriteView(QGraphicsView):
     def reset_zoom(self) -> None:
         self.fit_to_view()
 
+    def set_zoom(self, level: float) -> None:
+        """设置绝对缩放倍率（F-54 设置面板联动）。"""
+        self.resetTransform()
+        self.scale(level, level)
+        self._zoom = level
+
 
 class PreviewPanel(QWidget):
     """Right sidebar: sprite preview (zoom/pan) + sprite layer management tree."""
@@ -105,6 +111,7 @@ class PreviewPanel(QWidget):
     _ROLE_PATH = Qt.ItemDataRole.UserRole        # 256: sprite 文件路径
     _ROLE_SUFFIX = Qt.ItemDataRole.UserRole + 1  # 257: suffix
     _ROLE_WEAPON_INDEX = Qt.ItemDataRole.UserRole + 2  # 258: 武器索引（-1=非武器）
+    _ROLE_AUTOGEN = Qt.ItemDataRole.UserRole + 3  # 259: 可自动生成标记
 
     # 坐标缩放比：4 像素 = 1 世界单位（003 调研结论）
     _PPU = 4
@@ -190,6 +197,15 @@ class PreviewPanel(QWidget):
         self._splitter.setStretchFactor(0, 3)
         self._splitter.setStretchFactor(1, 2)
         layout.addWidget(self._splitter, stretch=1)
+
+        # 设置面板缩放倍率（F-54）
+        self._base_zoom = 4
+
+    def set_base_zoom(self, zoom: int) -> None:
+        """设置面板缩放倍率，重新渲染当前内容。"""
+        self._base_zoom = zoom
+        if self._content is not None:
+            self.show_content(self._content, self._project)
 
     def show_content(self, content: ContentData, project: Project | None) -> None:
         self._content = content
@@ -299,14 +315,22 @@ class PreviewPanel(QWidget):
                 continue
             item = self._view.scene.addPixmap(layer_pixmap)
             item.setTransformationMode(Qt.TransformationMode.FastTransformation)
-            item.setZValue(z)
+            # z-order（v0.2.5 修复）：阴影在最底（-3），轮廓次之（-2），
+            # 引擎 -1，主体 0，其余图层在主体上方。原实现所有图层 z 递增，
+            # 阴影被画在主体之上 → 半透明黑盖住主体，视觉上"渲染在上方"。
+            if suffix == "-shadow":
+                item.setZValue(-3)
+            elif suffix == "-outline":
+                item.setZValue(-2)
+            else:
+                item.setZValue(z)
+                z += 1
             # 居中对齐到主体
             item.setPos(
                 cx - layer_pixmap.width() / 2.0,
                 cy - layer_pixmap.height() / 2.0,
             )
             self._scene_items.setdefault(suffix, []).append(item)
-            z += 1
 
         # F-72: 武器叠加
         self._draw_weapons(cx, cy)
@@ -320,7 +344,7 @@ class PreviewPanel(QWidget):
         self._view.setVisible(True)
         self._empty_overlay.setVisible(False)
         self._import_btn.setVisible(False)
-        self._view.fit_to_view()
+        self._view.set_zoom(float(self._base_zoom))
 
     def _apply_all_layer_visibility(self) -> None:
         """根据 _layer_visibility 设置所有场景元素的可见性。"""
@@ -544,6 +568,8 @@ class PreviewPanel(QWidget):
             item.setData(0, self._ROLE_PATH, str(sprite_path))
             item.setData(0, self._ROLE_SUFFIX, suffix)
             item.setData(0, self._ROLE_WEAPON_INDEX, -1)
+            autogen = bool(layer.get("autoGenerable", False))
+            item.setData(0, self._ROLE_AUTOGEN, autogen)
 
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             visible = self._layer_visibility.get(suffix, True)
@@ -553,6 +579,14 @@ class PreviewPanel(QWidget):
             )
             if not exists:
                 item.setForeground(0, Qt.GlobalColor.gray)
+                # F-20: 可自动生成且缺失 → 列1 显示 [生成] 按钮
+                if autogen:
+                    gen_btn = QPushButton("[生成]")
+                    gen_btn.setFixedWidth(50)
+                    gen_btn.setFlat(True)
+                    gen_btn.setProperty("gen_suffix", suffix)
+                    gen_btn.clicked.connect(self._on_generate_clicked)
+                    self._layer_tree.setItemWidget(item, 1, gen_btn)
 
         # D1: 武器独立行
         if category == "units":
@@ -596,8 +630,8 @@ class PreviewPanel(QWidget):
             # NumDoubleSpinBox：滚轮只滚页面不改值 + 去尾零（与主面板一致）
             spin_x = NumDoubleSpinBox()
             spin_x.setRange(-40, 40)
-            spin_x.setSingleStep(0.1)
-            spin_x.setDecimals(1)
+            spin_x.setSingleStep(0.25)
+            spin_x.setDecimals(2)
             spin_x.setFixedWidth(70)
             spin_x.setPrefix("x ")
             spin_x.setProperty("weapon_idx", i)
@@ -614,8 +648,8 @@ class PreviewPanel(QWidget):
 
             spin_y = NumDoubleSpinBox()
             spin_y.setRange(-40, 40)
-            spin_y.setSingleStep(0.1)
-            spin_y.setDecimals(1)
+            spin_y.setSingleStep(0.25)
+            spin_y.setDecimals(2)
             spin_y.setFixedWidth(70)
             spin_y.setPrefix("y ")
             spin_y.setProperty("weapon_idx", i)
@@ -700,14 +734,18 @@ class PreviewPanel(QWidget):
         sprite_path = Path(path_str)
         exists = sprite_path.exists()
 
+        autogen = bool(item.data(0, self._ROLE_AUTOGEN))
+
         menu = QMenu(self)
         if exists:
             replace_action = menu.addAction("替换精灵图")
+            regen_action = menu.addAction("重新生成") if autogen else None
             reveal_action = menu.addAction("在文件管理器中打开")
             menu.addSeparator()
             delete_action = menu.addAction("删除精灵图")
         else:
             replace_action = menu.addAction("导入精灵图")
+            regen_action = menu.addAction("自动生成") if autogen else None
             reveal_action = None
             delete_action = None
 
@@ -716,10 +754,95 @@ class PreviewPanel(QWidget):
             return
         if chosen == replace_action:
             self._import_sprite_for_suffix(suffix)
+        elif chosen == regen_action and autogen:
+            self._generate_sprite(suffix)
         elif chosen == reveal_action and exists:
             self._reveal_sprite(sprite_path)
         elif chosen == delete_action and exists:
             self._delete_sprite(sprite_path, suffix)
+
+    def _on_generate_clicked(self) -> None:
+        """F-20: [生成] 按钮点击。"""
+        btn = self.sender()
+        if btn is None:
+            return
+        suffix = btn.property("gen_suffix")
+        if suffix:
+            self._generate_sprite(suffix)
+
+    def _generate_sprite(self, suffix: str) -> None:
+        """F-20: 自动生成 outline/shadow/full 精灵图。"""
+        from ..core.sprite_generator import generate_full, generate_outline, generate_shadow
+
+        if self._content is None or self._project is None:
+            return
+
+        category = self._content.category
+        name = self._content.name
+        main_path = self._project.sprite_path(category, name)
+        if not main_path.exists():
+            return
+
+        from PIL import Image as PILImage
+
+        src = PILImage.open(str(main_path)).convert("RGBA")
+        target = self._project.sprite_path(category, name, suffix)
+        target.parent.mkdir(parents=True, exist_ok=True)
+
+        if suffix == "-outline":
+            result = generate_outline(src)
+        elif suffix == "-shadow":
+            result = generate_shadow(src)
+        elif suffix == "-full":
+            # 收集额外图层（cell 等）
+            layers_pil = []
+            layers_cfg = self._sprite_layers_config.get(
+                self._content.data.get("type", ""), []
+            )
+            for layer in layers_cfg:
+                ls = layer.get("suffix", "")
+                if ls in ("", "-full", "-outline", "-shadow"):
+                    continue
+                lp = self._project.sprite_path(category, name, ls)
+                if lp.exists():
+                    layers_pil.append(PILImage.open(str(lp)).convert("RGBA"))
+
+            # 收集武器精灵
+            weapons = self._content.data.get("weapons")
+            weapon_sprites = []
+            weapons_list = []
+            if isinstance(weapons, list):
+                for w in weapons:
+                    if not isinstance(w, dict):
+                        continue
+                    w_name = w.get("name", "")
+                    if not w_name:
+                        continue
+                    wp = self._find_weapon_sprite(w_name)
+                    if wp is not None and not wp.isNull():
+                        # QPixmap → PIL
+                        img = wp.toImage().convertToFormat(
+                            wp.toImage().Format.RGBA8888
+                        )
+                        ptr = img.bits()
+                        pil_img = PILImage.frombytes(
+                            "RGBA", (img.width(), img.height()), bytes(ptr)
+                        )
+                        weapon_sprites.append(pil_img)
+                        weapons_list.append(w)
+
+            result = generate_full(
+                src, layers=layers_pil or None,
+                weapons=weapons_list or None,
+                weapon_sprites=weapon_sprites or None,
+                ppu=float(self._PPU),
+            )
+        else:
+            return
+
+        result.save(str(target))
+        self._refresh_preview()
+        self._refresh_layer_tree()
 
     def _reveal_sprite(self, path: Path) -> None:
         """在文件管理器中定位精灵图。"""

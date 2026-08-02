@@ -1,0 +1,98 @@
+{
+  "name": "MendProjector",
+  "fullName": "mindustry.world.blocks.defense.MendProjector",
+  "parent": "Block",
+  "fields": [
+    {
+      "name": "timerUse",
+      "javaType": "int",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0
+    },
+    {
+      "name": "baseColor",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "phaseColor",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "topRegion",
+      "javaType": "TextureRegion",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "reload",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "range",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "healPercent",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "phaseBoost",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "phaseRangeBoost",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "useTime",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "mendSound",
+      "javaType": "Sound",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "mendSoundVolume",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "any",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    }
+  ]
+}

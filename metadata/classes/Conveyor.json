@@ -1,0 +1,53 @@
+{
+  "name": "Conveyor",
+  "fullName": "mindustry.world.blocks.distribution.Conveyor",
+  "parent": "Block",
+  "fields": [
+    {
+      "name": "regions",
+      "javaType": "TextureRegion[][]",
+      "mode": "ARRAY",
+      "nullable": false,
+      "default": null,
+      "elementType": "TextureRegion[]",
+      "polymorphic": false
+    },
+    {
+      "name": "speed",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "displayedSpeed",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "pushUnits",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "junctionReplacement",
+      "javaType": "Block",
+      "mode": "INLINE_OBJECT",
+      "nullable": true,
+      "default": null,
+      "inlineType": "Block"
+    },
+    {
+      "name": "bridgeReplacement",
+      "javaType": "Block",
+      "mode": "INLINE_OBJECT",
+      "nullable": true,
+      "default": null,
+      "inlineType": "Block"
+    }
+  ]
+}

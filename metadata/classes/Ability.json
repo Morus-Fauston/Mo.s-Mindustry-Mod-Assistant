@@ -1,0 +1,21 @@
+{
+  "name": "Ability",
+  "fullName": "mindustry.entities.abilities.Ability",
+  "parent": null,
+  "fields": [
+    {
+      "name": "display",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "data",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

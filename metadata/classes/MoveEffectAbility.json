@@ -1,0 +1,133 @@
+{
+  "name": "MoveEffectAbility",
+  "fullName": "mindustry.entities.abilities.MoveEffectAbility",
+  "parent": "Ability",
+  "fields": [
+    {
+      "name": "minVelocity",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "interval",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "chance",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "amount",
+      "javaType": "int",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0
+    },
+    {
+      "name": "x",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "y",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "rotation",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "rangeX",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "rangeY",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "rangeLengthMin",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "rangeLengthMax",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "rotateEffect",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "effectParam",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "teamColor",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "parentizeEffects",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "color",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "effect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "counter",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

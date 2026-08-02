@@ -1,0 +1,50 @@
+{
+  "name": "LiquidExplodeAbility",
+  "fullName": "mindustry.entities.abilities.LiquidExplodeAbility",
+  "parent": "Ability",
+  "fields": [
+    {
+      "name": "liquid",
+      "javaType": "Liquid",
+      "mode": "STRING_REF",
+      "nullable": false,
+      "default": null,
+      "refSource": "Liquids"
+    },
+    {
+      "name": "amount",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "radAmountScale",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "radScale",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "noiseMag",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "noiseScl",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

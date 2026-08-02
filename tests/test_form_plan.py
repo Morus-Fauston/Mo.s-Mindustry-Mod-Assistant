@@ -348,3 +348,86 @@ class TestGetAddableFields:
             "nonexistent_group",
         )
         assert fields == []
+
+
+# ── synthetic_field_def (v0.2.5 F-22) ─────────────────────────────────
+
+
+class TestSyntheticFieldDef:
+    """JSON 中存在但元数据缺失的字段（如 consumes）仍可渲染。"""
+
+    def test_import_synthetic(self):
+        from app.core.form_plan import synthetic_field_def
+
+        assert callable(synthetic_field_def)
+
+    def test_dict_infers_inline_object(self):
+        from app.core.form_plan import synthetic_field_def
+
+        fd = synthetic_field_def("consumes", {"power": 1.0})
+        assert fd.name == "consumes"
+        assert fd.mode == "INLINE_OBJECT"
+
+    def test_list_infers_array(self):
+        from app.core.form_plan import synthetic_field_def
+
+        fd = synthetic_field_def("consumes", [])
+        assert fd.mode == "ARRAY"
+
+    def test_number_infers_primitive(self):
+        from app.core.form_plan import synthetic_field_def
+
+        assert synthetic_field_def("craftTime", 60).mode == "PRIMITIVE"
+        assert synthetic_field_def("craftTime", 60).java_type == "int"
+        assert synthetic_field_def("craftTime", 60.0).java_type == "float"
+
+    def test_bool_infers_primitive(self):
+        from app.core.form_plan import synthetic_field_def
+
+        assert synthetic_field_def("hasPower", True).java_type == "boolean"
+
+    def test_not_internal(self):
+        """合成字段不应被 is_internal 误判（否则会被隐藏/跳过校验）。"""
+        from app.core.form_plan import synthetic_field_def
+
+        fd = synthetic_field_def("consumes", {"power": 1.0})
+        assert not fd.is_internal
+
+    def test_data_field_not_in_class_def_renders(self):
+        """class_def 无 consumes，但 data 有 → 组内仍渲染该字段。"""
+        from app.core.form_plan import compute_form_plan
+
+        class_def = _class_def(SAMPLE_FIELDS)  # 无 consumes
+        groups = {
+            "TestType": {
+                "basic": {"required": ["health"], "optional": []},
+                "consumption": {
+                    "required": [],
+                    "optional": ["consumes"],
+                    "widgets": {"consumes": {"widget": "consumes"}},
+                },
+            }
+        }
+        plan = compute_form_plan(
+            class_def, {"type": "TestType", "health": 100, "consumes": {"power": 1.0}}, groups
+        )
+        group = next(g for g in plan if g.group_name == "consumption")
+        names = [f.field_def.name for f in group.fields]
+        assert "consumes" in names
+
+    def test_data_field_not_in_class_def_hidden_when_absent(self):
+        """data 无 consumes 时 consumption 组隐藏（与既有行为一致）。"""
+        from app.core.form_plan import compute_form_plan
+
+        class_def = _class_def(SAMPLE_FIELDS)
+        groups = {
+            "TestType": {
+                "basic": {"required": ["health"], "optional": []},
+                "consumption": {"required": [], "optional": ["consumes"]},
+            }
+        }
+        plan = compute_form_plan(
+            class_def, {"type": "TestType", "health": 100}, groups
+        )
+        names = [g.group_name for g in plan]
+        assert "consumption" not in names

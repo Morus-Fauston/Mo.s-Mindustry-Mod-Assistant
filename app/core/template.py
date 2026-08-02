@@ -32,6 +32,11 @@ class TemplateEngine:
             "ItemTurret": self._item_turret_template,
             "PowerTurret": self._power_turret_template,
             "Weapon": self._weapon_template,
+            "GenericCrafter": self._generic_crafter_template,
+            "Drill": self._drill_template,
+            "Conveyor": self._conveyor_template,
+            "Battery": self._battery_template,
+            "MendProjector": self._mend_projector_template,
         }
 
         generator = generators.get(kind)
@@ -195,7 +200,90 @@ class TemplateEngine:
             ],
             "category": "turret",
         }
+    # ── v0.2.5 F-22 新增方块模板 ─────────────────────────────────
 
+    def _generic_crafter_template(self, name: str) -> dict[str, Any]:
+        return {
+            "type": "GenericCrafter",
+            "name": name,
+            "health": 200,
+            "size": 2,
+            "craftTime": 60,
+            "description": "",
+            "outputItem": {"item": "copper", "amount": 1},
+            "consumes": {
+                "items": [{"item": "lead", "amount": 1}],
+                "power": 1.0,
+            },
+            "requirements": [
+                {"item": "copper", "amount": 50},
+                {"item": "lead", "amount": 25},
+            ],
+            "category": "crafting",
+        }
+
+    def _drill_template(self, name: str) -> dict[str, Any]:
+        return {
+            "type": "Drill",
+            "name": name,
+            "health": 200,
+            "size": 2,
+            "tier": 3,
+            "drillTime": 300,
+            "description": "",
+            "consumes": {"power": 1.0},
+            "requirements": [
+                {"item": "copper", "amount": 30},
+            ],
+            "category": "production",
+        }
+
+    def _conveyor_template(self, name: str) -> dict[str, Any]:
+        return {
+            "type": "Conveyor",
+            "name": name,
+            "health": 40,
+            "speed": 0.05,
+            "displayedSpeed": 5,
+            "description": "",
+            "requirements": [
+                {"item": "copper", "amount": 1},
+            ],
+            "category": "distribution",
+        }
+
+    def _battery_template(self, name: str) -> dict[str, Any]:
+        return {
+            "type": "Battery",
+            "name": name,
+            "health": 100,
+            "size": 1,
+            "description": "",
+            "consumes": {"power": 0.0},
+            "requirements": [
+                {"item": "copper", "amount": 20},
+                {"item": "lead", "amount": 30},
+            ],
+            "category": "power",
+        }
+
+    def _mend_projector_template(self, name: str) -> dict[str, Any]:
+        return {
+            "type": "MendProjector",
+            "name": name,
+            "health": 200,
+            "size": 1,
+            "range": 60,
+            "reload": 200,
+            "healPercent": 5,
+            "description": "",
+            "consumes": {"power": 1.0},
+            "requirements": [
+                {"item": "copper", "amount": 30},
+                {"item": "lead", "amount": 20},
+            ],
+            "category": "effect",
+        }
     # ── Weapon template ─────────────────────────────────────────────────
 
     def _weapon_template(self, name: str) -> dict[str, Any]:

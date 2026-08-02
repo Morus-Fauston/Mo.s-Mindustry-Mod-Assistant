@@ -338,9 +338,15 @@ class EditorPanel(QWidget):
         rows_layout.setContentsMargins(0, 0, 0, 0)
         rows_layout.setSpacing(4)
 
+        # 获取当前组的 widgets 配置（F-50 资源控件路由）
+        content_type = self._content.data.get("type", "")
+        groups_config = self._field_groups.get(content_type, {})
+        group_cfg = groups_config.get(plan.group_name, {})
+        widgets_cfg = group_cfg.get("widgets", {}) if isinstance(group_cfg, dict) else {}
+
         for fp in plan.fields:
             f = fp.field_def
-            widget = self._create_field_widget(f)
+            widget = self._create_field_widget(f, widgets_cfg.get(f.name))
             if widget is None:
                 continue
 
@@ -645,8 +651,14 @@ class EditorPanel(QWidget):
 
     # ── field widget creation ───────────────────────────────────────────
 
-    def _create_field_widget(self, field_def: FieldDef) -> QWidget | None:
+    def _create_field_widget(self, field_def: FieldDef, widget_cfg: dict | None = None) -> QWidget | None:
         current_value = self._content.data.get(field_def.name)
+
+        # F-50: widgets 配置路由（优先于 mode 分支）
+        if widget_cfg and "widget" in widget_cfg:
+            w = self._create_configured_widget(field_def, widget_cfg)
+            if w is not None:
+                return w
 
         if field_def.mode == "PRIMITIVE":
             return self._create_primitive_widget(field_def, current_value)
@@ -655,11 +667,66 @@ class EditorPanel(QWidget):
         elif field_def.mode == "ARRAY":
             if field_def.name == "weapons":
                 return self._create_weapons_widget()
+            if field_def.name == "abilities":
+                return self._create_abilities_widget()
             return ReservedPanel("数组字段")
         elif field_def.mode == "INLINE_OBJECT":
             if field_def.name == "bullet":
                 return self._create_bullet_editor()
             return ReservedPanel("内联对象")
+        return None
+
+    def _create_configured_widget(self, field_def: FieldDef, cfg: dict) -> QWidget | None:
+        """F-50: 根据 field_groups.json 的 widgets 配置实例化对应控件。"""
+        from .widgets.resource_editors import (
+            ConsumesEditor,
+            ResourceListEditor,
+            ResourceSlotEditor,
+            TechRefEditor,
+        )
+
+        widget_type = cfg["widget"]
+        data = self._content.data
+        path = field_def.name
+        stack = self._commands
+
+        if widget_type == "resource_list":
+            editor = ResourceListEditor(
+                data, path, stack,
+                resource_type=cfg.get("resource_type", "item"),
+                has_booster=cfg.get("has_booster", False),
+                metadata=self._metadata,
+                project=self._project,
+            )
+            # committed=True：编辑器内部已走命令栈，这里只做副作用（v0.2.5 修复
+            # 双重命令导致撤销失效/需撤多次）。
+            editor.valueChanged.connect(lambda: self._on_field_changed(path, data.get(path), committed=True))
+            return editor
+        elif widget_type == "resource_slot":
+            editor = ResourceSlotEditor(
+                data, path, stack,
+                resource_type=cfg.get("resource_type", "item"),
+                metadata=self._metadata,
+                project=self._project,
+            )
+            editor.valueChanged.connect(lambda: self._on_field_changed(path, data.get(path), committed=True))
+            return editor
+        elif widget_type == "tech_ref":
+            editor = TechRefEditor(
+                data, path, stack,
+                multi=cfg.get("multi", False),
+                metadata=self._metadata,
+            )
+            editor.valueChanged.connect(lambda: self._on_field_changed(path, data.get(path), committed=True))
+            return editor
+        elif widget_type == "consumes":
+            editor = ConsumesEditor(
+                data, path, stack,
+                metadata=self._metadata,
+                project=self._project,
+            )
+            editor.valueChanged.connect(lambda: self._on_field_changed(path, data.get(path), committed=True))
+            return editor
         return None
 
     def _create_primitive_widget(self, field_def: FieldDef, value: Any) -> QWidget:
@@ -731,6 +798,11 @@ class EditorPanel(QWidget):
                 combo.setCurrentIndex(idx)
             else:
                 combo.setEditText(str(value))
+            # 光标归位到开头，防止视口滚到末尾把左侧文本挤出视野（v0.2.5 修复：
+            # editable 下拉默认光标在末尾 → 长值看似"右对齐、左边看不见"）。
+            le = combo.lineEdit()
+            if le is not None:
+                le.setCursorPosition(0)
         combo.currentTextChanged.connect(
             lambda t, n=field_def.name: self._on_field_changed(n, t if t else None)
         )
@@ -780,6 +852,24 @@ class EditorPanel(QWidget):
         self._field_widgets["bullet"] = editor
         return editor
 
+    def _create_abilities_widget(self) -> QWidget:
+        """Create an AbilityArrayEditor for the abilities field (F-49).
+
+        不预写空数组：无 abilities 时 JSON 不产生该键，首次添加时才经命令栈创建
+        （v0.2.5 修复：预写绕过命令栈且保存时污染空数组）。
+        """
+        from .widgets.ability_array_editor import AbilityArrayEditor
+
+        editor = AbilityArrayEditor(
+            data=self._content.data,
+            path="abilities",
+            command_stack=self._commands,
+        )
+        editor.valueChanged.connect(self._mark_dirty)
+        editor.valueChanged.connect(self.data_changed.emit)
+        self._field_widgets["abilities"] = editor
+        return editor
+
     def _show_field_context_menu(self, pos, field_name: str, widget: QWidget) -> None:
         """Right-click context menu on a field widget: delete field."""
         menu = QMenu(self)
@@ -801,14 +891,24 @@ class EditorPanel(QWidget):
 
     # ── data operations ─────────────────────────────────────────────────
 
-    def _on_field_changed(self, field_name: str, new_value: Any) -> None:
-        cmd = SetFieldCommand(
-            data=self._content.data,
-            path=field_name,
-            new_value=new_value,
-            on_change=self._mark_dirty,
-        )
-        self._commands.execute(cmd)
+    def _on_field_changed(self, field_name: str, new_value: Any, committed: bool = False) -> None:
+        """字段值变化处理。
+
+        committed=False（默认）：简单控件（数字框/文本框/下拉/颜色等）自身不操作
+        命令栈，这里创建 SetFieldCommand 保证可撤销。
+
+        committed=True：复合编辑器（ResourceList/ResourceSlot/TechRef/Consumes）
+        内部已通过命令栈提交修改，这里只做副作用（脏标记/校验/预览刷新），避免
+        重复命令污染撤销栈（v0.2.5 修复：双重命令导致撤销失效或需撤多次）。
+        """
+        if not committed:
+            cmd = SetFieldCommand(
+                data=self._content.data,
+                path=field_name,
+                new_value=new_value,
+                on_change=self._mark_dirty,
+            )
+            self._commands.execute(cmd)
 
         # Real-time validation: red border + tooltip on error
         self._validate_field_widget(field_name, new_value)

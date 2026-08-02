@@ -1,5 +1,70 @@
 # Changelog
 
+## v0.2.5 (2026-08-02 17:09) — 功能填充：更多方块 + Abilities + 资源控件 + 精灵图生成
+
+> v0.2.5 是功能填充版本：把 v0.2.1 预留的占位区域填成完整功能——5 种新方块类型、Abilities 能力编辑器、资源/科技复合控件、精灵图自动生成。同时修复了这一批功能暴露出的全部渲染与交互问题。测试从 258 → 327 全绿。
+
+### 新增
+
+- **5 种新方块类型（F-22）**：GenericCrafter（合成器）/ Drill（钻机）/ Conveyor（传送带）/ Battery（电池）/ MendProjector（维修投影仪）。每种都有完整模板（`template.py`）+ 字段组配置（`field_groups.json`）+ 元数据（提取器重跑产出）
+- **Abilities 能力编辑器（F-49）**：新增 `ability_array_editor.py`，15 种能力子类卡片式编辑（类型下拉 → 字段表单），全部走命令栈可撤销；`abilities` 懒初始化——无能力时 JSON 不产生该键，首次添加才经命令栈创建
+- **资源/科技复合控件（F-50）**：`resource_editors.py` 新增 ResourceListEditor（多行资源列表）/ ResourceSlotEditor（单资源槽）/ TechRefEditor（科技引用）/ ConsumesEditor（消耗定义），全部走命令栈 + 嵌套路径读写
+- **精灵图自动生成（F-20）**：`sprite_generator.py`（Pillow 纯算法，core 层不 import Qt）——outline 轮廓 / shadow 阴影 / full 合成
+- **资源中文名表**：`resource_names_zh.json`（22 物品 + 9 液体官方译名），资源下拉显示 `铜 (copper)`、落盘存英文
+
+### 修复
+
+- **资源编辑器双重命令**：编辑器内部已走命令栈，主面板又发一条 → 撤销要撤多次。改用 `committed=True` 只做副作用（标记脏 + 通知刷新）
+- **consumes 永不渲染**：`consumes` 不在提取元数据 → 字段被隐藏。`form_plan.py` 新增 `synthetic_field_def`——按值类型合成 FieldDef，缺失字段仍走正常渲染（含 widgets 路由）
+- **能力字段全空**：`PolymorphicTypeEditor.value` 用 `dict.get("abilities.0")` → 读不到嵌套数组元素。改用 `_get_nested` 点路径读取
+- **嵌套路径「+ 添加」失效**：ResourceListEditor 值读写用 `dict.get` 读不到嵌套路径 → 重建清空。4 个值读写全部改 `_get_nested`/`_set_nested`/`_del_nested`
+- **下拉框黑块三角**：QSS border-transparent 三角在 windows11 editable 下拉上渲染成黑块 → 换 SVG 箭头图标（`arrow_down.svg`）
+- **下拉文字右对齐**：`setEditText` 后光标在末尾 → 视口滚到末尾，左侧中文被挤出。所有 editable 下拉设置后光标归位 `setCursorPosition(0)`
+- **consumes「+ 添加」失效**：添加下拉默认选中第一项，重建后重选不触发信号 → 加占位项（`请选择消耗类型…`，data=None）
+- **预览阴影盖主体**：预览 z 序全递增 → 阴影叠在主体上。阴影 z=-3、轮廓 z=-2，主体 z 从 1 起
+
+### 体验优化
+
+- **字段名翻译 +75**：`field_names_zh.json` 补齐方块/能力字段中文显示名
+- **新建方块对话框分组**：方块类型按 `block_categories.json` 大类分组展示（仅列已有模板的类型）
+- **设置项接线（F-54）**：显示名模式 / 自动保存间隔（0 = 关闭）/ 精灵图缩放倍率生效
+- **下拉弹出宽度**：长选项（如 `爆破混合物 (blast-compound)`）不再被截断，弹出列表按最长项撑宽
+
+### 测试（258 → 327 全绿）
+
+- **`test_sprite_generator.py`**（新增）：outline/shadow/full 纯算法验证
+- **`test_ability_array_editor.py`**（新增）：空态 / 添加撤销重做 / 卡片渲染 / FieldRow 包裹 / 卡片内删除 / 字段编辑撤销
+- **`test_editor_panel.py`**（新增）：widgets 路由 / consumes 渲染 / 资源编辑器撤销与样式 / 下拉修复（SVG 箭头、占位、光标、弹出宽度）/ 嵌套路径读写
+- **`test_form_plan.py`**（+）：synthetic_field_def 推断
+- **`test_preview_panel.py`**（+）：阴影 z 序
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/ui/widgets/ability_array_editor.py` | **新增** — Abilities 卡片编辑器（F-49） |
+| `app/core/sprite_generator.py` | **新增** — 精灵图 outline/shadow/full 生成（F-20） |
+| `app/config/resource_names_zh.json` | **新增** — 资源中文名总表 |
+| `app/resources/icons/arrow_down.svg` | **新增** — 下拉箭头图标（替代黑块三角） |
+| `metadata/classes/` | **新增** — 5 新方块 + 15 Ability 子类 + PowerBlock 元数据 |
+| `app/ui/widgets/resource_editors.py` | 大改 — 4 个复合控件 + 嵌套路径 + 双语言下拉 |
+| `app/core/form_plan.py` | 修改 — synthetic_field_def 缺失字段合成 |
+| `app/core/template.py` | 修改 — 5 种新方块模板 |
+| `app/config/field_groups.json` | 修改 — 新方块类型字段组 + widgets 路由 |
+| `app/config/field_names_zh.json` | 修改 — +75 字段中文名 |
+| `app/ui/editor_panel.py` | 修改 — committed=True / 能力懒初始化 / 下拉光标 |
+| `app/ui/widgets/polymorphic_editor.py` | 修改 — _get_nested 嵌套读取 / FieldRow 包裹 |
+| `app/ui/preview_panel.py` | 修改 — 阴影 z 序 / sprite_zoom 接线 |
+| `app/ui/dialogs/new_content.py` | 修改 — 方块类型按大类分组 |
+| `app/ui/dialogs/settings_dialog.py` | 修改 — 显示名/自动保存/缩放接线（F-54） |
+| `app/ui/main_window.py` | 修改 — 设置项应用后刷新 |
+| `app/ui/theme.py` | 修改 — @ARROW_ICON@ 令牌 |
+| `app/resources/style.qss` | 修改 — SVG 箭头样式 |
+| `extractor/` | 修改 — ClassExtractor 支持 Ability/新方块提取 |
+| `tests/` | 新增/修改 — 327 测试全绿 |
+
+---
+
 ## v0.2.4.revised (2026-08-02 03:19) — 架构深化 + 图层树渲染修复 + 测试补全
 
 > 一次完整的架构审查驱动的重构：把渲染坐标公式、字段组操作、控件创建、颜色选择四块逻辑从 UI 层提取为可独立测试的深模块；修复图层树在 windows11 下的一串渲染问题；补齐图层树行为测试。测试从 219 → 258 全绿。

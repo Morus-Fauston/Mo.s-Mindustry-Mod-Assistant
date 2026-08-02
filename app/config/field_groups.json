@@ -116,7 +116,11 @@
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer"]
+      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer"],
+      "widgets": {
+        "requirements": {"widget": "resource_list", "resource_type": "item"},
+        "research": {"widget": "tech_ref", "multi": false}
+      }
     }
   },
 
@@ -145,11 +149,19 @@
     },
     "consumption": {
       "required": [],
-      "optional": ["consumes", "coolant", "coolantMultiplier", "heatRequirement", "maxHeatEfficiency", "consumeAmmoOnce"]
+      "optional": ["consumes", "coolant", "coolantMultiplier", "heatRequirement", "maxHeatEfficiency", "consumeAmmoOnce"],
+      "widgets": {
+        "consumes": {"widget": "consumes"},
+        "coolant": {"widget": "resource_slot", "resource_type": "liquid"}
+      }
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer", "placeOverlapMargin", "fogRadiusMultiplier"]
+      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer", "placeOverlapMargin", "fogRadiusMultiplier"],
+      "widgets": {
+        "requirements": {"widget": "resource_list", "resource_type": "item"},
+        "research": {"widget": "tech_ref", "multi": false}
+      }
     }
   },
 
@@ -178,11 +190,143 @@
     },
     "consumption": {
       "required": [],
-      "optional": ["consumes", "coolant", "coolantMultiplier", "heatRequirement", "maxHeatEfficiency", "consumeAmmoOnce"]
+      "optional": ["consumes", "coolant", "coolantMultiplier", "heatRequirement", "maxHeatEfficiency", "consumeAmmoOnce"],
+      "widgets": {
+        "consumes": {"widget": "consumes"},
+        "coolant": {"widget": "resource_slot", "resource_type": "liquid"}
+      }
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer", "placeOverlapMargin", "fogRadiusMultiplier"]
+      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer", "placeOverlapMargin", "fogRadiusMultiplier"],
+      "widgets": {
+        "requirements": {"widget": "resource_list", "resource_type": "item"},
+        "research": {"widget": "tech_ref", "multi": false}
+      }
+    }
+  },
+
+  "GenericCrafter": {
+    "basic": {
+      "required": ["name", "health", "size"],
+      "default": ["description"],
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+    },
+    "production": {
+      "required": ["outputItem", "craftTime"],
+      "optional": ["outputItems", "outputLiquid", "outputLiquids", "craftEffect", "updateEffect", "updateEffectChance", "warmupSpeed", "dumpExtraLiquid", "ignoreLiquidFullness"],
+      "widgets": {
+        "outputItem": {"widget": "resource_slot", "resource_type": "item"},
+        "outputLiquid": {"widget": "resource_slot", "resource_type": "liquid"}
+      }
+    },
+    "consumption": {
+      "required": [],
+      "optional": ["consumes"],
+      "widgets": {
+        "consumes": {"widget": "consumes"}
+      }
+    },
+    "build": {
+      "required": ["requirements", "category"],
+      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "widgets": {
+        "requirements": {"widget": "resource_list", "resource_type": "item"},
+        "research": {"widget": "tech_ref", "multi": false}
+      }
+    }
+  },
+
+  "Drill": {
+    "basic": {
+      "required": ["name", "health", "size"],
+      "default": ["description"],
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+    },
+    "mining": {
+      "required": ["tier", "drillTime"],
+      "optional": ["hardnessDrillMultiplier", "liquidBoostIntensity", "warmupSpeed", "rotateSpeed", "blockedItem", "returnItem", "drawMineItem", "drillEffect"]
+    },
+    "consumption": {
+      "required": [],
+      "optional": ["consumes"],
+      "widgets": {
+        "consumes": {"widget": "consumes"}
+      }
+    },
+    "build": {
+      "required": ["requirements", "category"],
+      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "widgets": {
+        "requirements": {"widget": "resource_list", "resource_type": "item"},
+        "research": {"widget": "tech_ref", "multi": false}
+      }
+    }
+  },
+
+  "Conveyor": {
+    "basic": {
+      "required": ["name", "health"],
+      "default": ["description", "speed", "displayedSpeed"],
+      "optional": ["pushUnits", "breakable", "destructible"]
+    },
+    "build": {
+      "required": ["requirements", "category"],
+      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "widgets": {
+        "requirements": {"widget": "resource_list", "resource_type": "item"},
+        "research": {"widget": "tech_ref", "multi": false}
+      }
+    }
+  },
+
+  "Battery": {
+    "basic": {
+      "required": ["name", "health", "size"],
+      "default": ["description"],
+      "optional": ["emptyLightColor", "fullLightColor", "breakable", "destructible"]
+    },
+    "consumption": {
+      "required": [],
+      "optional": ["consumes"],
+      "widgets": {
+        "consumes": {"widget": "consumes"}
+      }
+    },
+    "build": {
+      "required": ["requirements", "category"],
+      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "widgets": {
+        "requirements": {"widget": "resource_list", "resource_type": "item"},
+        "research": {"widget": "tech_ref", "multi": false}
+      }
+    }
+  },
+
+  "MendProjector": {
+    "basic": {
+      "required": ["name", "health", "size"],
+      "default": ["description"],
+      "optional": ["breakable", "destructible", "targetable"]
+    },
+    "repair": {
+      "required": ["range", "reload", "healPercent"],
+      "optional": ["phaseBoost", "phaseRangeBoost", "useTime", "baseColor", "phaseColor", "mendSound"]
+    },
+    "consumption": {
+      "required": [],
+      "optional": ["consumes"],
+      "widgets": {
+        "consumes": {"widget": "consumes"}
+      }
+    },
+    "build": {
+      "required": ["requirements", "category"],
+      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "widgets": {
+        "requirements": {"widget": "resource_list", "resource_type": "item"},
+        "research": {"widget": "tech_ref", "multi": false}
+      }
     }
   },
 
@@ -429,6 +573,126 @@
       "required": [],
       "optional": ["hitEffect", "despawnEffect", "shootEffect", "smokeEffect", "hitSound", "despawnSound", "shootSound", "hitShake", "hitSoundVolume", "despawnHit"],
       "defaults": { "hitShake": 1 }
+    }
+  },
+
+  "ShieldRegenFieldAbility": {
+    "basic": {
+      "required": ["amount", "max", "reload", "range"],
+      "optional": ["applyEffect", "activeEffect", "sound", "soundVolume"],
+      "defaults": { "amount": 1.0, "max": 100.0, "reload": 100.0, "range": 60.0 }
+    }
+  },
+
+  "RegenAbility": {
+    "basic": {
+      "required": ["amount"],
+      "optional": ["percentAmount"],
+      "defaults": { "amount": 1.0 }
+    }
+  },
+
+  "MoveLightningAbility": {
+    "basic": {
+      "required": ["damage", "chance", "length"],
+      "optional": ["minSpeed", "maxSpeed", "color", "x", "y"],
+      "defaults": { "damage": 10.0, "chance": 0.15, "length": 12 }
+    }
+  },
+
+  "StatusFieldAbility": {
+    "basic": {
+      "required": ["effect", "duration", "range"],
+      "optional": ["reload", "onShoot", "applyEffect", "activeEffect"],
+      "defaults": { "duration": 60.0, "range": 60.0, "reload": 60.0 }
+    }
+  },
+
+  "ForceFieldAbility": {
+    "basic": {
+      "required": ["radius", "regen", "max", "cooldown"],
+      "optional": ["sides", "rotation", "breakSound", "hitSound"],
+      "defaults": { "radius": 60.0, "regen": 0.5, "max": 100.0, "cooldown": 60.0, "sides": 6 }
+    }
+  },
+
+  "EnergyFieldAbility": {
+    "basic": {
+      "required": ["damage", "reload", "range"],
+      "optional": ["status", "healEffect", "hitEffect", "damageEffect", "shootSound"],
+      "defaults": { "damage": 10.0, "reload": 30.0, "range": 60.0 }
+    }
+  },
+
+  "RepairFieldAbility": {
+    "basic": {
+      "required": ["amount", "reload", "range"],
+      "optional": ["healPercent", "healEffect", "activeEffect", "sound"],
+      "defaults": { "amount": 1.0, "reload": 60.0, "range": 60.0 }
+    }
+  },
+
+  "ArmorPlateAbility": {
+    "basic": {
+      "required": ["healthMultiplier"],
+      "optional": ["drawPlate", "drawShine", "color", "shineSpeed"],
+      "defaults": { "healthMultiplier": 1.5, "drawPlate": true }
+    }
+  },
+
+  "MoveEffectAbility": {
+    "basic": {
+      "required": ["effect", "interval"],
+      "optional": ["chance", "amount", "x", "y", "minVelocity", "color", "rotateEffect"],
+      "defaults": { "interval": 1.0, "chance": 1.0, "amount": 1 }
+    }
+  },
+
+  "SpawnDeathAbility": {
+    "basic": {
+      "required": ["unit", "amount"],
+      "optional": ["randAmount", "spread", "faceOutwards"],
+      "defaults": { "amount": 1, "spread": 8.0 }
+    }
+  },
+
+  "LiquidExplodeAbility": {
+    "basic": {
+      "required": ["liquid", "amount"],
+      "optional": ["radAmountScale", "radScale", "noiseMag", "noiseScl"],
+      "defaults": { "amount": 12.0 }
+    }
+  },
+
+  "LiquidRegenAbility": {
+    "basic": {
+      "required": ["liquid", "slurpSpeed"],
+      "optional": ["regenPerSlurp", "slurpEffectChance", "slurpEffect"],
+      "defaults": { "slurpSpeed": 1.0, "regenPerSlurp": 1.0 }
+    }
+  },
+
+  "SuppressionFieldAbility": {
+    "basic": {
+      "required": ["reload", "range"],
+      "optional": ["orbRadius", "color", "x", "y", "particles", "particleSize", "active"],
+      "defaults": { "reload": 60.0, "range": 80.0, "orbRadius": 6.0 }
+    }
+  },
+
+  "UnitSpawnAbility": {
+    "basic": {
+      "required": ["unit", "spawnTime"],
+      "optional": ["spawnX", "spawnY", "spawnEffect"],
+      "defaults": { "spawnTime": 600.0 }
+    }
+  },
+
+  "ShieldArcAbility": {
+    "basic": {
+      "required": ["radius", "regen", "max", "cooldown", "angle"],
+      "optional": ["width", "angleOffset", "x", "y", "whenShooting", "chanceDeflect", "drawArc", "color"],
+      "defaults": { "radius": 60.0, "regen": 0.5, "max": 100.0, "cooldown": 60.0, "angle": 120.0, "width": 6.0 }
     }
   }
 }

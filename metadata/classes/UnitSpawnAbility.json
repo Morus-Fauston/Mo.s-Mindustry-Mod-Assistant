@@ -1,0 +1,57 @@
+{
+  "name": "UnitSpawnAbility",
+  "fullName": "mindustry.entities.abilities.UnitSpawnAbility",
+  "parent": "Ability",
+  "fields": [
+    {
+      "name": "unit",
+      "javaType": "UnitType",
+      "mode": "INLINE_OBJECT",
+      "nullable": false,
+      "default": null,
+      "inlineType": "UnitType"
+    },
+    {
+      "name": "spawnTime",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "spawnX",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "spawnY",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "spawnEffect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "parentizeEffects",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "timer",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

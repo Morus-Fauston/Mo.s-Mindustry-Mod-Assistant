@@ -32,11 +32,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...core.commands import CommandStack, SetFieldCommand
+from ...core.commands import CommandStack, SetFieldCommand, _get_nested
 from .check_toggle import CheckToggle
 from .num_spin import NumSpinBox, NumDoubleSpinBox
 from .auto_width_edit import AutoWidthEdit
 from .field_widget_factory import create_value_widget
+from .field_row import FieldRow
 from .label_helper import rich_label
 from ...core.config_loader import (
     display_name,
@@ -98,7 +99,14 @@ class PolymorphicTypeEditor(QGroupBox):
 
     @property
     def value(self) -> dict:
-        return self._data.get(self._path, {})
+        """读取当前多态对象 dict。
+
+        路径可能是嵌套点路径（如 'abilities.0'）或顶层键（如 'bullet'）。
+        用 _get_nested 而非 dict.get，否则 abilities 数组元素读不到（v0.2.5 修复：
+        技能卡片字段全空的根因）。
+        """
+        val = _get_nested(self._data, self._path)
+        return val if isinstance(val, dict) else {}
 
     @value.setter
     def value(self, new_value: dict) -> None:
@@ -180,14 +188,27 @@ class PolymorphicTypeEditor(QGroupBox):
                     self._add_field_row(fname, widget)
 
     def _add_field_row(self, fname: str, widget: QWidget) -> None:
-        """Add a labeled row to the field form with tooltip support."""
+        """Add a labeled row to the field form with tooltip support.
+
+        v0.2.5：用 FieldRow 包裹（马卡龙色条 + 控件 fieldType），与主面板/武器卡片一致。
+        """
         zh = self._field_names_zh.get(fname, "")
         row_label = rich_label(zh, fname)
         doc = self._field_docs.get(fname, "")
         if doc:
             row_label.setToolTip(doc)
             widget.setToolTip(doc)
-        self._field_form.addRow(row_label, widget)
+        # 按控件类型推断 fieldType：CheckToggle → bool，spin → num，编辑框 → str
+        from .check_toggle import CheckToggle
+        from .num_spin import NumDoubleSpinBox, NumSpinBox
+
+        if isinstance(widget, CheckToggle):
+            ft = "bool"
+        elif isinstance(widget, (NumSpinBox, NumDoubleSpinBox)):
+            ft = "num"
+        else:
+            ft = "str"
+        self._field_form.addRow(row_label, FieldRow(widget, ft, deletable=False))
 
     # ── data mutation ────────────────────────────────────────────────────
 

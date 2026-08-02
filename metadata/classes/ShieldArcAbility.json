@@ -1,0 +1,196 @@
+{
+  "name": "ShieldArcAbility",
+  "fullName": "mindustry.entities.abilities.ShieldArcAbility",
+  "parent": "Ability",
+  "fields": [
+    {
+      "name": "radius",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "regen",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "max",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "cooldown",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "angle",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "angleOffset",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "x",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "y",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "whenShooting",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "width",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "chanceDeflect",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "reflectBuildingDamage",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "reflectVel",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "reflectTime",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "deflectSound",
+      "javaType": "Sound",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "breakSound",
+      "javaType": "Sound",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "hitSound",
+      "javaType": "Sound",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "hitSoundVolume",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "missileUnitMultiplier",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "drawArc",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "region",
+      "javaType": "String",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "color",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "offsetRegion",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "pushUnits",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "pushEffect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "widthScale",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "alpha",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

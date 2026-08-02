@@ -1,7 +1,7 @@
 {
   "gameVersion": "159",
   "extractorVersion": "1.1",
-  "generatedAt": "2026-07-29T06:19:37.813742300Z",
+  "generatedAt": "2026-08-01T20:34:15.651179100Z",
   "classes": [
     "Content",
     "MappableContent",
@@ -15,26 +15,49 @@
     "ReloadTurret",
     "Turret",
     "ItemTurret",
+    "GenericCrafter",
+    "Drill",
+    "Conveyor",
+    "PowerBlock",
+    "PowerDistributor",
+    "Battery",
+    "MendProjector",
     "BasicBulletType",
     "LaserBulletType",
     "MissileBulletType",
     "ArtilleryBulletType",
-    "FlakBulletType"
+    "FlakBulletType",
+    "Ability",
+    "ArmorPlateAbility",
+    "EnergyFieldAbility",
+    "ForceFieldAbility",
+    "LiquidExplodeAbility",
+    "LiquidRegenAbility",
+    "MoveEffectAbility",
+    "MoveLightningAbility",
+    "RegenAbility",
+    "RepairFieldAbility",
+    "ShieldArcAbility",
+    "ShieldRegenFieldAbility",
+    "SpawnDeathAbility",
+    "StatusFieldAbility",
+    "SuppressionFieldAbility",
+    "UnitSpawnAbility"
   ],
   "instanceCategories": [
+    "Items",
     "Liquids",
     "Blocks",
     "StatusEffects",
     "UnitTypes",
-    "Items",
     "Weapons"
   ],
   "instanceCounts": {
+    "Items": 22,
     "Liquids": 11,
     "Blocks": 446,
     "StatusEffects": 23,
     "UnitTypes": 68,
-    "Items": 22,
     "Weapons": 54
   }
 }

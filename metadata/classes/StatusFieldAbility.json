@@ -1,0 +1,99 @@
+{
+  "name": "StatusFieldAbility",
+  "fullName": "mindustry.entities.abilities.StatusFieldAbility",
+  "parent": "Ability",
+  "fields": [
+    {
+      "name": "effect",
+      "javaType": "StatusEffect",
+      "mode": "STRING_REF",
+      "nullable": false,
+      "default": null,
+      "refSource": "StatusEffects"
+    },
+    {
+      "name": "duration",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "reload",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "range",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "onShoot",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "applyEffect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "activeEffect",
+      "javaType": "Effect",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "effectX",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "effectY",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    },
+    {
+      "name": "parentizeEffects",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "effectSizeParam",
+      "javaType": "boolean",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": false
+    },
+    {
+      "name": "color",
+      "javaType": "Color",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "timer",
+      "javaType": "float",
+      "mode": "PRIMITIVE",
+      "nullable": false,
+      "default": 0.0
+    }
+  ]
+}

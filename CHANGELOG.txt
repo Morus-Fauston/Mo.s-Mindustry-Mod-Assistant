@@ -1,3 +1,10 @@
+特殊更新 (2026-08-02 18:23) 新增CI自动化测试(不计入软件版本号)
+  新增: GitHub Actions工作流(ci.yml)——push到main或PR自动跑全部386测试,Ubuntu无头装Qt系统库+QT_QPA_PLATFORM=offscreen,metadata已入库clone即可跑
+  说明: 真机验证仍是人工流程,CI负责单元测试层
+  文件: 新增1(.github/workflows/ci.yml)
+
+====
+
 v0.2.6.revised.1 (2026-08-02 17:57) 修复打包后exe崩溃(相对导入)
   修复: 打包exe双击即崩(Failed to execute script 'main')→根因moma.spec入口app/main.py被当顶层脚本,相对导入失效→新增run.py顶层入口+spec改指向,app恢复包导入
   技术: moma.spec入库(.gitignore的*.spec规则→!moma.spec放行,否则clone源码无法复现打包)

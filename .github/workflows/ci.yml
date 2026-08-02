@@ -16,6 +16,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libegl1 libgl1 libxkbcommon0 libdbus-1-3
+          echo "STEP_APT_DONE"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -27,6 +28,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e . pytest
+          echo "STEP_PIP_DONE"
 
       - name: Import smoke test
         run: |
@@ -40,6 +42,7 @@ jobs:
           m = Metadata(Path('metadata'))
           print('smoke OK, instances:', len(m.list_instance_categories()))
           "
+          echo "STEP_SMOKE_DONE"
 
       - name: Run tests
         env:

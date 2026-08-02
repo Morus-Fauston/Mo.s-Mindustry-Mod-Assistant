@@ -1,5 +1,23 @@
 # Changelog
 
+## 特殊更新 (2026-08-02 18:23) — 新增 CI 自动化测试
+
+> 工程基础设施更新，不计入软件版本号（不影响软件功能）。首次引入 GitHub Actions：每次 push 到 main 或提交 PR 时，云端自动跑全部 386 个测试。真机验证仍是人工流程（offscreen 验不出观感），CI 负责单元测试层。
+
+### 新增
+
+- **CI 自动化测试**：新增 `.github/workflows/ci.yml`——Ubuntu 无头环境装 PySide6 所需系统库（libegl1/libgl1/libxkbcommon0/libdbus），`pip install -e .` 后以 `QT_QPA_PLATFORM=offscreen` 跑 `pytest tests/ -q`
+  - push 到 main 或 PR 时自动触发
+  - 测试数据源 `metadata/`（665 文件）已入库，clone 即可跑
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `.github/workflows/ci.yml` | **新增** — GitHub Actions 自动测试工作流 |
+
+---
+
 ## v0.2.6.revised.1 (2026-08-02 17:57) — 修复打包后 exe 崩溃（相对导入）
 
 > 用户实测：打包出的 MoMA.exe 双击即弹「Failed to execute script 'main'」。根因是 PyInstaller 把 `app/main.py` 当独立脚本执行，其内部相对导入（`from .ui.main_window import ...`）失效。新增顶层入口 `run.py` 解决，并放行 `moma.spec` 入库。

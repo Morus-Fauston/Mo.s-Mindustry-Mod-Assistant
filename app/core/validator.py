@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .metadata import Metadata, FieldDef
+from .field_dependencies import inactive_dependencies
 
 # mod.json name 字段允许的字符（与 project.py 的 _MOD_ID_RE 一致）
 _MOD_NAME_RE = re.compile(r"^[a-z0-9-]+$")
@@ -241,6 +242,14 @@ class Validator:
         for field_def in class_def.fields:
             field_issues = self._validate_field(data, field_def)
             issues.extend(field_issues)
+
+        for field, prerequisite in inactive_dependencies(content_type, data).items():
+            issues.append(Issue(
+                field,
+                "warning",
+                f"字段当前不生效，前置条件为：{prerequisite}",
+                field=field,
+            ))
 
         if level in ("content", "project"):
             # Reference existence checks

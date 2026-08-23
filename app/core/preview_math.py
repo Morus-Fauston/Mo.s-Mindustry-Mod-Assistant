@@ -16,9 +16,41 @@ pytest 直接验证——ADR-003 要求"渲染公式必须带源码引用、可�
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 
 # 坐标缩放比：4 像素 = 1 世界单位（003 调研结论）
 PPU = 4
+
+
+# 动态预览只需要稳定、可辨识的队伍色。键名同时作为 UI 离散选项，避免 UI
+# 层维护另一份颜色表。默认值保留现有引擎占位色，其他值对应 Mindustry 常见队伍。
+TEAM_COLORS = {
+    "默认": "#ffc832",
+    "废弃": "#898989",
+    "碎片": "#4d6bf3",
+    "红队": "#e82d2d",
+    "紫队": "#a958d5",
+    "绿队": "#4ac44a",
+    "蓝队": "#50a9ee",
+    "橙队": "#f4a958",
+    "黄队": "#f3e979",
+    "青队": "#46cdbd",
+    "粉队": "#f26aa0",
+    "棕队": "#a06a42",
+}
+
+HEALTH_LEVELS = {
+    "满血": 1.0,
+    "半血": 0.5,
+    "残血": 0.15,
+}
+
+_DIRECTION_DEGREES = {
+    "右": 0.0,
+    "上": -90.0,
+    "左": 180.0,
+    "下": 90.0,
+}
 
 
 @dataclass
@@ -54,6 +86,80 @@ class SceneSpec:
     height: float = 0.0
     pixmaps: list[LayerSpec] = field(default_factory=list)
     circles: list[CircleSpec] = field(default_factory=list)
+
+
+@dataclass
+class PreviewAnimationState:
+    """Pure, resettable state for the first dynamic-preview effects."""
+
+    time_tick: float = 0.0
+    recoil: float = 0.0
+    heat: float = 0.0
+    muzzle_flash_ticks: float = 0.0
+    tread_time: float = 0.0
+
+    def fire(self) -> None:
+        self.recoil = 1.0
+        self.heat = 1.0
+        self.muzzle_flash_ticks = 3.0
+
+    def advance(
+        self,
+        delta_tick: float,
+        *,
+        recoil_time: float = 10.0,
+        cooldown_time: float = 20.0,
+        moving: bool = False,
+    ) -> None:
+        delta = max(0.0, min(float(delta_tick), 3.0))
+        self.time_tick += delta
+        self.recoil = max(0.0, self.recoil - delta / max(recoil_time, 1.0))
+        self.heat = max(0.0, self.heat - delta / max(cooldown_time, 1.0))
+        self.muzzle_flash_ticks = max(0.0, self.muzzle_flash_ticks - delta)
+        if moving:
+            self.tread_time += delta
+
+    def pulse(self, period: float = 2.0) -> float:
+        return abs(math.sin(math.pi * self.time_tick / max(period, 0.001)))
+
+    def tread_frame(self, frames: int) -> int:
+        return int(self.tread_time) % max(int(frames), 1)
+
+    def recoil_offset(self, distance: float = 1.0, power: float = 1.8) -> float:
+        """Return the signed Mindustry recoil offset for the current state."""
+        return -(max(self.recoil, 0.0) ** max(float(power), 0.0)) * float(distance)
+
+    def muzzle_flash_opacity(self) -> float:
+        """Map the three-tick demo flash lifetime to a Qt opacity."""
+        return max(0.0, min(self.muzzle_flash_ticks / 3.0, 1.0))
+
+
+def team_color_hex(team: str) -> str:
+    """Return a known team color, falling back to the default preview color."""
+    return TEAM_COLORS.get(team, TEAM_COLORS["默认"])
+
+
+def health_fraction(level: str) -> float:
+    """Return the discrete health fraction used by dynamic cell rendering."""
+    return HEALTH_LEVELS.get(level, HEALTH_LEVELS["满血"])
+
+
+def direction_degrees(direction: str) -> float:
+    """Map the four supported directions to a scene rotation in degrees."""
+    return _DIRECTION_DEGREES.get(direction, _DIRECTION_DEGREES["右"])
+
+
+def cell_color_hex(team: str, health: str, time_tick: float) -> str:
+    """Approximate UnitType.cellColor with health-scaled absin pulsing."""
+    fraction = max(0.0, min(health_fraction(health), 1.0))
+    period = max(fraction * 5.0, 1.0)
+    pulse = abs(math.sin(math.pi * float(time_tick) / period)) * (1.0 - fraction)
+    amount = max(0.0, min(fraction + pulse, 1.0))
+    color = team_color_hex(team).lstrip("#")
+    red, green, blue = (int(color[offset:offset + 2], 16) for offset in (0, 2, 4))
+    return "#{:02x}{:02x}{:02x}".format(
+        round(red * amount), round(green * amount), round(blue * amount)
+    )
 
 
 def weapon_xy(w: dict, ref_defaults: tuple[float, float] = (0.0, 0.0)) -> tuple[float, float]:

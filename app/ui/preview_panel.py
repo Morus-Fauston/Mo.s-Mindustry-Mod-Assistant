@@ -15,21 +15,25 @@ from __future__ import annotations
 import math
 import os
 import subprocess
+import time
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, Qt, Signal
+from PySide6.QtCore import QEvent, Qt, Signal, QTimer
 from PySide6.QtGui import QBrush, QColor, QPen, QPixmap, QTransform
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QComboBox,
     QFileDialog,
     QGraphicsScene,
     QGraphicsView,
+    QGraphicsColorizeEffect,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QMenu,
     QMessageBox,
     QPushButton,
+    QToolButton,
     QSplitter,
     QStyle,
     QStyleOptionViewItem,
@@ -42,6 +46,14 @@ from PySide6.QtWidgets import (
 from ..core.config_loader import get_sprite_layers
 from ..core.content_store import ContentData
 from ..core.metadata import normalize_content_type
+from ..core.preview_math import (
+    HEALTH_LEVELS,
+    TEAM_COLORS,
+    PreviewAnimationState,
+    cell_color_hex,
+    direction_degrees,
+    team_color_hex,
+)
 from ..core.project import Project
 from ..core.sprite_io import import_sprite, save_sprite
 from .theme import get_tokens
@@ -125,15 +137,90 @@ class PreviewPanel(QWidget):
         self._sprite_layers_config = self._load_sprite_layers()
         # 图层可见性缓存（suffix → bool），跨刷新保持
         self._layer_visibility: dict[str, bool] = {}
+        self._animation = PreviewAnimationState()
+        self._dynamic_mode = False
+        self._moving = False
+        self._speed = 1.0
+        self._direction_value = "右"
+        self._team_color = "默认"
+        self._health_level = "满血"
+        self._last_animation_time: float | None = None
+        self._timer = QTimer(self)
+        self._timer.setInterval(17)
+        self._timer.timeout.connect(self._advance_animation)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
         # 面板区域标题（对齐设计稿 .panel-h）
-        header = QLabel("预览")
+        header = QWidget()
         header.setObjectName("panelHeader")
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(12, 4, 6, 4)
+        header_layout.setSpacing(4)
+        header_layout.addWidget(QLabel("预览"))
+        header_layout.addStretch()
+        self._dynamic_button = QToolButton()
+        self._dynamic_button.setText("▶")
+        self._dynamic_button.setToolTip("开启动态预览")
+        self._dynamic_button.clicked.connect(self._toggle_dynamic)
+        header_layout.addWidget(self._dynamic_button)
         layout.addWidget(header)
+
+        controls = QWidget()
+        controls.setObjectName("previewDynamicControls")
+        controls_layout = QVBoxLayout(controls)
+        controls_layout.setContentsMargins(6, 2, 6, 2)
+        controls_layout.setSpacing(2)
+        controls_top = QHBoxLayout()
+        controls_top.setSpacing(3)
+        self._play_pause_button = QToolButton()
+        self._play_pause_button.setText("Ⅱ")
+        self._play_pause_button.setToolTip("暂停动态预览")
+        self._play_pause_button.clicked.connect(self._toggle_dynamic)
+        controls_top.addWidget(self._play_pause_button)
+        self._fire_button = QToolButton()
+        self._fire_button.setText("●")
+        self._fire_button.setToolTip("开火一次")
+        self._fire_button.clicked.connect(self._fire_once)
+        controls_top.addWidget(self._fire_button)
+        self._direction_box = QComboBox()
+        self._direction_box.setToolTip("预览朝向")
+        self._direction_box.addItems(["右", "上", "左", "下"])
+        self._direction_box.currentTextChanged.connect(self._set_direction)
+        controls_top.addWidget(self._direction_box)
+        self._speed_box = QComboBox()
+        self._speed_box.setToolTip("动画速度")
+        self._speed_box.addItems(["0.5x", "1x", "2x"])
+        self._speed_box.setCurrentText("1x")
+        self._speed_box.currentTextChanged.connect(self._set_speed)
+        controls_top.addWidget(self._speed_box)
+        controls_top.addStretch()
+        controls_layout.addLayout(controls_top)
+
+        controls_bottom = QHBoxLayout()
+        controls_bottom.setSpacing(3)
+        self._moving_box = QComboBox()
+        self._moving_box.setToolTip("单位移动状态")
+        self._moving_box.addItems(["原地", "移动"])
+        self._moving_box.currentTextChanged.connect(self._set_moving)
+        controls_bottom.addWidget(self._moving_box)
+        self._team_box = QComboBox()
+        self._team_box.setToolTip("队伍色")
+        self._team_box.addItems(list(TEAM_COLORS))
+        self._team_box.currentTextChanged.connect(self._set_team_color)
+        controls_bottom.addWidget(self._team_box)
+        self._health_box = QComboBox()
+        self._health_box.setToolTip("单位血量")
+        self._health_box.addItems(list(HEALTH_LEVELS))
+        self._health_box.currentTextChanged.connect(self._set_health_level)
+        controls_bottom.addWidget(self._health_box)
+        controls_bottom.addStretch()
+        controls_layout.addLayout(controls_bottom)
+        controls.setVisible(False)
+        self._dynamic_controls = controls
+        layout.addWidget(controls)
 
         # 垂直分割器：预览视口 / 图层区（可拖拽调整比例）
         self._splitter = QSplitter(Qt.Orientation.Vertical)
@@ -212,6 +299,7 @@ class PreviewPanel(QWidget):
     def show_content(self, content: ContentData, project: Project | None) -> None:
         self._content = content
         self._project = project
+        self._reset_animation()
         self._refresh_preview()
         self._refresh_layer_tree()
 
@@ -233,6 +321,88 @@ class PreviewPanel(QWidget):
             return
         self._refresh_preview()
         self._refresh_layer_tree()
+
+    def _toggle_dynamic(self) -> None:
+        self._dynamic_mode = not self._dynamic_mode
+        self._dynamic_controls.setVisible(self._dynamic_mode)
+        self._update_dynamic_buttons()
+        if self._dynamic_mode:
+            self._last_animation_time = time.monotonic()
+            self._timer.start()
+        else:
+            self._timer.stop()
+            self._last_animation_time = None
+            self._refresh_preview()
+
+    def _update_dynamic_buttons(self) -> None:
+        """Keep the persistent entry and in-mode pause control in sync."""
+        text = "Ⅱ" if self._dynamic_mode else "▶"
+        tooltip = "暂停动态预览" if self._dynamic_mode else "开启动态预览"
+        self._dynamic_button.setText(text)
+        self._dynamic_button.setToolTip(tooltip)
+        self._play_pause_button.setText(text)
+        self._play_pause_button.setToolTip(tooltip)
+
+    def _fire_once(self) -> None:
+        self._animation.fire()
+        self._refresh_preview()
+
+    def _advance_animation(self) -> None:
+        if self._dynamic_mode:
+            now = time.monotonic()
+            previous = self._last_animation_time or now
+            self._last_animation_time = now
+            delta_tick = min((now - previous) * 60.0 * self._speed, 3.0)
+            data = self._content.data if self._content is not None else {}
+            self._animation.advance(
+                delta_tick,
+                recoil_time=float(data.get("recoilTime", 10.0)),
+                cooldown_time=float(data.get("cooldownTime", 20.0)),
+                moving=self._moving,
+            )
+            if self._animation.recoil <= 0 and self._animation.heat <= 0:
+                self._animation.fire()
+            self._refresh_preview()
+
+    def _reset_animation(self) -> None:
+        self._timer.stop()
+        self._last_animation_time = None
+        self._animation = PreviewAnimationState()
+        self._dynamic_mode = False
+        self._moving = False
+        self._speed = 1.0
+        self._direction_value = "右"
+        self._team_color = "默认"
+        self._health_level = "满血"
+        if hasattr(self, "_dynamic_controls"):
+            self._dynamic_controls.setVisible(False)
+            self._update_dynamic_buttons()
+            self._speed_box.setCurrentText("1x")
+            self._moving_box.setCurrentText("原地")
+            self._direction_box.setCurrentText("右")
+            self._team_box.setCurrentText("默认")
+            self._health_box.setCurrentText("满血")
+
+    def _set_direction(self, value: str) -> None:
+        self._direction_value = value
+        if self._dynamic_mode:
+            self._refresh_preview()
+
+    def _set_speed(self, value: str) -> None:
+        self._speed = float(value[:-1])
+
+    def _set_moving(self, value: str) -> None:
+        self._moving = value == "移动"
+
+    def _set_team_color(self, value: str) -> None:
+        self._team_color = value
+        if self._dynamic_mode:
+            self._refresh_preview()
+
+    def _set_health_level(self, value: str) -> None:
+        self._health_level = value
+        if self._dynamic_mode:
+            self._refresh_preview()
 
     def eventFilter(self, obj, event) -> bool:  # noqa: ANN001
         """拦截图层树 viewport 的双击：若双击落在复选框 indicator 上，
@@ -329,6 +499,10 @@ class PreviewPanel(QWidget):
             if visible_for and subtype not in visible_for:
                 continue
             layer_path = self._project.sprite_path(category, name, suffix)
+            if suffix == "-treads":
+                animated_tread = self._animated_tread_path(category, name)
+                if animated_tread is not None:
+                    layer_path = animated_tread
             if not layer_path.exists():
                 continue
             layer_pixmap = QPixmap(str(layer_path))
@@ -359,8 +533,12 @@ class PreviewPanel(QWidget):
         # F-72: 引擎示意圆
         self._draw_engine(cx, cy)
 
+        self._draw_heat_overlay(cx, cy)
+        self._draw_muzzle_flash(cx, cy, base_rect)
+
         # 应用图层可见性（F-73）
         self._apply_all_layer_visibility()
+        self._apply_dynamic_appearance(cx, cy)
 
         self._view.setVisible(True)
         self._empty_overlay.setVisible(False)
@@ -373,6 +551,98 @@ class PreviewPanel(QWidget):
             visible = self._layer_visibility.get(suffix, True)
             for item in items:
                 item.setVisible(visible)
+
+    def _animated_tread_path(self, category: str, name: str) -> Path | None:
+        """Return the generated tank-tread frame selected by simulated movement.
+
+        The game generates these regions as ``name-treads<rect>-<frame>``.
+        MoMA keeps the existing static tread image unless dynamic mode, movement,
+        and at least one generated frame are all present.
+        """
+        if not self._dynamic_mode or not self._moving or self._content is None:
+            return None
+        frames = max(int(self._content.data.get("treadFrames", 18)), 1)
+        paths = [
+            self._project.sprite_path(category, name, f"-treads0-{index}")
+            for index in range(frames)
+        ]
+        available = [path for path in paths if path.exists()]
+        if not available:
+            return None
+        return available[self._animation.tread_frame(len(available))]
+
+    def _draw_heat_overlay(self, cx: float, cy: float) -> None:
+        """Draw the optional heat sprite using the shared recoil/heat state."""
+        if (
+            not self._dynamic_mode
+            or self._animation.heat <= 0
+            or self._content is None
+            or self._project is None
+        ):
+            return
+        path = self._project.sprite_path(self._content.category, self._content.name, "-heat")
+        if not path.exists():
+            return
+        pixmap = QPixmap(str(path))
+        if pixmap.isNull():
+            return
+        item = self._view.scene.addPixmap(pixmap)
+        item.setTransformationMode(Qt.TransformationMode.FastTransformation)
+        item.setPos(cx - pixmap.width() / 2.0, cy - pixmap.height() / 2.0)
+        item.setZValue(12)
+        item.setOpacity(self._animation.heat)
+        effect = QGraphicsColorizeEffect()
+        effect.setColor(QColor("#ff795e"))
+        effect.setStrength(1.0)
+        item.setGraphicsEffect(effect)
+        item.setToolTip("热图")
+        self._scene_items.setdefault("__heat__", []).append(item)
+
+    def _draw_muzzle_flash(self, cx: float, cy: float, base_rect) -> None:
+        """Draw a deliberately simple three-tick muzzle flash for the demo."""
+        if not self._dynamic_mode or self._animation.muzzle_flash_opacity() <= 0:
+            return
+        radius = max(3.0, min(base_rect.width(), base_rect.height()) / 8.0)
+        flash = self._view.scene.addEllipse(
+            cx - radius,
+            cy - base_rect.height() * 0.42 - radius,
+            radius * 2,
+            radius * 2,
+            QPen(Qt.PenStyle.NoPen),
+            QBrush(QColor("#fff3a1")),
+        )
+        flash.setZValue(20)
+        flash.setOpacity(self._animation.muzzle_flash_opacity())
+        flash.setToolTip("枪口闪光")
+        self._scene_items.setdefault("__muzzle_flash__", []).append(flash)
+
+    def _apply_dynamic_appearance(self, cx: float, cy: float) -> None:
+        """Translate pure dynamic state to Qt-only transforms and color effects."""
+        if not self._dynamic_mode:
+            return
+
+        team_color = QColor(team_color_hex(self._team_color))
+        for item in self._scene_items.get("-team", []):
+            effect = QGraphicsColorizeEffect()
+            effect.setColor(team_color)
+            effect.setStrength(1.0)
+            item.setGraphicsEffect(effect)
+
+        cell_color = QColor(
+            cell_color_hex(self._team_color, self._health_level, self._animation.time_tick)
+        )
+        for item in self._scene_items.get("-cell", []):
+            effect = QGraphicsColorizeEffect()
+            effect.setColor(cell_color)
+            effect.setStrength(1.0)
+            item.setGraphicsEffect(effect)
+
+        rotation = direction_degrees(self._direction_value)
+        for items in self._scene_items.values():
+            for item in items:
+                pos = item.pos()
+                item.setTransformOriginPoint(cx - pos.x(), cy - pos.y())
+                item.setRotation(rotation)
 
     def _draw_weapons(self, cx: float, cy: float) -> None:
         """按 weapons 数组叠加武器精灵图（PPU=4 坐标映射）。
@@ -407,7 +677,15 @@ class PreviewPanel(QWidget):
 
             # R1: PPU=4 坐标映射
             scene_x = cx + wx * ppu - w_cx
-            scene_y = cy - wy * ppu - w_cy
+            recoil_offset = (
+                -self._animation.recoil_offset(
+                    distance=float(w.get("recoil", 1.0)),
+                    power=float(w.get("recoilPow", 1.8)),
+                ) * ppu
+                if self._dynamic_mode
+                else 0.0
+            )
+            scene_y = cy - wy * ppu - w_cy + recoil_offset
             item = self._view.scene.addPixmap(w_pixmap)
             item.setTransformationMode(Qt.TransformationMode.FastTransformation)
             item.setPos(scene_x, scene_y)
@@ -466,6 +744,8 @@ class PreviewPanel(QWidget):
         ex = cx
         ey = cy + engine_offset * ppu
         radius = engine_size * ppu
+        if self._dynamic_mode:
+            radius *= 1.0 + self._animation.pulse() * 0.25
 
         # 外圈颜色：engineColor 未设置 → 亮黄/橙占位（= 默认队伍色）
         outer_hex = data.get("engineColor")

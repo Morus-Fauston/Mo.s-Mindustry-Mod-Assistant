@@ -76,6 +76,11 @@ def get_field_groups() -> dict:
     return get_config("field_groups")
 
 
+def get_field_dependencies() -> dict:
+    """字段依赖规则：{内容类型: {从属字段: {前置字段: 条件}}}。"""
+    return get_config("field_dependencies")
+
+
 def get_vanilla_weapon_names_zh() -> dict[str, str]:
     """Vanilla weapon Chinese name translations."""
     return get_config("vanilla_weapon_names_zh")

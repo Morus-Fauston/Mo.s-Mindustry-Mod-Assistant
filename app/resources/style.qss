@@ -743,6 +743,10 @@ QTextEdit:focus, QPlainTextEdit:focus {
     border: 1px solid @COPPER@;
 }
 
+QLabel[inactive="true"] {
+    color: @WARN@;
+}
+
 QPlainTextEdit[error="true"] {
     border: 1px solid @ERR@;
     background-color: @ERR_BG@;

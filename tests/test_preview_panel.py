@@ -518,3 +518,102 @@ class TestShadowZOrder:
         assert items
         for it in items:
             assert it.zValue() > 0
+
+
+class TestDynamicPreview:
+    """动态预览必须把控件状态落实到实际场景项。"""
+
+    def _make_panel(self, qapp):
+        import tempfile
+
+        from PySide6.QtGui import QColor, QImage
+
+        from app.core.content_store import ContentData
+        from app.core.project import Project
+
+        tmp = Path(tempfile.mkdtemp(prefix="moma_dynamic_preview_"))
+        Project.create(tmp, "probe-mod", "探针模组")
+        project = Project.open(tmp / "probe-mod")
+        sprite_dir = project.sprites_dir / "units"
+        sprite_dir.mkdir(parents=True, exist_ok=True)
+        colors = {
+            "": QColor("#888888"),
+            "-cell": QColor("#ffffff"),
+            "-team": QColor("#ffffff"),
+            "-heat": QColor("#ffffff"),
+            "-treads": QColor("#ff0000"),
+            "-treads0-0": QColor("#00ff00"),
+            "-treads0-1": QColor("#0000ff"),
+        }
+        for suffix, color in colors.items():
+            image = QImage(16, 16, QImage.Format.Format_RGBA8888)
+            image.fill(color)
+            assert image.save(str(sprite_dir / f"tank{suffix}.png"), "PNG")
+
+        content = ContentData(
+            name="tank",
+            category="units",
+            data={"type": "tank", "treadFrames": 2, "engineSize": 2.0},
+        )
+        panel = PreviewPanel()
+        panel._sprite_layers_config = {
+            "UnitType": [
+                {"suffix": "", "label": "主体", "required": True},
+                {"suffix": "-cell", "label": "核心"},
+                {"suffix": "-team", "label": "队伍色"},
+                {"suffix": "-treads", "label": "履带", "visible_for": ["tank"]},
+            ]
+        }
+        panel.show_content(content, project)
+        panel.show()
+        qapp.processEvents()
+        return panel, content, project
+
+    def test_dynamic_controls_and_effects_drive_scene(self, qapp):
+        panel, *_ = self._make_panel(qapp)
+        assert not panel._dynamic_controls.isVisible()
+        assert panel._dynamic_button.isVisible()
+
+        panel._dynamic_button.click()
+        panel._fire_once()
+        panel._direction_box.setCurrentText("左")
+        panel._team_box.setCurrentText("蓝队")
+        panel._health_box.setCurrentText("残血")
+        qapp.processEvents()
+
+        assert panel._dynamic_controls.isVisible()
+        assert panel._play_pause_button.text() == "Ⅱ"
+        assert panel._scene_items["__heat__"]
+        assert panel._scene_items["__muzzle_flash__"]
+        assert panel._scene_items["-team"][0].graphicsEffect().color().name() == "#50a9ee"
+        assert panel._scene_items["-cell"][0].graphicsEffect().color().name() == "#0c1924"
+        assert panel._scene_items[""][0].rotation() == 180.0
+
+    def test_moving_tank_switches_existing_generated_tread_frame(self, qapp):
+        panel, *_ = self._make_panel(qapp)
+        panel._toggle_dynamic()
+        panel._moving_box.setCurrentText("移动")
+        panel._animation.tread_time = 1.0
+        panel._refresh_preview()
+        qapp.processEvents()
+
+        tread = panel._scene_items["-treads"][0].pixmap().toImage()
+        assert tread.pixelColor(0, 0).name() == "#0000ff"
+
+    def test_switching_content_resets_dynamic_controls_and_state(self, qapp):
+        panel, _, project = self._make_panel(qapp)
+        panel._toggle_dynamic()
+        panel._fire_once()
+        panel._team_box.setCurrentText("蓝队")
+        panel._moving_box.setCurrentText("移动")
+
+        from app.core.content_store import ContentData
+
+        replacement = ContentData(name="tank", category="units", data={"type": "tank"})
+        panel.show_content(replacement, project)
+        qapp.processEvents()
+
+        assert not panel._dynamic_mode
+        assert panel._animation.heat == 0.0
+        assert panel._team_box.currentText() == "默认"
+        assert panel._moving_box.currentText() == "原地"

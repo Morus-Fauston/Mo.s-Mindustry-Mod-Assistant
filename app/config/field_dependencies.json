@@ -1,0 +1,11 @@
+{
+  "UnitType": {
+    "engineOffset": {"engineSize": {"$gt": 0}},
+    "boostMultiplier": {"canBoost": true}
+  },
+  "Weapon": {
+    "rotateSpeed": {"rotate": true},
+    "rotationLimit": {"rotate": true},
+    "initialShootSound": {"continuous": true}
+  }
+}

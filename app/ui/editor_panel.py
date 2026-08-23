@@ -49,6 +49,7 @@ from ..core.form_plan import (
     get_addable_fields,
     type_default,
 )
+from ..core.field_dependencies import inactive_dependencies
 from ..core.group_ops import (
     cache_group_fields,
     group_field_names,
@@ -597,6 +598,9 @@ class EditorPanel(QWidget):
         groups_config = self._field_groups.get(content_type, {})
         group_cfg = groups_config.get(plan.group_name, {})
         widgets_cfg = group_cfg.get("widgets", {}) if isinstance(group_cfg, dict) else {}
+        inactive = inactive_dependencies(
+            self._content.data.get("type", ""), self._content.data
+        )
 
         for fp in plan.fields:
             f = fp.field_def
@@ -616,6 +620,14 @@ class EditorPanel(QWidget):
             tip = "\n".join(tip_parts)
             label_widget.setToolTip(tip)
             widget.setToolTip(tip)
+
+            prerequisite = inactive.get(f.name)
+            if prerequisite:
+                label_widget.setProperty("inactive", "true")
+                inactive_tip = f"{tip}\n当前不生效，前置条件：{prerequisite}"
+                label_widget.setToolTip(inactive_tip)
+                widget.setToolTip(inactive_tip)
+                widget.setEnabled(False)
 
             # 右键菜单
             widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -1195,6 +1207,8 @@ class EditorPanel(QWidget):
 
         # Real-time validation: red border + tooltip on error
         self._validate_field_widget(field_name, new_value)
+        if field_name in {"engineSize", "canBoost", "rotate", "continuous"}:
+            self._rebuild_form()
         # v0.2.4.batch4：通知预览实时刷新
         self.data_changed.emit()
 

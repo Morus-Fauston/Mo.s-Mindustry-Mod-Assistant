@@ -96,6 +96,27 @@ def test_committed_baseline_snapshot_matches_generated_output(tmp_path: Path) ->
     sample_mod.assert_matches_baseline(result.project_root)
 
 
+def test_kitchen_sink_covers_templates_weapon_references_and_derived_sprites(tmp_path: Path) -> None:
+    result = sample_mod.generate_kitchen_sink(tmp_path)
+
+    unit_names = {path.stem for path in (result.project_root / "content" / "units").glob("*.json")}
+    block_names = {path.stem for path in (result.project_root / "content" / "blocks").glob("*.json")}
+    weapon_names = {path.stem for path in (result.project_root / "content" / "weapons").glob("*.json")}
+
+    assert {"moma-sink-mech", "moma-sink-flying", "moma-sink-tank", "moma-sink-legs"} <= unit_names
+    assert len(weapon_names) == 5
+    assert {"moma-sink-wall", "moma-sink-itemturret", "moma-sink-mendprojector"} <= block_names
+    assert "moma-sink-renamed-wall" in block_names
+    assert not (result.project_root / "sprites" / "blocks" / "moma-sink-rename-source.png").exists()
+    for suffix in ("-outline", "-shadow", "-full"):
+        assert (result.project_root / "sprites" / "units" / f"moma-sink-mech{suffix}.png").exists()
+
+    mech = (result.project_root / "content" / "units" / "moma-sink-mech.json").read_text(encoding="utf-8")
+    assert '"type": "BasicBulletType"' in mech
+    with zipfile.ZipFile(result.zip_path) as archive:
+        assert "content/weapons/moma-sink-basicbullettype-weapon.json" in archive.namelist()
+
+
 def test_snapshot_update_keeps_existing_snapshot_when_staging_copy_fails(tmp_path: Path, monkeypatch) -> None:
     result = sample_mod.generate_baseline(tmp_path)
     snapshot = tmp_path / "snapshot"

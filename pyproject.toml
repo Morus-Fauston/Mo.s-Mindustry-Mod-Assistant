@@ -1,6 +1,6 @@
 [project]
 name = "moma"
-version = "0.2.6"
+version = "0.3.0a5"
 description = "Mo's Mindustry Mod Assistant - GUI mod editor"
 requires-python = ">=3.11"
 dependencies = [

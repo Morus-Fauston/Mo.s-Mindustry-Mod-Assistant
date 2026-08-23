@@ -24,10 +24,12 @@ from app.core.metadata import Metadata
 from app.core.paths import metadata_dir
 from app.core.project import Project
 from app.core.sprite_io import save_sprite
+from app.core.sprite_generator import generate_full, generate_outline, generate_shadow
 from app.core.template import TemplateEngine
 
 BASELINE_MOD_ID = "moma-baseline"
 BASELINE_FIXTURE = ROOT / "tests" / "fixtures" / "baseline-mod"
+KITCHEN_SINK_MOD_ID = "moma-kitchen-sink"
 
 
 @dataclass(frozen=True)
@@ -89,6 +91,100 @@ def generate_baseline(output_dir: str | Path) -> BaselineOutput:
     return BaselineOutput(project.root, zip_path)
 
 
+def _save_fixture_sprite(
+    project: Project,
+    category: str,
+    name: str,
+    color: tuple[int, int, int, int],
+    *,
+    derived: bool = False,
+) -> Image.Image:
+    """Write a deterministic main sprite and, when requested, its derived set."""
+    main = make_sprite_fixture(32, color)
+    save_sprite(project, category, name, main, overwrite=True)
+    if derived:
+        outline = generate_outline(main, color="#20242c")
+        shadow = generate_shadow(main)
+        full = generate_full(main, layers=[outline])
+        save_sprite(project, category, name, outline, "-outline", overwrite=True)
+        save_sprite(project, category, name, shadow, "-shadow", overwrite=True)
+        save_sprite(project, category, name, full, "-full", overwrite=True)
+    return main
+
+
+def _bullet_for(kind: str) -> dict:
+    """Return the smallest documented payload for each supported bullet subtype."""
+    if kind == "LaserBulletType":
+        return {"type": kind, "damage": 16, "length": 96, "width": 8}
+    return {"type": kind, "damage": 12, "speed": 3.5, "lifetime": 35}
+
+
+def generate_kitchen_sink(output_dir: str | Path) -> BaselineOutput:
+    """Generate the v0.3 candidate sample without changing the baseline fixture.
+
+    The five project-Weapon references are deliberately isolated one-per-unit.
+    Their actual engine registration remains an A4 conclusion, not an assumption.
+    """
+    destination = Path(output_dir)
+    project = Project.create(destination, KITCHEN_SINK_MOD_ID, "MoMA 厨房水槽样本", author="MoMA")
+    engine = TemplateEngine(Metadata(metadata_dir()))
+
+    unit_specs = [
+        ("UnitType", "moma-sink-mech", (89, 148, 205, 255)),
+        ("UnitType-flying", "moma-sink-flying", (112, 198, 184, 255)),
+        ("UnitType-tank", "moma-sink-tank", (177, 132, 89, 255)),
+        ("UnitType-legs", "moma-sink-legs", (156, 104, 186, 255)),
+    ]
+    units: dict[str, dict] = {}
+    for template_kind, name, color in unit_specs:
+        unit = engine.create(template_kind, name)
+        project.contents.save(name, unit, "units")
+        _save_fixture_sprite(project, "units", name, color, derived=name == "moma-sink-mech")
+        units[name] = unit
+
+    inline_weapon = engine.create("Weapon", "moma-sink-inline-gun")
+    inline_weapon["bullet"] = _bullet_for("BasicBulletType")
+    units["moma-sink-mech"]["weapons"] = [inline_weapon]
+    project.contents.save("moma-sink-mech", units["moma-sink-mech"], "units")
+
+    for index, bullet_type in enumerate(
+        ["BasicBulletType", "LaserBulletType", "MissileBulletType", "ArtilleryBulletType", "FlakBulletType"]
+    ):
+        weapon_name = f"moma-sink-{bullet_type.lower()}-weapon"
+        weapon = engine.create("Weapon", weapon_name)
+        weapon["bullet"] = _bullet_for(bullet_type)
+        project.contents.save(weapon_name, weapon, "weapons")
+        _save_fixture_sprite(project, "weapons", weapon_name, (210, 154 + index * 10, 78, 255))
+
+        unit_name = f"moma-sink-{bullet_type.lower()}-ref"
+        unit = engine.create("UnitType", unit_name)
+        unit["weapons"] = [{"name": weapon_name}]
+        project.contents.save(unit_name, unit, "units")
+        _save_fixture_sprite(project, "units", unit_name, (74, 122, 173 + index * 8, 255))
+
+    for index, template_kind in enumerate(
+        ["Wall", "ItemTurret", "PowerTurret", "GenericCrafter", "Drill", "Conveyor", "Battery", "MendProjector"]
+    ):
+        name = f"moma-sink-{template_kind.lower()}"
+        block = engine.create(template_kind, name)
+        project.contents.save(name, block, "blocks")
+        _save_fixture_sprite(project, "blocks", name, (126 + index * 10, 136, 151, 255))
+
+    # Rename-sprites contract: create only the old fixture name, rename it,
+    # then write the content JSON under the resulting name.
+    old_name = "moma-sink-rename-source"
+    renamed_name = "moma-sink-renamed-wall"
+    _save_fixture_sprite(project, "blocks", old_name, (192, 122, 95, 255), derived=True)
+    project.rename_sprites("blocks", old_name, renamed_name)
+    project.contents.save(renamed_name, engine.create("Wall", renamed_name), "blocks")
+
+    project.mod_info.description = "MoMA v0.3.0 厨房水槽候选验收样本。"
+    project.mod_info.version = "0.3.0"
+    project.save_mod_info()
+    zip_path = project.export_zip(destination / f"{KITCHEN_SINK_MOD_ID}.zip")
+    return BaselineOutput(project.root, zip_path)
+
+
 def snapshot_manifest(root: str | Path) -> dict[str, str]:
     """Return strict text-or-SHA256 output evidence for a generated baseline."""
     base = Path(root)
@@ -147,17 +243,20 @@ def update_baseline_snapshot(output_root: str | Path, baseline_root: str | Path 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="生成 MoMA v0.3.0 基线模组")
     parser.add_argument("--output", type=Path, default=ROOT / "sample-mod-output" / "baseline")
+    parser.add_argument("--sample", choices=("baseline", "kitchen-sink"), default="baseline")
     parser.add_argument("--update-baseline", action="store_true", help="用本次输出显式更新审阅快照")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    result = generate_baseline(args.output)
+    result = generate_baseline(args.output) if args.sample == "baseline" else generate_kitchen_sink(args.output)
     if args.update_baseline:
+        if args.sample != "baseline":
+            raise ValueError("只有 baseline 样本可以更新审阅快照")
         update_baseline_snapshot(result.project_root)
         print(f"已显式更新基线快照: {BASELINE_FIXTURE}")
-    else:
+    elif args.sample == "baseline":
         assert_matches_baseline(result.project_root)
     print(f"基线工程: {result.project_root}")
     print(f"基线 ZIP: {result.zip_path}")

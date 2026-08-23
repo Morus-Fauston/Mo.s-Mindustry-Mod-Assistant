@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -73,14 +74,22 @@ def test_save_sprite_uses_project_path_suffix_and_explicit_overwrite(project: Pr
     assert Image.open(target).getpixel((0, 0))[:3] == (0, 0, 255)
 
 
+def test_save_sprite_writes_the_canonical_png_bytes_for_a_fixed_rgba_image(project: Project) -> None:
+    target = save_sprite(project, "blocks", "wall", Image.new("RGBA", (2, 2), "red"))
+
+    assert hashlib.sha256(target.read_bytes()).hexdigest() == (
+        "de11064a1fe6798bb786999d9c0ed73dc92aa15971772899eaebf7df62bb1fe0"
+    )
+
+
 def test_save_sprite_keeps_existing_png_when_overwrite_write_fails(project: Project, monkeypatch) -> None:
     target = save_sprite(project, "blocks", "wall", Image.new("RGBA", (2, 2), "red"))
     before = target.read_bytes()
 
-    def fail_save(*args, **kwargs) -> None:
+    def fail_write(*args, **kwargs) -> None:
         raise OSError("disk full")
 
-    monkeypatch.setattr(Image.Image, "save", fail_save)
+    monkeypatch.setattr(sprite_io, "_write_canonical_png", fail_write)
     with pytest.raises(OSError, match="disk full"):
         save_sprite(project, "blocks", "wall", Image.new("RGBA", (2, 2), "blue"), overwrite=True)
 

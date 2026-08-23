@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.0-alpha.2 (2026-08-23 20:19) - 批次 1：跨平台快照修复
+
+### 修复
+
+- **Ubuntu CI 基线快照失败**：现象 → GitHub Actions 重新生成最小样本时 PNG SHA-256 与 Windows 审阅快照不同；根因 → Pillow 的平台 PNG/zlib 编码流不保证字节一致；修复 → `save_sprite()` 固定写入 RGBA、无过滤行与未压缩 deflate 块的规范 PNG，使同一像素输入跨平台得到相同文件字节。
+
+### 验证
+
+- **回归保护**：新增固定 2x2 RGBA 输入的已知 PNG SHA-256 断言；基线两张 PNG 仅重新编码，像素尺寸、模式和非透明边界未变。
+- **自动与真实引擎**：`pytest tests/ -q` 共 406 项通过；Windows GPU A4 复验 `ERROR = 0`，墙放置与 mech AI 各 600 tick 通过，34 条既有 Warning 已在本地 `Docs/验证反馈/v0.3.0-003/` 关联研判。
+
+---
+
 ## v0.3.0-alpha.1 (2026-08-23 20:01) - 批次 1：可信输出基础
 
 ### 新增

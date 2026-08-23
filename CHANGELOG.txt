@@ -1,3 +1,9 @@
+v0.3.0-alpha.2 (2026-08-23 20:19)
+  修复: GitHub Actions Ubuntu 生成的 PNG 与 Windows 审阅快照 SHA 不同 -> save_sprite 固定规范 RGBA PNG 字节编码
+  验证: 固定 SHA 回归测试 + 406 pytest 全绿；Windows GPU A4 ERROR=0，墙与 mech 各运行 600 tick
+
+====
+
 v0.3.0-alpha.1 (2026-08-23 20:01)
   新增: 无 Qt PNG 导入/写盘 API，默认拒绝覆盖且原子替换保护旧图 / 可复现的墙+mech+内联基础子弹基线模组与审阅快照
   调整: 预览导入及 outline/shadow/full 统一接入 core API；快照仅可通过 --update-baseline 显式更新

@@ -1,3 +1,10 @@
+v0.3.0-alpha.3 (2026-08-23 20:52)
+  新增: 表单/JSON 输出预览切换、500ms 合法草稿整体回写、可撤销 ReplaceDataCommand、格式化与问题定位
+  修复: 非法 JSON 不入命令栈/不写盘；完整替换后撤销重做同步类型表单；补齐 QSS 警告色令牌
+  验证: 421 pytest 全绿；Windows11 热区 probe 通过；A4 ERROR=0，墙与 mech 各运行 600 tick
+
+====
+
 v0.3.0-alpha.2 (2026-08-23 20:19)
   修复: GitHub Actions Ubuntu 生成的 PNG 与 Windows 审阅快照 SHA 不同 -> save_sprite 固定规范 RGBA PNG 字节编码
   验证: 固定 SHA 回归测试 + 406 pytest 全绿；Windows GPU A4 ERROR=0，墙与 mech 各运行 600 tick

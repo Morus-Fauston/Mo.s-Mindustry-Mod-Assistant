@@ -9,6 +9,7 @@ All data mutations in the editor go through CommandStack.execute().
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from typing import Callable
 
 
@@ -77,6 +78,39 @@ class SetFieldCommand(Command):
             merged._old = self._old
             return merged
         return None
+
+
+class ReplaceDataCommand(Command):
+    """Replace a complete content dict while preserving its shared identity."""
+
+    def __init__(
+        self,
+        data: dict,
+        replacement: dict,
+        on_change: Callable[[], None] | None = None,
+    ) -> None:
+        if not isinstance(replacement, dict):
+            raise TypeError("完整 JSON 输出必须是对象")
+        self._data = data
+        self._old = deepcopy(data)
+        self._new = deepcopy(replacement)
+        self._on_change = on_change
+
+    @property
+    def description(self) -> str:
+        return "替换完整 JSON 输出"
+
+    def execute(self) -> None:
+        self._replace_with(self._new)
+
+    def undo(self) -> None:
+        self._replace_with(self._old)
+
+    def _replace_with(self, source: dict) -> None:
+        self._data.clear()
+        self._data.update(deepcopy(source))
+        if self._on_change:
+            self._on_change()
 
 
 class DeleteFieldCommand(Command):

@@ -6,6 +6,7 @@ from app.core.commands import (
     ArrayInsertCommand,
     ArrayRemoveCommand,
     CommandStack,
+    ReplaceDataCommand,
     SetFieldCommand,
 )
 
@@ -153,3 +154,30 @@ class TestCommandStack:
         data = {"x": 0}
         stack.execute(SetFieldCommand(data=data, path="x", new_value=1))
         assert len(calls) >= 1
+
+
+class TestReplaceDataCommand:
+    def test_replace_undo_and_redo_keep_the_shared_data_reference(self):
+        data = {"type": "UnitType", "weapons": [{"bullet": {"damage": 10}}]}
+        original_reference = data
+        replacement = {"type": "UnitType", "weapons": [{"bullet": {"damage": 25}}], "health": 200}
+        stack = CommandStack()
+
+        stack.execute(ReplaceDataCommand(data, replacement))
+
+        assert data is original_reference
+        assert data == replacement
+        stack.undo()
+        assert data == {"type": "UnitType", "weapons": [{"bullet": {"damage": 10}}]}
+        stack.redo()
+        assert data == replacement
+
+    def test_replace_snapshots_nested_values_against_later_caller_mutation(self):
+        data = {"type": "Wall", "health": 100}
+        replacement = {"type": "Wall", "requirements": [{"item": "copper", "amount": 10}]}
+
+        command = ReplaceDataCommand(data, replacement)
+        replacement["requirements"][0]["amount"] = 999
+        command.execute()
+
+        assert data["requirements"][0]["amount"] == 10

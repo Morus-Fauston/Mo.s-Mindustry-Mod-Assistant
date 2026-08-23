@@ -693,7 +693,7 @@ QComboBox[error="true"] {
 }
 
 /* 描述档多行文本框 */
-QTextEdit {
+QTextEdit, QPlainTextEdit {
     background-color: @CANVAS@;
     color: @INK@;
     border: 1px solid @LINE@;
@@ -701,8 +701,31 @@ QTextEdit {
     padding: 4px 8px;
     font-size: 12.5px;
 }
-QTextEdit:focus {
+QTextEdit:focus, QPlainTextEdit:focus {
     border: 1px solid @COPPER@;
+}
+
+QPlainTextEdit[error="true"] {
+    border: 1px solid @ERR@;
+    background-color: @ERR_BG@;
+}
+#jsonSyntaxStatus {
+    color: @ERR@;
+    font-size: 11px;
+}
+#jsonIssuesList {
+    border: 1px solid @LINE@;
+    background-color: @PANEL@;
+    font-size: 12px;
+}
+#jsonIssuesList::item {
+    padding: 5px 8px;
+}
+#jsonIssuesList QWidget[severity="error"] QLabel {
+    color: @ERR@;
+}
+#jsonIssuesList QWidget[severity="warning"] QLabel {
+    color: @WARN@;
 }
 
 /* Toast 提示（右下角浮层） */

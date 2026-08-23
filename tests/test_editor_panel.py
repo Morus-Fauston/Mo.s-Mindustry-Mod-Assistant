@@ -17,9 +17,11 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
+from PySide6.QtTest import QTest
 
-from app.core.commands import CommandStack
+from app.core.commands import CommandStack, ReplaceDataCommand
 from app.core.content_store import ContentData
 from app.core.metadata import Metadata
 from app.core.project import Project
@@ -86,6 +88,119 @@ class TestConfiguredWidgetRouting:
             qapp, project, {"type": "GenericCrafter", "name": "探针"}
         )
         assert panel.findChildren(ResourceSlotEditor), "outputItem 应渲染为 ResourceSlotEditor"
+
+
+class TestJsonOutputPreview:
+    """合法 JSON 通过命令栈回写，非法草稿只停留在视图中。"""
+
+    def _make_panel(self, qapp, project, data):
+        metadata = Metadata(METADATA_DIR)
+        stack = CommandStack()
+        panel = EditorPanel(
+            content=ContentData(name="json-probe", category="blocks", data=data),
+            metadata=metadata,
+            command_stack=stack,
+            validator=Validator(metadata),
+            project=project,
+        )
+        panel.show()
+        qapp.processEvents()
+        return panel, stack
+
+    def test_legal_json_replaces_data_after_debounce_and_can_be_undone(self, qapp, project):
+        from PySide6.QtWidgets import QPlainTextEdit
+
+        data = {"type": "Wall", "health": 100}
+        panel, stack = self._make_panel(qapp, project, data)
+        panel.findChild(__import__("PySide6.QtWidgets", fromlist=["QPushButton"]).QPushButton, "jsonModeBtn").click()
+        editor = panel.findChild(QPlainTextEdit, "jsonOutputEditor")
+        assert editor is not None
+
+        editor.setPlainText('{"type": "Wall", "health": 250, "armor": 4}')
+        QTest.qWait(550)
+
+        assert data == {"type": "Wall", "health": 250, "armor": 4}
+        stack.undo()
+        assert data == {"type": "Wall", "health": 100}
+
+    def test_invalid_json_draft_does_not_change_data_or_enter_command_history(self, qapp, project):
+        from PySide6.QtWidgets import QPlainTextEdit
+
+        data = {"type": "Wall", "health": 100}
+        panel, stack = self._make_panel(qapp, project, data)
+        panel.findChild(__import__("PySide6.QtWidgets", fromlist=["QPushButton"]).QPushButton, "jsonModeBtn").click()
+        editor = panel.findChild(QPlainTextEdit, "jsonOutputEditor")
+        assert editor is not None
+
+        editor.setPlainText('{"type": "Wall",')
+        QTest.qWait(550)
+
+        assert data == {"type": "Wall", "health": 100}
+        assert not stack.can_undo
+        assert editor.property("error") == "true"
+
+    def test_save_while_json_draft_is_invalid_keeps_the_last_legal_content(self, qapp, project):
+        from PySide6.QtWidgets import QPlainTextEdit
+
+        data = {"type": "Wall", "health": 100}
+        project.contents.save("json-probe", data, "blocks")
+        panel, _ = self._make_panel(qapp, project, data)
+        panel.findChild(__import__("PySide6.QtWidgets", fromlist=["QPushButton"]).QPushButton, "jsonModeBtn").click()
+        editor = panel.findChild(QPlainTextEdit, "jsonOutputEditor")
+        assert editor is not None
+        editor.setPlainText('{"type":')
+        QTest.qWait(550)
+
+        panel.save()
+
+        assert project.contents.get("json-probe").data == {"type": "Wall", "health": 100}
+
+    def test_format_command_keeps_an_invalid_draft_intact(self, qapp, project):
+        from PySide6.QtWidgets import QPlainTextEdit
+
+        panel, _ = self._make_panel(qapp, project, {"type": "Wall", "health": 100})
+        panel.findChild(__import__("PySide6.QtWidgets", fromlist=["QPushButton"]).QPushButton, "jsonModeBtn").click()
+        editor = panel.findChild(QPlainTextEdit, "jsonOutputEditor")
+        assert editor is not None
+        editor.setPlainText('{"type":')
+        panel.findChild(__import__("PySide6.QtWidgets", fromlist=["QPushButton"]).QPushButton, "formatJsonBtn").click()
+
+        assert editor.toPlainText() == '{"type":'
+
+    def test_legal_json_issues_are_listed_and_clicking_one_selects_its_key_line(self, qapp, project):
+        from PySide6.QtWidgets import QListWidget, QPlainTextEdit
+
+        panel, _ = self._make_panel(qapp, project, {"type": "Wall", "health": 100})
+        panel.findChild(__import__("PySide6.QtWidgets", fromlist=["QPushButton"]).QPushButton, "jsonModeBtn").click()
+        editor = panel.findChild(QPlainTextEdit, "jsonOutputEditor")
+        issues = panel.findChild(QListWidget, "jsonIssuesList")
+        assert editor is not None and issues is not None
+
+        editor.setPlainText('{\n  "type": "UnknownType"\n}')
+        qapp.processEvents()
+
+        assert issues.count() == 1
+        assert issues.isVisible()
+        QTest.mouseClick(
+            issues.viewport(),
+            Qt.MouseButton.LeftButton,
+            pos=issues.visualItemRect(issues.item(0)).center(),
+        )
+        assert editor.textCursor().blockNumber() == 1
+
+    def test_refresh_after_undo_or_redo_resyncs_the_form_type(self, qapp, project):
+        data = {"type": "Wall", "health": 100}
+        panel, stack = self._make_panel(qapp, project, data)
+
+        stack.execute(ReplaceDataCommand(data, {"type": "GenericCrafter", "name": "探针"}))
+        panel.refresh_from_data()
+        assert panel._type_label.text() == "GenericCrafter"
+        assert panel._class_def is not None and panel._class_def.name == "GenericCrafter"
+
+        stack.undo()
+        panel.refresh_from_data()
+        assert panel._type_label.text() == "Wall"
+        assert panel._class_def is not None and panel._class_def.name == "Wall"
 
 
 class TestConsumesRendering:

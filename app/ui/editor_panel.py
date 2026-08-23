@@ -9,25 +9,32 @@ Design principles:
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
     QComboBox,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMenu,
+    QPlainTextEdit,
     QPushButton,
     QScrollArea,
+    QSplitter,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 from PySide6.QtCore import Signal
 
-from ..core.commands import CommandStack, DeleteFieldCommand, SetFieldCommand
+from ..core.commands import CommandStack, DeleteFieldCommand, ReplaceDataCommand, SetFieldCommand
 from ..core.config_loader import (
     display_name as _format_display_name,
     get_field_docs,
@@ -48,6 +55,7 @@ from ..core.group_ops import (
     restore_group_fields,
 )
 from ..core.metadata import ClassDef, FieldDef, Metadata, normalize_content_type
+from ..core.json_draft import format_json_draft, locate_path_line, parse_json_object
 from ..core.project import Project
 from ..core.validator import Validator
 from .widgets.weapon_array_editor import WeaponArrayEditor
@@ -162,6 +170,14 @@ class EditorPanel(QWidget):
         self._project = project
         self._field_widgets: dict[str, QWidget] = {}
         self._dirty = False
+        self._view_mode = "form"
+        self._loading_json = False
+        self._json_had_issues = False
+        self._json_user_collapsed = False
+        self._json_apply_timer = QTimer(self)
+        self._json_apply_timer.setSingleShot(True)
+        self._json_apply_timer.setInterval(500)
+        self._json_apply_timer.timeout.connect(self._apply_json_draft)
 
         self._field_groups = get_field_groups()
         self._field_names_zh = get_field_names_zh()
@@ -180,7 +196,12 @@ class EditorPanel(QWidget):
 
     def refresh_from_data(self) -> None:
         """Rebuild the form from current data. Called after undo/redo."""
-        self._rebuild_form()
+        if self._sync_class_definition():
+            self._rebuild_form()
+        else:
+            self._render_unknown_type()
+        if self._view_mode == "json":
+            self._load_json_from_data()
 
     # ── UI setup ────────────────────────────────────────────────────────
 
@@ -208,11 +229,24 @@ class EditorPanel(QWidget):
         title_bar.addWidget(self._title_label)
 
         # 类型小字（12px 淡化，同行底对齐，去括号）
-        type_label = QLabel(self._content.data.get("type", "?"))
-        type_label.setObjectName("editorTypeLabel")
-        title_bar.addWidget(type_label, 0, Qt.AlignmentFlag.AlignBottom)
+        self._type_label = QLabel(self._content.data.get("type", "?"))
+        self._type_label.setObjectName("editorTypeLabel")
+        title_bar.addWidget(self._type_label, 0, Qt.AlignmentFlag.AlignBottom)
 
         title_bar.addStretch()
+
+        self._form_mode_btn = QPushButton("表单")
+        self._form_mode_btn.setObjectName("formModeBtn")
+        self._form_mode_btn.setCheckable(True)
+        self._form_mode_btn.setChecked(True)
+        self._form_mode_btn.clicked.connect(lambda: self._set_view_mode("form"))
+        title_bar.addWidget(self._form_mode_btn)
+
+        self._json_mode_btn = QPushButton("JSON")
+        self._json_mode_btn.setObjectName("jsonModeBtn")
+        self._json_mode_btn.setCheckable(True)
+        self._json_mode_btn.clicked.connect(lambda: self._set_view_mode("json"))
+        title_bar.addWidget(self._json_mode_btn)
 
         # [添加字段组] 按钮
         self._add_group_btn = QPushButton("+ 添加字段组")
@@ -238,19 +272,208 @@ class EditorPanel(QWidget):
         self._form_layout.setSpacing(12)  # 组间 12px（对齐 HTML .group margin-bottom）
 
         # Get class definition
+        if self._sync_class_definition():
+            self._rebuild_form()
+        else:
+            self._render_unknown_type()
+
+        scroll.setWidget(scroll_widget)
+        self._editor_stack = QStackedWidget()
+        self._editor_stack.addWidget(scroll)
+        self._editor_stack.addWidget(self._build_json_page())
+        layout.addWidget(self._editor_stack)
+
+    def _build_json_page(self) -> QWidget:
+        page = QWidget()
+        page.setObjectName("jsonOutputPage")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
+        toolbar = QHBoxLayout()
+        toolbar.addStretch()
+        self._format_json_btn = QPushButton("格式化 JSON")
+        self._format_json_btn.setObjectName("formatJsonBtn")
+        self._format_json_btn.clicked.connect(self._format_json_draft)
+        toolbar.addWidget(self._format_json_btn)
+        self._json_issue_toggle = QPushButton("问题")
+        self._json_issue_toggle.setObjectName("jsonIssuesToggle")
+        self._json_issue_toggle.setCheckable(True)
+        self._json_issue_toggle.clicked.connect(self._toggle_json_issues)
+        toolbar.addWidget(self._json_issue_toggle)
+        layout.addLayout(toolbar)
+
+        self._json_syntax_status = QLabel()
+        self._json_syntax_status.setObjectName("jsonSyntaxStatus")
+        self._json_syntax_status.hide()
+        layout.addWidget(self._json_syntax_status)
+
+        self._json_splitter = QSplitter(Qt.Orientation.Vertical)
+        self._json_text = QPlainTextEdit()
+        self._json_text.setObjectName("jsonOutputEditor")
+        self._json_text.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        self._json_text.textChanged.connect(self._on_json_text_changed)
+        self._json_splitter.addWidget(self._json_text)
+
+        self._json_issues = QListWidget()
+        self._json_issues.setObjectName("jsonIssuesList")
+        self._json_issues.itemClicked.connect(self._jump_to_json_issue)
+        self._json_issues.itemActivated.connect(self._jump_to_json_issue)
+        self._json_issues.hide()
+        self._json_splitter.addWidget(self._json_issues)
+        layout.addWidget(self._json_splitter)
+        return page
+
+    def _set_view_mode(self, mode: str) -> None:
+        is_json = mode == "json"
+        self._form_mode_btn.setChecked(not is_json)
+        self._json_mode_btn.setChecked(is_json)
+        if mode == self._view_mode:
+            return
+        self._view_mode = mode
+        self._editor_stack.setCurrentIndex(1 if is_json else 0)
+        if is_json:
+            self._load_json_from_data()
+        else:
+            self._json_apply_timer.stop()
+
+    def _load_json_from_data(self) -> None:
+        self._loading_json = True
+        try:
+            self._json_text.setPlainText(json.dumps(self._content.data, ensure_ascii=False, indent=2) + "\n")
+        finally:
+            self._loading_json = False
+        self._set_json_error(None)
+        self._refresh_json_issues(self._content.data)
+
+    def _on_json_text_changed(self) -> None:
+        if self._loading_json:
+            return
+        result = parse_json_object(self._json_text.toPlainText())
+        if result.data is None:
+            self._json_apply_timer.stop()
+            self._set_json_error(result.error)
+            self._refresh_json_issues(None)
+            return
+        self._set_json_error(None)
+        self._refresh_json_issues(result.data)
+        self._json_apply_timer.start()
+
+    def _apply_json_draft(self) -> None:
+        result = parse_json_object(self._json_text.toPlainText())
+        if result.data is None:
+            self._set_json_error(result.error)
+            return
+        if result.data != self._content.data:
+            self._commands.execute(
+                ReplaceDataCommand(
+                    self._content.data,
+                    result.data,
+                    on_change=self._on_json_data_changed,
+                )
+            )
+        self._refresh_json_issues(result.data)
+
+    def _on_json_data_changed(self) -> None:
+        self._mark_dirty()
+        if self._sync_class_definition():
+            self._rebuild_form()
+        else:
+            self._render_unknown_type()
+        self.data_changed.emit()
+
+    def _format_json_draft(self) -> None:
+        source = self._json_text.toPlainText()
+        formatted, error = format_json_draft(source)
+        if error:
+            self._set_json_error("JSON 语法错误，无法格式化")
+            return
+        self._loading_json = True
+        try:
+            self._json_text.setPlainText(formatted)
+        finally:
+            self._loading_json = False
+        self._set_json_error(None)
+        self._on_json_text_changed()
+
+    def _set_json_error(self, message: str | None) -> None:
+        has_error = bool(message)
+        self._json_text.setProperty("error", "true" if has_error else "")
+        self._json_text.style().unpolish(self._json_text)
+        self._json_text.style().polish(self._json_text)
+        self._json_syntax_status.setText(message or "")
+        self._json_syntax_status.setVisible(has_error)
+
+    def _refresh_json_issues(self, data: dict[str, Any] | None) -> None:
+        issues = self._validator.validate(data, "content") if data is not None else []
+        self._json_issues.clear()
+        for issue in issues:
+            severity = "错误" if issue.severity == "error" else "警告"
+            item = QListWidgetItem()
+            item.setData(Qt.ItemDataRole.UserRole, issue.path)
+            self._json_issues.addItem(item)
+            row = QWidget()
+            row.setProperty("severity", issue.severity)
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(8, 5, 8, 5)
+            label = QLabel(f"{severity}：{issue.message}")
+            label.setWordWrap(True)
+            row_layout.addWidget(label)
+            item.setSizeHint(row.sizeHint())
+            self._json_issues.setItemWidget(item, row)
+
+        has_issues = bool(issues)
+        if not has_issues:
+            self._json_had_issues = False
+            self._json_user_collapsed = False
+            self._json_issues.hide()
+            self._json_issue_toggle.setChecked(False)
+            return
+        if not self._json_had_issues and not self._json_user_collapsed:
+            self._json_issues.show()
+            self._json_issue_toggle.setChecked(True)
+            self._json_splitter.setSizes([300, 120])
+        self._json_had_issues = True
+
+    def _toggle_json_issues(self, checked: bool) -> None:
+        self._json_user_collapsed = not checked
+        self._json_issues.setVisible(checked and self._json_issues.count() > 0)
+        if checked:
+            self._json_splitter.setSizes([300, 120])
+
+    def _jump_to_json_issue(self, item: QListWidgetItem) -> None:
+        path = item.data(Qt.ItemDataRole.UserRole)
+        if not isinstance(path, str):
+            return
+        location = locate_path_line(self._json_text.toPlainText(), path)
+        if location.line is None:
+            return
+        block = self._json_text.document().findBlockByNumber(location.line - 1)
+        cursor = QTextCursor(block)
+        cursor.select(QTextCursor.SelectionType.LineUnderCursor)
+        self._json_text.setTextCursor(cursor)
+        self._json_text.centerCursor()
+        self._json_text.setFocus()
+
+    def _sync_class_definition(self) -> bool:
         content_type = self._content.data.get("type", "")
+        self._type_label.setText(content_type or "?")
         try:
             self._class_def = self._metadata.get_class(content_type)
         except KeyError:
-            self._form_layout.addWidget(QLabel(f"无法加载类型定义: {content_type}"))
-            scroll.setWidget(scroll_widget)
-            layout.addWidget(scroll)
+            self._class_def = None
+            return False
+        return True
+
+    def _render_unknown_type(self) -> None:
+        if self._form_layout is None:
             return
-
-        self._rebuild_form()
-
-        scroll.setWidget(scroll_widget)
-        layout.addWidget(scroll)
+        while self._form_layout.count() > 0:
+            item = self._form_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        self._field_widgets.clear()
+        self._form_layout.addWidget(QLabel(f"无法加载类型定义: {self._content.data.get('type', '')}"))
 
     def _rebuild_form(self) -> None:
         """Rebuild form groups from the computed form plan.

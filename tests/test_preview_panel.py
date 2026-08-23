@@ -134,6 +134,10 @@ class TestTreeIndicatorQss:
         )
 
     @pytest.mark.parametrize("theme", ["light", "dark"])
+    def test_warning_color_token_is_fully_resolved(self, theme):
+        assert "@WARN@" not in load_qss(theme)
+
+    @pytest.mark.parametrize("theme", ["light", "dark"])
     def test_checked_uses_svg_check(self, theme):
         """勾选态必须用 SVG 橙勾（@CHECK_ICON@ 被 theme.py 替换为绝对路径），
         windows11 原生勾在深色主题下几乎不可见。"""

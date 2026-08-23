@@ -140,3 +140,33 @@ class TestFieldGroupsBulletTypes:
         groups = get_field_groups()
         missile = groups["MissileBulletType"]
         assert "homing" in missile
+
+
+class TestV030FieldGroups:
+    def test_research_is_in_the_shared_tech_tree_group(self):
+        groups = get_field_groups()
+        for content_type in (
+            "UnitType", "Wall", "ItemTurret", "PowerTurret", "GenericCrafter",
+            "Drill", "Conveyor", "Battery", "MendProjector",
+        ):
+            tech_tree = groups[content_type]["tech_tree"]
+            assert tech_tree["required"] == ["research"]
+            assert tech_tree["widgets"]["research"]["widget"] == "research"
+
+    def test_unit_combat_is_split_by_the_confirmed_workflow(self):
+        unit = get_field_groups()["UnitType"]
+        assert "combat" not in unit
+        assert unit["weapons_range"]["required"] == ["weapons", "range"]
+        assert "maxRange" in unit["weapons_range"]["default"]
+        assert "targetAir" in unit["target_selection"]["required"]
+        assert "canAttack" in unit["attack_behavior"]["default"]
+
+    def test_shown_planets_is_in_each_supported_basic_group(self):
+        groups = get_field_groups()
+        for content_type in (
+            "UnitType", "Wall", "ItemTurret", "PowerTurret", "GenericCrafter",
+            "Drill", "Conveyor", "Battery", "MendProjector",
+        ):
+            basic = groups[content_type]["basic"]
+            assert "shownPlanets" in basic["optional"]
+            assert basic["widgets"]["shownPlanets"]["widget"] == "planet_set"

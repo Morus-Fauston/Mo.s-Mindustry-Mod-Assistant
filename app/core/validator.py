@@ -270,6 +270,26 @@ class Validator:
         if field_def.is_internal:
             return issues
 
+        # Mindustry initializes this ObjectSet itself when the key is absent.
+        # When a mod explicitly writes it, JSON must keep the Planet-name list
+        # shape used by the dedicated form editor and the content parser.
+        if field_def.name == "shownPlanets":
+            if value is None:
+                return issues
+            if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+                return [Issue("shownPlanets", "error", "shownPlanets 应为星球标识符数组")]
+            try:
+                planets = set(self._meta.list_instances("Planets"))
+            except Exception:
+                planets = set()
+            unknown = [planet for planet in value if planets and planet not in planets]
+            if unknown:
+                return [Issue(
+                    "shownPlanets", "error",
+                    f"shownPlanets 包含不存在的星球: {unknown[0]}",
+                )]
+            return issues
+
         # Required check: only for primitive fields that are non-nullable
         if value is None and not field_def.nullable:
             if field_def.mode == "PRIMITIVE" and field_def.default is None:

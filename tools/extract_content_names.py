@@ -35,11 +35,13 @@ _CATEGORY_MAP = {
     "liquid": "liquids",
     "weapon": "weapons",
     "status": "status",
+    "planet": "planets",
+    "sector": "sectors",
 }
 
 # 匹配 `<type>.<name>.name = 中文`，name 为小写字母/数字/连字符
 _ENTRY_RE = re.compile(
-    r"^(block|unit|item|liquid|weapon|status)\.([a-z0-9-]+)\.name\s*=\s*(.+)$"
+    r"^(block|unit|item|liquid|weapon|status|planet|sector)\.([A-Za-z0-9-]+)\.name\s*=\s*(.+)$"
 )
 
 
@@ -47,7 +49,7 @@ def extract(bundle_path: Path) -> dict[str, dict[str, str]]:
     """解析汉化包，返回 {category: {name: zh}}。"""
     result: dict[str, dict[str, str]] = {
         "items": {}, "liquids": {}, "blocks": {},
-        "units": {}, "weapons": {}, "status": {},
+        "units": {}, "weapons": {}, "status": {}, "planets": {}, "sectors": {},
     }
     lines = bundle_path.read_text(encoding="utf-8").splitlines()
     for line in lines:

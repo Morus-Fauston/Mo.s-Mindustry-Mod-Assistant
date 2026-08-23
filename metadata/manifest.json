@@ -50,7 +50,9 @@
     "Blocks",
     "StatusEffects",
     "UnitTypes",
-    "Weapons"
+    "Weapons",
+    "Planets",
+    "SectorPresets"
   ],
   "instanceCounts": {
     "Items": 22,
@@ -58,6 +60,8 @@
     "Blocks": 446,
     "StatusEffects": 23,
     "UnitTypes": 68,
-    "Weapons": 54
+    "Weapons": 54,
+    "Planets": 7,
+    "SectorPresets": 95
   }
 }

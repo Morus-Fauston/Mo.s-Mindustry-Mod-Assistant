@@ -28,6 +28,9 @@ from app.core.project import Project
 from app.core.template import TemplateEngine
 from app.core.validator import Validator
 from app.ui.editor_panel import EditorPanel
+from app.ui.widgets.content_ref_selector import ContentRefSelector
+from app.ui.widgets.planet_set_editor import PlanetSetEditor
+from app.ui.widgets.research_editor import ResearchEditor
 from app.ui.widgets.resource_editors import (
     ConsumesEditor,
     ResourceListEditor,
@@ -88,6 +91,78 @@ class TestConfiguredWidgetRouting:
             qapp, project, {"type": "GenericCrafter", "name": "探针"}
         )
         assert panel.findChildren(ResourceSlotEditor), "outputItem 应渲染为 ResourceSlotEditor"
+
+    def test_research_uses_the_inline_object_editor_even_when_the_field_is_absent(self, qapp, project):
+        panel = self._make_panel(
+            qapp, project, {"type": "Wall", "name": "探针"}
+        )
+
+        assert panel.findChildren(ResearchEditor), "科技树组应提供 Research 内联对象编辑器"
+
+    def test_plain_string_reference_uses_the_shared_selector(self, qapp, project):
+        panel = self._make_panel(
+            qapp, project, {"type": "Wall", "name": "探针", "itemDrop": "copper"}
+        )
+
+        assert panel.findChildren(ContentRefSelector), "STRING_REF 应复用统一内容选择器"
+
+    def test_shown_planets_uses_the_basic_group_planet_set_editor(self, qapp, project):
+        panel = self._make_panel(
+            qapp, project,
+            {"type": "Wall", "name": "探针", "shownPlanets": ["serpulo"]},
+        )
+
+        assert panel.findChildren(PlanetSetEditor), "基础属性组应提供星球集合编辑器"
+
+
+class TestResearchEditor:
+    def test_legacy_string_is_preserved_until_an_object_field_changes(self, qapp, project):
+        metadata = Metadata(METADATA_DIR)
+        data = {"type": "Wall", "research": "copper-wall"}
+        stack = CommandStack()
+        editor = ResearchEditor(data, "research", stack, metadata, project)
+
+        assert editor.value == "copper-wall"
+        parent = editor.findChild(ContentRefSelector, "researchParentSelector")
+        assert parent is not None
+        parent.set_value("dagger", emit=True)
+
+        assert data["research"] == {"parent": "dagger"}
+        stack.undo()
+        assert data["research"] == "copper-wall"
+
+    def test_objective_type_rebuilds_its_candidate_scope_and_writes_through_commands(self, qapp, project):
+        metadata = Metadata(METADATA_DIR)
+        data = {"type": "Wall"}
+        stack = CommandStack()
+        editor = ResearchEditor(data, "research", stack, metadata, project)
+
+        editor.findChild(__import__("PySide6.QtWidgets", fromlist=["QPushButton"]).QPushButton, "addResearchObjective").click()
+        type_selector = editor.findChild(__import__("PySide6.QtWidgets", fromlist=["QComboBox"]).QComboBox, "researchObjectiveType0")
+        assert type_selector is not None
+        type_selector.setCurrentIndex(type_selector.findData("OnPlanet"))
+        target = editor.findChild(ContentRefSelector, "researchObjectiveContent0")
+        assert target is not None
+        target.set_value("serpulo", emit=True)
+
+        assert data["research"] == {"objectives": [{"type": "OnPlanet", "planet": "serpulo"}]}
+        assert stack.can_undo
+
+
+class TestShownPlanetsEditor:
+    def test_planet_set_is_rendered_in_basic_and_uses_the_command_stack(self, qapp, project):
+        metadata = Metadata(METADATA_DIR)
+        data = {"type": "Wall", "name": "探针", "shownPlanets": ["serpulo"]}
+        stack = CommandStack()
+        editor = PlanetSetEditor(data, "shownPlanets", stack, metadata, project)
+
+        selector = editor.findChild(ContentRefSelector, "shownPlanetsSelector0")
+        assert selector is not None
+        selector.set_value("erekir", emit=True)
+
+        assert data["shownPlanets"] == ["erekir"]
+        stack.undo()
+        assert data["shownPlanets"] == ["serpulo"]
 
 
 class TestJsonOutputPreview:

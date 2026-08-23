@@ -150,10 +150,13 @@ def compute_form_plan(
         for n in visible_names:
             if n in all_fields:
                 visible.append(all_fields[n])
-            elif n in data:
+            elif n in data or (
+                n in required and isinstance(group_def.get("widgets", {}).get(n), dict)
+            ):
                 # 模板/JSON 中存在但元数据缺失的字段（如 consumes）：
-                # 合成 FieldDef 保证仍可渲染（v0.2.5 F-22）
-                visible.append(synthetic_field_def(n, data[n]))
+                # 或配置要求常驻的虚拟字段（如 research），合成 FieldDef
+                # 保证仍可渲染（v0.2.5 F-22 / v0.3.0）。
+                visible.append(synthetic_field_def(n, data.get(n)))
 
         # Empty-group hiding: show group only if it has required fields
         # or at least one visible field.  Groups with only default/optional

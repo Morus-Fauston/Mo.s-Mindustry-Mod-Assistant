@@ -54,6 +54,21 @@ class TestValidateBasic:
         errors = [i for i in issues if i.severity == "error"]
         assert errors == []
 
+    def test_shown_planets_is_optional_but_requires_a_planet_name_list_when_set(self, validator):
+        absent = validator.validate({"type": "Wall", "name": "my-wall", "health": 200})
+        valid = validator.validate({
+            "type": "Wall", "name": "my-wall", "health": 200,
+            "shownPlanets": ["serpulo", "erekir"],
+        })
+        invalid = validator.validate({
+            "type": "Wall", "name": "my-wall", "health": 200,
+            "shownPlanets": "serpulo",
+        })
+
+        assert not any(issue.path == "shownPlanets" for issue in absent)
+        assert not any(issue.path == "shownPlanets" for issue in valid)
+        assert any(issue.path == "shownPlanets" for issue in invalid)
+
 
 # ── validate: type checking ────────────────────────────────────────────
 

@@ -34,6 +34,8 @@ class TestExtractContentNames:
             "block.limit = 限制（非 name 键，应跳过）\n"
             "unit.blockssquared = 格（非 name 键，应跳过）\n"
             "status.burning.name = 燃烧\n"
+            "planet.serpulo.name = 塞普罗\n"
+            "sector.groundZero.name = 零号地区\n"
             "weapon.meltdown.name = 熔毁\n"
             "block.unknown.name = [scarlet]未知\n",
             encoding="utf-8",
@@ -51,6 +53,8 @@ class TestExtractContentNames:
         assert result["units"]["dagger"] == "尖刀"
         assert result["items"]["copper"] == "铜"
         assert result["status"]["burning"] == "燃烧"
+        assert result["planets"]["serpulo"] == "塞普罗"
+        assert result["sectors"]["groundZero"] == "零号地区"
         assert result["weapons"]["meltdown"] == "熔毁"
         # 非 .name 键跳过
         assert "limit" not in result["blocks"]
@@ -64,7 +68,7 @@ class TestContentNamesConfig:
 
     def test_config_exists_and_shape(self):
         data = get_content_names_zh()
-        for cat in ("items", "liquids", "blocks", "units", "weapons", "status"):
+        for cat in ("items", "liquids", "blocks", "units", "weapons", "status", "planets", "sectors"):
             assert cat in data, f"缺少 {cat} 分类"
         assert data["items"]["copper"] == "铜"
         assert data["blocks"]["copper-wall"] == "铜墙"

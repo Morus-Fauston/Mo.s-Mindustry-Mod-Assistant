@@ -57,7 +57,7 @@ class FieldDef:
     _INTERNAL_NAMES = frozenset({
         "id", "minfo", "stats", "localizedName",
         "alwaysUnlocked", "removed",
-        "uiIcon", "fullIcon", "fullOverride", "shownPlanets",
+        "uiIcon", "fullIcon", "fullOverride",
         "databaseTabs", "allDatabaseTabs", "techNodes", "techNode",
         "constructor", "firstRequirements",
         "engineColorInner", "engineColor", "healColor",
@@ -81,8 +81,14 @@ class FieldDef:
             return True
         if any(self.name.endswith(s) for s in self._INTERNAL_SUFFIXES):
             return True
-        # Non-editable primitive types (e.g. Object references stored as primitives)
-        if self.mode == "PRIMITIVE" and self.java_type not in self._EDITABLE_JAVA_TYPES:
+        # Non-editable primitive types (e.g. object references stored as primitives).
+        # shownPlanets is the one supported collection exception: Mindustry reads
+        # it as a set of Planet names and the editor provides a dedicated widget.
+        if (
+            self.mode == "PRIMITIVE"
+            and self.java_type not in self._EDITABLE_JAVA_TYPES
+            and self.name != "shownPlanets"
+        ):
             return True
         return False
 

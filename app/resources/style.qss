@@ -439,6 +439,44 @@ QComboBox[fieldType="ref"] {
     border-color: @S_REF@;
 }
 QComboBox[fieldType="ref"]:hover { border-color: @B_REF@; }
+QLineEdit[fieldType="ref"] {
+    background-color: @F_REF@;
+    border-color: @S_REF@;
+}
+QLineEdit[fieldType="ref"]:hover { border-color: @B_REF@; }
+
+/* 统一内容选择器：弹层是 Qt.Popup，不受表单滚动区裁切。 */
+#contentRefPopup {
+    background-color: @PANEL@;
+    border: 1px solid @LINE@;
+    border-radius: 4px;
+}
+#contentRefList {
+    background-color: @CANVAS@;
+    border: none;
+    outline: none;
+}
+#contentRefList::item {
+    padding: 4px 8px;
+}
+#contentRefList::item:selected {
+    background-color: @COPPER_TINT@;
+    color: @INK@;
+    font-weight: 600;
+    border-left: 3px solid @COPPER@;
+}
+#contentRefStickyHeader, #contentRefTopBookmarks, #contentRefBottomBookmarks {
+    background-color: @PANEL@;
+    border: 1px solid @LINE@;
+}
+#contentRefStickyLabel { color: @INK2@; font-weight: 600; }
+#contentRefBookmark {
+    background: transparent;
+    border: none;
+    color: @INK2@;
+    padding: 1px 5px;
+}
+#contentRefBookmark:hover { color: @COPPER@; }
 
 /* 颜色 */
 QLineEdit[fieldType="col"] {

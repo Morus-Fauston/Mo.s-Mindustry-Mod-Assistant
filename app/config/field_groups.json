@@ -5,7 +5,8 @@
     "basic": {
       "required": ["name", "health", "armor", "speed", "hitSize", "flying"],
       "default": ["description"],
-      "optional": ["lowAltitude", "hovering", "naval", "bounded", "useUnitCap", "coreUnitDock", "isEnemy", "hidden", "internal"]
+      "optional": ["lowAltitude", "hovering", "naval", "bounded", "useUnitCap", "coreUnitDock", "isEnemy", "hidden", "internal", "shownPlanets"],
+      "widgets": {"shownPlanets": {"widget": "planet_set"}}
     },
     "movement": {
       "locked": true,
@@ -13,11 +14,23 @@
       "default": ["faceTarget"],
       "optional": ["omniMovement", "rotateMoveFirst", "strafePenalty", "floorMultiplier", "baseRotateSpeed", "riseSpeed", "descentSpeed", "fallSpeed", "weaveMag", "weaveScale", "weaveRandom", "crawlSlowdown", "crawlSlowdownFrac"]
     },
-    "combat": {
+    "weapons_range": {
       "locked": true,
-      "required": ["weapons", "range", "targetAir", "targetGround"],
-      "default": ["ammoCapacity", "canAttack"],
-      "optional": ["maxRange", "singleTarget", "forceMultiTarget", "autoFindTarget", "targetUnderBlocks", "alwaysShootWhenMoving", "targetPriority", "circleTarget", "circleTargetRadius", "attacks", "canHeal", "autoDropBombs", "lifetime", "homingDelay", "aimDst", "targetBuildingsMobile", "targetFlags", "missileAccelTime"]
+      "required": ["weapons", "range"],
+      "default": ["maxRange", "ammoCapacity"],
+      "optional": []
+    },
+    "target_selection": {
+      "locked": true,
+      "required": ["targetAir", "targetGround"],
+      "default": [],
+      "optional": ["targetUnderBlocks", "targetPriority", "targetBuildingsMobile", "targetFlags", "singleTarget", "forceMultiTarget", "autoFindTarget", "circleTarget", "circleTargetRadius"]
+    },
+    "attack_behavior": {
+      "locked": true,
+      "required": [],
+      "default": ["canAttack"],
+      "optional": ["alwaysShootWhenMoving", "attacks", "canHeal", "autoDropBombs", "lifetime", "homingDelay", "aimDst", "missileAccelTime"]
     },
     "mining": {
       "required": [],
@@ -95,8 +108,14 @@
     },
     "meta": {
       "required": [],
-      "default": ["research"],
+      "default": [],
       "optional": ["details", "credit", "hideDetails", "inlineDescription", "allowedInPayloads", "researchCostMultiplier", "canOverdrive"]
+    },
+    "tech_tree": {
+      "required": ["research"],
+      "widgets": {
+        "research": {"widget": "research"}
+      }
     }
   },
 
@@ -104,7 +123,8 @@
     "basic": {
       "required": ["name", "health", "size"],
       "default": ["description", "armor"],
-      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity", "shownPlanets"],
+      "widgets": {"shownPlanets": {"widget": "planet_set"}}
     },
     "defense": {
       "required": [],
@@ -116,11 +136,14 @@
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer"],
+      "optional": ["buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer"],
       "widgets": {
-        "requirements": {"widget": "resource_list", "resource_type": "item"},
-        "research": {"widget": "tech_ref", "multi": false}
+        "requirements": {"widget": "resource_list", "resource_type": "item"}
       }
+    },
+    "tech_tree": {
+      "required": ["research"],
+      "widgets": {"research": {"widget": "research"}}
     }
   },
 
@@ -128,7 +151,8 @@
     "basic": {
       "required": ["name", "health", "size"],
       "default": ["description"],
-      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity", "shownPlanets"],
+      "widgets": {"shownPlanets": {"widget": "planet_set"}}
     },
     "combat": {
       "required": ["range", "reload", "ammoTypes"],
@@ -157,11 +181,14 @@
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer", "placeOverlapMargin", "fogRadiusMultiplier"],
+      "optional": ["buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer", "placeOverlapMargin", "fogRadiusMultiplier"],
       "widgets": {
-        "requirements": {"widget": "resource_list", "resource_type": "item"},
-        "research": {"widget": "tech_ref", "multi": false}
+        "requirements": {"widget": "resource_list", "resource_type": "item"}
       }
+    },
+    "tech_tree": {
+      "required": ["research"],
+      "widgets": {"research": {"widget": "research"}}
     }
   },
 
@@ -169,7 +196,8 @@
     "basic": {
       "required": ["name", "health", "size"],
       "default": ["description"],
-      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity", "shownPlanets"],
+      "widgets": {"shownPlanets": {"widget": "planet_set"}}
     },
     "combat": {
       "required": ["range", "reload", "shootType"],
@@ -198,11 +226,14 @@
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer", "placeOverlapMargin", "fogRadiusMultiplier"],
+      "optional": ["buildCostMultiplier", "buildTime", "buildVisibility", "placeableOn", "placeablePlayer", "placeOverlapMargin", "fogRadiusMultiplier"],
       "widgets": {
-        "requirements": {"widget": "resource_list", "resource_type": "item"},
-        "research": {"widget": "tech_ref", "multi": false}
+        "requirements": {"widget": "resource_list", "resource_type": "item"}
       }
+    },
+    "tech_tree": {
+      "required": ["research"],
+      "widgets": {"research": {"widget": "research"}}
     }
   },
 
@@ -210,7 +241,8 @@
     "basic": {
       "required": ["name", "health", "size"],
       "default": ["description"],
-      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity", "shownPlanets"],
+      "widgets": {"shownPlanets": {"widget": "planet_set"}}
     },
     "production": {
       "required": ["outputItem", "craftTime"],
@@ -229,11 +261,14 @@
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "optional": ["buildCostMultiplier", "buildTime", "buildVisibility"],
       "widgets": {
-        "requirements": {"widget": "resource_list", "resource_type": "item"},
-        "research": {"widget": "tech_ref", "multi": false}
+        "requirements": {"widget": "resource_list", "resource_type": "item"}
       }
+    },
+    "tech_tree": {
+      "required": ["research"],
+      "widgets": {"research": {"widget": "research"}}
     }
   },
 
@@ -241,7 +276,8 @@
     "basic": {
       "required": ["name", "health", "size"],
       "default": ["description"],
-      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity"]
+      "optional": ["scaledHealth", "breakable", "destructible", "targetable", "hasPower", "hasItems", "hasLiquids", "itemCapacity", "shownPlanets"],
+      "widgets": {"shownPlanets": {"widget": "planet_set"}}
     },
     "mining": {
       "required": ["tier", "drillTime"],
@@ -256,11 +292,14 @@
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "optional": ["buildCostMultiplier", "buildTime", "buildVisibility"],
       "widgets": {
-        "requirements": {"widget": "resource_list", "resource_type": "item"},
-        "research": {"widget": "tech_ref", "multi": false}
+        "requirements": {"widget": "resource_list", "resource_type": "item"}
       }
+    },
+    "tech_tree": {
+      "required": ["research"],
+      "widgets": {"research": {"widget": "research"}}
     }
   },
 
@@ -268,15 +307,19 @@
     "basic": {
       "required": ["name", "health"],
       "default": ["description", "speed", "displayedSpeed"],
-      "optional": ["pushUnits", "breakable", "destructible"]
+      "optional": ["pushUnits", "breakable", "destructible", "shownPlanets"],
+      "widgets": {"shownPlanets": {"widget": "planet_set"}}
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "optional": ["buildCostMultiplier", "buildTime", "buildVisibility"],
       "widgets": {
-        "requirements": {"widget": "resource_list", "resource_type": "item"},
-        "research": {"widget": "tech_ref", "multi": false}
+        "requirements": {"widget": "resource_list", "resource_type": "item"}
       }
+    },
+    "tech_tree": {
+      "required": ["research"],
+      "widgets": {"research": {"widget": "research"}}
     }
   },
 
@@ -284,7 +327,8 @@
     "basic": {
       "required": ["name", "health", "size"],
       "default": ["description"],
-      "optional": ["emptyLightColor", "fullLightColor", "breakable", "destructible"]
+      "optional": ["emptyLightColor", "fullLightColor", "breakable", "destructible", "shownPlanets"],
+      "widgets": {"shownPlanets": {"widget": "planet_set"}}
     },
     "consumption": {
       "required": [],
@@ -295,11 +339,14 @@
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "optional": ["buildCostMultiplier", "buildTime", "buildVisibility"],
       "widgets": {
-        "requirements": {"widget": "resource_list", "resource_type": "item"},
-        "research": {"widget": "tech_ref", "multi": false}
+        "requirements": {"widget": "resource_list", "resource_type": "item"}
       }
+    },
+    "tech_tree": {
+      "required": ["research"],
+      "widgets": {"research": {"widget": "research"}}
     }
   },
 
@@ -307,7 +354,8 @@
     "basic": {
       "required": ["name", "health", "size"],
       "default": ["description"],
-      "optional": ["breakable", "destructible", "targetable"]
+      "optional": ["breakable", "destructible", "targetable", "shownPlanets"],
+      "widgets": {"shownPlanets": {"widget": "planet_set"}}
     },
     "repair": {
       "required": ["range", "reload", "healPercent"],
@@ -322,11 +370,14 @@
     },
     "build": {
       "required": ["requirements", "category"],
-      "optional": ["research", "buildCostMultiplier", "buildTime", "buildVisibility"],
+      "optional": ["buildCostMultiplier", "buildTime", "buildVisibility"],
       "widgets": {
-        "requirements": {"widget": "resource_list", "resource_type": "item"},
-        "research": {"widget": "tech_ref", "multi": false}
+        "requirements": {"widget": "resource_list", "resource_type": "item"}
       }
+    },
+    "tech_tree": {
+      "required": ["research"],
+      "widgets": {"research": {"widget": "research"}}
     }
   },
 

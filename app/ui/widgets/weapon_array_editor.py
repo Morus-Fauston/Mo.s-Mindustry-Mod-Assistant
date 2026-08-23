@@ -44,6 +44,7 @@ from .field_widget_factory import create_value_widget
 from .label_helper import rich_label
 from .field_row import FieldRow
 from .polymorphic_editor import BULLET_TYPES
+from .content_ref_selector import ContentRefSelector
 
 # NOTE: These are imported lazily or at module level depending on need
 from ...core.commands import ArrayInsertCommand, ArrayMoveCommand, ArrayRemoveCommand, CommandStack
@@ -90,6 +91,7 @@ def _override_default(fname: str) -> Any:
 from ...core.config_loader import (
     display_name as _display_name_fn,
     get_category_names_zh,
+    get_content_names_zh,
     get_field_docs,
     get_field_groups,
     get_field_names_zh,
@@ -623,7 +625,9 @@ def _load_weapon_data(
     """Try to load full weapon data from project or metadata instances."""
     # 1. Check project's content/weapons/
     try:
-        content = project.contents.get(name)
+        project_name = project.mod_info.name + "-"
+        local_name = name[len(project_name):] if name.startswith(project_name) else name
+        content = project.contents.get(local_name)
         if content:
             return dict(content.data)
     except Exception:
@@ -690,11 +694,14 @@ class _AddWeaponDialog(QDialog):
         layout.addWidget(self._inline_radio)
 
         # 引用模式：武器下拉
-        self._ref_combo = QComboBox()
-        self._ref_combo.setEditable(True)
-        self._ref_combo.setFixedWidth(240)
-        self._populate_weapon_list()
-        layout.addWidget(self._ref_combo)
+        self._ref_selector = ContentRefSelector(
+            metadata=self._metadata,
+            project=self._project,
+            categories=("Weapons",),
+            names_zh=get_content_names_zh(),
+        )
+        self._ref_selector.setObjectName("weaponReferenceSelector")
+        layout.addWidget(self._ref_selector)
 
         # 内联模式：名称输入框（引用模式隐藏）
         self._name_edit = AutoWidthEdit()
@@ -729,17 +736,8 @@ class _AddWeaponDialog(QDialog):
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
 
-    def _populate_weapon_list(self) -> None:
-        project_weapons = _list_project_weapons(self._project)
-        vanilla_weapons = _list_vanilla_weapons(self._metadata)
-        for w in project_weapons + vanilla_weapons:
-            if w in VANILLA_WEAPON_NAMES_ZH:
-                self._ref_combo.addItem(f"{VANILLA_WEAPON_NAMES_ZH[w]} ({w})", w)
-            else:
-                self._ref_combo.addItem(w, w)
-
     def _on_mode_changed(self, ref_checked: bool) -> None:
-        self._ref_combo.setVisible(ref_checked)
+        self._ref_selector.setVisible(ref_checked)
         self._name_edit.setVisible(not ref_checked)
         self._bullet_combo.setVisible(not ref_checked)
         self._bullet_preview.setVisible(not ref_checked)
@@ -748,7 +746,7 @@ class _AddWeaponDialog(QDialog):
 
     def _on_accept(self) -> None:
         if self._ref_radio.isChecked():
-            actual = self._ref_combo.currentData() or self._ref_combo.currentText()
+            actual = self._ref_selector.value
             if not actual:
                 QMessageBox.warning(self, "提示", "请选择或输入一个武器引用")
                 return

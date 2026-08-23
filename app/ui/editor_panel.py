@@ -40,6 +40,7 @@ from ..core.config_loader import (
     get_field_docs,
     get_field_groups,
     get_field_names_zh,
+    get_content_names_zh,
 )
 from ..core.content_store import ContentData
 from ..core.form_plan import (
@@ -124,6 +125,9 @@ class EditorPanel(QWidget):
         "basic": "基础属性",
         "movement": "移动属性",
         "combat": "战斗属性",
+        "weapons_range": "武器与射程",
+        "target_selection": "目标选择",
+        "attack_behavior": "攻击行为",
         "mining": "采矿",
         "building": "建造",
         "capacity": "容量",
@@ -141,6 +145,7 @@ class EditorPanel(QWidget):
         "physics": "物理与碰撞",
         "env": "环境",
         "meta": "研究树与说明",
+        "tech_tree": "科技树",
         "defense": "防御属性",
         "visual": "视觉",
         "build": "建造需求",
@@ -181,6 +186,7 @@ class EditorPanel(QWidget):
 
         self._field_groups = get_field_groups()
         self._field_names_zh = get_field_names_zh()
+        self._content_names_zh = get_content_names_zh()
         self._field_docs = get_field_docs()
         self._class_def: ClassDef | None = None
         self._form_layout: QVBoxLayout | None = None
@@ -960,8 +966,9 @@ class EditorPanel(QWidget):
             ConsumesEditor,
             ResourceListEditor,
             ResourceSlotEditor,
-            TechRefEditor,
         )
+        from .widgets.planet_set_editor import PlanetSetEditor
+        from .widgets.research_editor import ResearchEditor
 
         widget_type = cfg["widget"]
         data = self._content.data
@@ -989,11 +996,19 @@ class EditorPanel(QWidget):
             )
             editor.valueChanged.connect(lambda: self._on_field_changed(path, data.get(path), committed=True))
             return editor
-        elif widget_type == "tech_ref":
-            editor = TechRefEditor(
+        elif widget_type in ("research", "tech_ref"):
+            editor = ResearchEditor(
                 data, path, stack,
-                multi=cfg.get("multi", False),
                 metadata=self._metadata,
+                project=self._project,
+            )
+            editor.valueChanged.connect(lambda: self._on_field_changed(path, data.get(path), committed=True))
+            return editor
+        elif widget_type == "planet_set":
+            editor = PlanetSetEditor(
+                data, path, stack,
+                metadata=self._metadata,
+                project=self._project,
             )
             editor.valueChanged.connect(lambda: self._on_field_changed(path, data.get(path), committed=True))
             return editor
@@ -1061,31 +1076,21 @@ class EditorPanel(QWidget):
         return edit
 
     def _create_ref_widget(self, field_def: FieldDef, value: Any) -> QWidget:
-        combo = QComboBox()
-        combo.setFixedWidth(150)  # 名称档（引用下拉略宽于数字）
-        combo.setEditable(True)
-        if field_def.ref_source:
-            try:
-                instances = self._metadata.list_instances(field_def.ref_source)
-                combo.addItems([""] + instances)
-            except Exception:
-                pass
-        if value is not None:
-            idx = combo.findText(str(value))
-            if idx >= 0:
-                combo.setCurrentIndex(idx)
-            else:
-                combo.setEditText(str(value))
-            # 光标归位到开头，防止视口滚到末尾把左侧文本挤出视野（v0.2.5 修复：
-            # editable 下拉默认光标在末尾 → 长值看似"右对齐、左边看不见"）。
-            le = combo.lineEdit()
-            if le is not None:
-                le.setCursorPosition(0)
-        combo.currentTextChanged.connect(
-            lambda t, n=field_def.name: self._on_field_changed(n, t if t else None)
+        from .widgets.content_ref_selector import ContentRefSelector
+
+        categories = (field_def.ref_source,) if field_def.ref_source else ()
+        selector = ContentRefSelector(
+            metadata=self._metadata,
+            project=self._project,
+            categories=categories,
+            names_zh=self._content_names_zh,
         )
-        self._field_widgets[field_def.name] = combo
-        return combo
+        selector.set_value(str(value) if value is not None else "")
+        selector.valueChanged.connect(
+            lambda selected, n=field_def.name: self._on_field_changed(n, selected or None)
+        )
+        self._field_widgets[field_def.name] = selector
+        return selector
 
     def _create_color_widget(self, field_def: FieldDef, value: Any) -> QWidget:
         """Color 字段 → ColorPicker 控件（色块 + hex 输入）。"""

@@ -1,3 +1,10 @@
+v0.3.0-alpha.4 (2026-08-23 21:50)
+  新增: 七字段 Research 对象编辑与五种目标 / 双语统一内容选择器、键盘与双向书签 / 7 个星球和 95 个战区真实候选
+  调整: research 统一迁入科技树组；shownPlanets 使用星球集合编辑器；UnitType combat 拆为三个工作组
+  验证: 440 pytest 全绿；Windows 原生交互 probe 通过；Mindustry A4 五类目标+shownPlanets ERROR=0、600 tick
+
+====
+
 v0.3.0-alpha.3 (2026-08-23 20:52)
   新增: 表单/JSON 输出预览切换、500ms 合法草稿整体回写、可撤销 ReplaceDataCommand、格式化与问题定位
   修复: 非法 JSON 不入命令栈/不写盘；完整替换后撤销重做同步类型表单；补齐 QSS 警告色令牌

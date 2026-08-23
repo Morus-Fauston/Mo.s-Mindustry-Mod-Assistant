@@ -25,7 +25,9 @@ public class InstanceExtractor {
             "Blocks", ContentType.block,
             "Items", ContentType.item,
             "Liquids", ContentType.liquid,
-            "StatusEffects", ContentType.status
+            "StatusEffects", ContentType.status,
+            "Planets", ContentType.planet,
+            "SectorPresets", ContentType.sector
     ));
 
     /** Fields to serialize for each content type (whitelist approach for v1) */
@@ -52,7 +54,9 @@ public class InstanceExtractor {
                     "name", "damage", "speedMultiplier", "healthMultiplier",
                     "damageMultiplier", "reloadMultiplier", "buildSpeedMultiplier",
                     "transitionDamage", "effect"
-            )
+            ),
+            "Planets", Set.of("name"),
+            "SectorPresets", Set.of("name")
     );
 
     /** Weapon fields to serialize (v1.1) — excludes complex types (Sound, Effect) */

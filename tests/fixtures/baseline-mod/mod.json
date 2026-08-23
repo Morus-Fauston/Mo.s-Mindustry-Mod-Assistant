@@ -1,0 +1,8 @@
+{
+  "name": "moma-baseline",
+  "displayName": "MoMA 基线模组",
+  "author": "MoMA",
+  "description": "MoMA 自动生成的最小验证基线。",
+  "version": "0.3.0",
+  "minGameVersion": "146"
+}

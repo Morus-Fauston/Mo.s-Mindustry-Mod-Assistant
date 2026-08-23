@@ -1,0 +1,34 @@
+{
+  "type": "mech",
+  "name": "moma-baseline-mech",
+  "health": 150,
+  "armor": 0,
+  "speed": 1.5,
+  "hitSize": 8,
+  "flying": false,
+  "rotateSpeed": 15,
+  "accel": 0.1,
+  "drag": 0.1,
+  "range": 140,
+  "targetAir": true,
+  "targetGround": true,
+  "weapons": [
+    {
+      "type": "Weapon",
+      "name": "moma-baseline-mech-gun",
+      "reload": 25,
+      "x": 4,
+      "y": 2,
+      "mirror": true,
+      "alternate": true,
+      "bullet": {
+        "type": "BasicBulletType",
+        "damage": 12,
+        "speed": 3.5,
+        "lifetime": 35,
+        "width": 7,
+        "height": 10
+      }
+    }
+  ]
+}

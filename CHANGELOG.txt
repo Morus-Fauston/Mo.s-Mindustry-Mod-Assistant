@@ -1,3 +1,10 @@
+v0.3.0-alpha.1 (2026-08-23 20:01)
+  新增: 无 Qt PNG 导入/写盘 API，默认拒绝覆盖且原子替换保护旧图 / 可复现的墙+mech+内联基础子弹基线模组与审阅快照
+  调整: 预览导入及 outline/shadow/full 统一接入 core API；快照仅可通过 --update-baseline 显式更新
+  验证: 405 pytest 全绿；Windows GPU A4 实测 ERROR=0，墙与 mech 各运行 600 tick，Warning 已逐条研判
+
+====
+
 v0.2.6.revised.2 (2026-08-02 22:18) 修复单位type不被游戏识别(致命)+验证器误报(388全绿)
   修复: 单位模板type写死"UnitType"(Java类名)游戏不认→报Invalid unit type→改游戏子类型值(地面mech/飞行flying/坦克tank/多足legs)
   架构: 编辑器内部查配置键是"UnitType",直接改子类型会查空→metadata新增normalize_content_type统一收敛+form_plan.infer_subtype识别子类型+editor/preview查配置前规范化(visible_for仍用游戏值)

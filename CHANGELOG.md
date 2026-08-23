@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.3.0-alpha.1 (2026-08-23 20:01) - 批次 1：可信输出基础
+
+### 新增
+
+- **统一 PNG 写盘 API**：新增无 Qt 依赖的 `import_sprite()` 与 `save_sprite()`；真实 PNG 导入保持原始字节，默认拒绝覆盖，调用方必须显式授权覆盖。
+- **最小基线模组**：生成器通过 Project、模板、ContentStore 与 PNG core API 产出一面墙、一个 mech、内联基础子弹及两张固定 PNG；快照严格比较文件清单、JSON 文本和 PNG SHA-256。
+
+### 调整
+
+- **预览精灵图流程**：导入、outline、shadow 与 full 写盘统一复用 core API；覆盖已有图层前要求确认，写入使用同目录临时文件后原子替换，失败不损坏旧图。
+- **基线快照更新**：仅 `--update-baseline` 能替换审阅快照；先在同级临时目录复制与校验，切换失败自动保留旧快照。
+
+### 验证
+
+- **自动测试**：405 项 pytest 全绿，覆盖 PNG 格式与覆盖契约、原子写入失败保护、可重复生成，以及快照的文件清单、JSON 和 PNG 漂移检测。
+- **真实引擎 A4**：Windows GPU 环境加载 `moma-baseline.zip` 成功，墙放置与 mech AI 各运行 600 tick，`ERROR = 0`；34 条运行时默认字段 Warning 已在本地 `Docs/验证反馈/v0.3.0-002/` 逐条研判。
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/core/sprite_io.py` | **新增** - 可复用、原子化的 PNG 导入与写盘 API |
+| `app/ui/preview_panel.py` | 修改 - 预览导入与派生图写盘接入 core API |
+| `tools/make_sample_mod.py` | 重写 - 可重复的基线生成、快照比较与显式更新 |
+| `tests/test_sprite_io.py` | **新增** - PNG API 与失败保护回归测试 |
+| `tests/test_sample_mod.py` | **新增** - 基线输出与快照契约测试 |
+| `tests/fixtures/baseline-mod/` | **新增** - 生成器产出的审阅快照 |
+
+---
+
 ## v0.2.6.revised.2 (2026-08-02 22:18) — 修复单位 type 不被游戏识别（致命）
 
 > 用户实测：用 MoMA 生成的示例模组导入游戏，所有单位报错 `Invalid unit type: 'UnitType'`。根因是单位模板把 `type` 字段写成 Java 类名 `UnitType`，而游戏解析单位时 `type` 必须是实体子类型字符串（flying/mech/legs/tank/naval/payload/missile/tether/crawl）——游戏源码 `ContentParser.unitType()` 的 switch 里没有 `UnitType`。方块/武器的 `type` 是类名、正确，只有单位特殊。顺带修复验证器把内联武器误报为「引用不存在」。

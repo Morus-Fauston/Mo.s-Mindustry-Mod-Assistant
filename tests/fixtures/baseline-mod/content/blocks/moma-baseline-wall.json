@@ -1,0 +1,15 @@
+{
+  "type": "Wall",
+  "name": "moma-baseline-wall",
+  "health": 400,
+  "size": 1,
+  "armor": 0,
+  "description": "",
+  "requirements": [
+    {
+      "item": "copper",
+      "amount": 6
+    }
+  ],
+  "category": "defense"
+}

@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import math
 import os
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -29,6 +28,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QMenu,
+    QMessageBox,
     QPushButton,
     QSplitter,
     QStyle,
@@ -43,6 +43,7 @@ from ..core.config_loader import get_sprite_layers
 from ..core.content_store import ContentData
 from ..core.metadata import normalize_content_type
 from ..core.project import Project
+from ..core.sprite_io import import_sprite, save_sprite
 from .theme import get_tokens
 from .widgets.num_spin import NumDoubleSpinBox
 
@@ -806,9 +807,6 @@ class PreviewPanel(QWidget):
         from PIL import Image as PILImage
 
         src = PILImage.open(str(main_path)).convert("RGBA")
-        target = self._project.sprite_path(category, name, suffix)
-        target.parent.mkdir(parents=True, exist_ok=True)
-
         if suffix == "-outline":
             result = generate_outline(src)
         elif suffix == "-shadow":
@@ -860,7 +858,7 @@ class PreviewPanel(QWidget):
         else:
             return
 
-        result.save(str(target))
+        save_sprite(self._project, category, name, result, suffix, overwrite=True)
         self._refresh_preview()
         self._refresh_layer_tree()
 
@@ -895,12 +893,32 @@ class PreviewPanel(QWidget):
         if not file_path:
             return
 
-        import shutil
         category = self._content.category
         name = self._content.name
         target = self._project.sprite_path(category, name, suffix)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(file_path, str(target))
+        if target.exists():
+            reply = QMessageBox.question(
+                self,
+                "覆盖精灵图",
+                f"图层 '{target.name}' 已存在，是否覆盖？",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
+        try:
+            import_sprite(
+                self._project,
+                category,
+                name,
+                file_path,
+                suffix,
+                overwrite=target.exists(),
+            )
+        except ValueError as exc:
+            QMessageBox.warning(self, "导入精灵图失败", str(exc))
+            return
 
         self._refresh_preview()
         self._refresh_layer_tree()

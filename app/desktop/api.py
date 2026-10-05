@@ -13,13 +13,22 @@ PROTOCOL_VERSION = 1
 
 
 class DesktopApi:
-    def __init__(self, metadata_dir: Path | str, choose_directory: Callable[[], str | None] | None = None) -> None:
+    def __init__(self, metadata_dir: Path | str, choose_directory: Callable[[], str | None] | None = None,
+                 on_close: Callable[[], None] | None = None, on_close_ready: Callable[[], None] | None = None) -> None:
         self._metadata_dir = Path(metadata_dir)
         self._lock = RLock()
         self._bootstrap: dict[str, Any] | None = None
         self._choose_directory = choose_directory
         self._workspace = None
         self._admission = BoundedSemaphore(32)
+        self._on_close = on_close
+        self._on_close_ready = on_close_ready
+
+    def close_ready(self) -> bool:
+        """Called only after the page installs its close event listener."""
+        if self._on_close_ready is not None:
+            self._on_close_ready()
+        return True
 
     def request_result(self, request_id: str) -> dict[str, Any]:
         """Query a timed-out operation without executing it again."""
@@ -39,7 +48,12 @@ class DesktopApi:
                 if self._workspace is None:
                     from app.desktop.workspace import WorkspaceService
                     self._workspace = WorkspaceService(self._metadata_dir, self._choose_directory)
-            return self._workspace.request(envelope)
+            result = self._workspace.request(envelope)
+            if (isinstance(envelope, dict) and envelope.get('action') == 'close_window'
+                    and result.get('ok') and result.get('data', {}).get('closeApproved')
+                    and self._on_close is not None):
+                self._on_close()
+            return result
         finally:
             self._admission.release()
 

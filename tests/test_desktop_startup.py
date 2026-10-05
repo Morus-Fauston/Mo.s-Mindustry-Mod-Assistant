@@ -30,7 +30,8 @@ def test_startup_failure_has_chinese_feedback_and_nonzero_exit(tmp_path, monkeyp
         def __iadd__(self, callback):
             return self
 
-    window = SimpleNamespace(events=SimpleNamespace(loaded=NativeEvent(), closed=NativeEvent()))
+    window = SimpleNamespace(events=SimpleNamespace(loaded=NativeEvent(), closed=NativeEvent(), closing=NativeEvent()),
+                             destroy=lambda: None)
     monkeypatch.setitem(sys.modules, "webview", SimpleNamespace(
         settings={}, create_window=lambda *args, **kwargs: window, start=fail_runtime,
     ))

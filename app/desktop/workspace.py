@@ -10,16 +10,14 @@ from threading import RLock
 from typing import Callable
 from uuid import uuid4
 
-from app.core.config_loader import get_block_categories, get_field_docs, get_field_names_zh
-from app.core.metadata import normalize_content_type
+from app.core.config_loader import get_block_categories
 from app.core.project import Project
 from app.core.session import ProjectSession
+from app.desktop.editing import EditingError, EditingService
 
 
-class WorkspaceError(Exception):
-    def __init__(self, code: str, message: str, path: str | None = None):
-        super().__init__(message)
-        self.code, self.path = code, path
+class WorkspaceError(EditingError):
+    pass
 
 
 class WorkspaceService:
@@ -30,6 +28,8 @@ class WorkspaceService:
         self._choose_directory = choose_directory
         self._session = ProjectSession(metadata_dir)
         self._session_id: str | None = None
+        self._editing = EditingService(self._session, None)
+        self._closing = False
         self._lock = RLock()
         self._results: OrderedDict[str, tuple[str, dict]] = OrderedDict()
 
@@ -63,7 +63,9 @@ class WorkspaceService:
                 if envelope.get("sessionId") is not None and not isinstance(envelope["sessionId"], str):
                     raise WorkspaceError("INVALID_REQUEST", "会话标识无效。")
                 action, payload = envelope.get("action"), envelope.get("payload", {})
-                if action not in ("recent_projects", "open_project", "choose_project", "read_document") or not isinstance(payload, dict):
+                if action not in ("recent_projects", "open_project", "choose_project", "read_document",
+                                  "editing_state", "set_field", "undo", "redo", "save_opened",
+                                  "close_documents", "close_window") or not isinstance(payload, dict):
                     raise WorkspaceError("INVALID_REQUEST", "不支持此请求。")
                 fingerprint = json.dumps(envelope, sort_keys=True, ensure_ascii=False, allow_nan=False)
                 if len(fingerprint) > 16384:
@@ -78,9 +80,11 @@ class WorkspaceService:
                     return deepcopy(result)
                 if action != "recent_projects" and envelope.get("sessionId") != self._session_id:
                     raise WorkspaceError("STALE_SESSION", "工程已切换，请在当前工程重试。")
+                if self._closing and action not in ("editing_state", "recent_projects"):
+                    raise WorkspaceError("WINDOW_CLOSING", "窗口正在关闭，不能继续修改工程。")
                 data = self._dispatch(action, payload)
                 response.update(ok=True, sessionId=self._session_id, data=data)
-            except WorkspaceError as exc:
+            except EditingError as exc:
                 response["error"] = {"code": exc.code, "message": str(exc)}
                 if exc.path is not None:
                     response["error"]["path"] = exc.path
@@ -93,6 +97,25 @@ class WorkspaceService:
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
+        if action == "editing_state":
+            return self._editing.state()
+        if action == "set_field":
+            return self._editing.set_field(payload)
+        if action in ("undo", "redo"):
+            return self._editing.history(action, payload)
+        if action == "save_opened":
+            return self._editing.save(payload)
+        if action == "close_documents":
+            return self._editing.close(payload)
+        if action == "close_window":
+            self._editing.check_revision(payload)
+            decision = payload.get("decision")
+            if decision not in ("save", "discard"):
+                raise WorkspaceError("INVALID_CLOSE", "请明确选择保存、放弃或取消关闭。")
+            if decision == "save":
+                self._editing.save(payload)
+            self._closing = True
+            return {**self._editing.state(), "closeApproved": True}
         if action == "recent_projects":
             recent = self._session.last_project_path()
             if not isinstance(recent, str) or not recent or len(recent) > 4096 or "\x00" in recent:
@@ -107,6 +130,7 @@ class WorkspaceService:
                 pass
             return {"recentProjects": [{"path": str(path), "name": name}]}
         if action == "choose_project":
+            self._check_open_decision(payload)
             if self._choose_directory is None:
                 raise WorkspaceError("DIALOG_UNAVAILABLE", "目录选择器尚未就绪，请稍后重试。")
             path = self._choose_directory()
@@ -114,8 +138,19 @@ class WorkspaceService:
                 return {"cancelled": True}
             return self._open(path)
         if action == "open_project":
+            self._check_open_decision(payload)
             return self._open(payload.get("path"))
+        if "expectedRevision" in payload:
+            self._editing.check_revision(payload)
         return self._read(payload.get("path"))
+
+    def _check_open_decision(self, payload: dict) -> None:
+        if self._editing.has_dirty():
+            if payload.get("discard") is not True:
+                raise WorkspaceError("UNSAVED_CHANGES", "当前工程有未保存修改，请先保存或明确放弃。")
+            self._editing.check_revision(payload)
+        elif "expectedRevision" in payload:
+            self._editing.check_revision(payload)
 
     def _open(self, path: object) -> dict:
         if not isinstance(path, str) or not path or len(path) > 4096 or "\x00" in path or not Path(path).is_absolute():
@@ -132,6 +167,7 @@ class WorkspaceService:
             raise WorkspaceError("PROJECT_OPEN_FAILED", "无法打开工程，请检查目录中的 mod.json 和文件访问权限。", str(root)) from exc
         self._session = candidate
         self._session_id = uuid4().hex
+        self._editing = EditingService(candidate, self._session_id, self._editing.revision + 1)
         return {"sessionId": self._session_id, "name": project.mod_info.display_name or project.mod_info.name or root.name,
                 "root": str(root), "tree": tree}
 
@@ -150,13 +186,7 @@ class WorkspaceService:
             content = self._session.read_content(path[8:])
         except (OSError, ValueError) as exc:
             raise WorkspaceError("DOCUMENT_READ_FAILED", "无法读取此内容，请检查 JSON 格式、路径和文件访问权限。", path) from exc
-        kind = content.data.get("type", "UnitType" if content.category == "units" else "Weapon" if content.category == "weapons" else "Block")
-        if not isinstance(kind, str):
-            kind = "Unknown"
-        return {"sessionId": self._session_id, "path": path, "name": content.name,
-                "category": content.category, "contentType": normalize_content_type(kind),
-                "data": deepcopy(content.data), "fieldNames": deepcopy(get_field_names_zh()),
-                "fieldDocs": deepcopy(get_field_docs())}
+        return self._editing.opened(path, content)
 
     @staticmethod
     def _group(identifier: str, label: str, children: list[dict]) -> dict:

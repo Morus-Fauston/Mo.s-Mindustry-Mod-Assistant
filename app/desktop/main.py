@@ -9,6 +9,7 @@ from threading import Event
 
 from app.core.paths import data_dir, metadata_dir, ensure_user_config_dir
 from app.desktop.api import DesktopApi
+from app.desktop.close import WindowCloseGuard
 
 
 def _require_webview2() -> None:
@@ -43,13 +44,19 @@ def main() -> None:
             selected = window.create_file_dialog(webview.FileDialog.FOLDER)
             return selected[0] if selected else None
 
-        api = DesktopApi(metadata_dir(), choose_directory)
+        api = DesktopApi(metadata_dir(), choose_directory,
+                         on_close=lambda: guard.approve(), on_close_ready=lambda: guard.ready())
         webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
         window = webview.create_window(
             "MoMA 模组助手", str(page), js_api=api,
             width=1400, height=900, min_size=(1024, 640),
             background_color="#f5f6f7", text_select=True,
         )
+        guard = WindowCloseGuard(
+            lambda: window.evaluate_js("window.dispatchEvent(new Event('moma-close-request'))"),
+            window.destroy,
+        )
+        window.events.closing += guard.on_closing
         finished, failed = Event(), Event()
         window.events.loaded += finished.set
         window.events.closed += finished.set

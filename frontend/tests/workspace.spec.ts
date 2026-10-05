@@ -15,7 +15,7 @@ test('真实工程树的同名内容、搜索、键盘与标签', async ({ deskt
   const unitNode = page.locator('[data-path="content/units/twin.json"]');
   const blockNode = page.locator('[data-path="content/blocks/twin.json"]');
   await unitNode.click();
-  await expect(page.getByRole('tabpanel', { name: 'content/units/twin.json' })).toContainText('137');
+  await expect(page.getByRole('tabpanel', { name: 'content/units/twin.json' }).getByRole('textbox')).toHaveValue('137');
   const unitPage = page.getByRole('tabpanel', { name: 'content/units/twin.json' });
   await unitPage.evaluate(element => { element.scrollTop = 137; });
   const scrollTop = await unitPage.evaluate(element => element.scrollTop);
@@ -53,7 +53,7 @@ test('真实工程树的同名内容、搜索、键盘与标签', async ({ deskt
   await expect(page.getByRole('tab')).toHaveCount(1);
   await page.locator('[data-path="content/units/broken.json"]').click();
   await expect(page.getByRole('alert')).toContainText('broken.json');
-  await expect(page.getByRole('tabpanel', { name: 'content/units/twin.json' })).toContainText('137');
+  await expect(page.getByRole('tabpanel', { name: 'content/units/twin.json' }).getByRole('textbox')).toHaveValue('137');
   const measurements = await page.locator('input,textarea,select').evaluateAll(controls => controls.map(element => {
     const rect = element.getBoundingClientRect();
     const style = getComputedStyle(element);
@@ -142,7 +142,7 @@ test('打开响应超时后查询原结果，关闭全部隔离迟到读取', as
   await page.evaluate(() => (window as any).releaseRead());
   await expect(page.getByRole('tab')).toHaveCount(0);
   await page.locator('[data-path="content/units/twin.json"]').click();
-  await expect(page.getByRole('tabpanel', { name: 'content/units/twin.json' })).toContainText('137');
+  await expect(page.getByRole('tabpanel', { name: 'content/units/twin.json' }).getByRole('textbox')).toHaveValue('137');
   await expect(page.getByRole('tab')).toHaveCount(1);
 });
 

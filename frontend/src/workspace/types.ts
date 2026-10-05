@@ -26,6 +26,17 @@ export interface DocumentSnapshot {
   data: Record<string, unknown>;
   fieldNames: Record<string, string>;
   fieldDocs: Record<string, string>;
+  revision: number;
+  dirty: boolean;
+}
+
+export interface EditingState {
+  sessionId: string | null;
+  revision: number;
+  documents: DocumentSnapshot[];
+  history: { canUndo: boolean; canRedo: boolean; undoDescription: string; redoDescription: string };
+  autoSaveInterval: number;
+  closeApproved?: boolean;
 }
 
 export interface RecentProject { path: string; name: string }

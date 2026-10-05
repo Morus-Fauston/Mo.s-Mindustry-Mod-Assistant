@@ -7,7 +7,7 @@ export default defineConfig({
   fullyParallel: false,
   reporter: [['list'], ['json', { outputFile: 'test-results/host-results.json' }]],
   projects: [
-    { name: 'host', testMatch: ['startup.spec.ts', 'workspace.spec.ts'] },
+    { name: 'host', testMatch: ['startup.spec.ts', 'workspace.spec.ts', 'editing.spec.ts'] },
     { name: 'package', testMatch: 'package.spec.ts' },
   ],
 });

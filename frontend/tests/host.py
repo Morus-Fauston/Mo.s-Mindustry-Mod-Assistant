@@ -22,14 +22,26 @@ if missing_metadata:
     desktop_main.metadata_dir = lambda: stop_path.parent / "metadata"
 
 webview.settings["REMOTE_DEBUGGING_PORT"] = port
+close_guards = []
+original_guard = desktop_main.WindowCloseGuard
+
+
+def tracked_guard(*args, **kwargs):
+    guard = original_guard(*args, **kwargs)
+    close_guards.append(guard)
+    return guard
+
+
+desktop_main.WindowCloseGuard = tracked_guard
 
 
 def watch_stop():
     deadline = time.monotonic() + 120
     while not stop_path.exists() and time.monotonic() < deadline:
         time.sleep(0.1)
-    for window in tuple(webview.windows):
-        window.destroy()
+    # Test teardown may discard its temporary project even after a failed assertion.
+    for guard in close_guards:
+        guard.approve()
 
 
 threading.Thread(target=watch_stop, daemon=True).start()

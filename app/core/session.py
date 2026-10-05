@@ -146,6 +146,21 @@ class ProjectSession:
         self._project.is_dirty = False
         return report
 
+    def save_content(self, content: ContentData) -> Path:
+        """Save one opened document after rechecking its project-local identity."""
+        if self._project is None:
+            raise ValueError("没有已打开的工程")
+        relative = f"{content.category}/{content.name}.json"
+        if self._open_contents.get(relative) is not content:
+            raise ValueError("内容不属于当前会话")
+        root = self._project.root.resolve()
+        target = root / "content" / relative
+        if not target.resolve().is_relative_to(root) or target.resolve() != content.path:
+            raise ValueError("内容路径已变化或超出工程范围")
+        if target.exists() and not target.is_file():
+            raise ValueError("内容保存目标不是文件")
+        return self._project.contents.save(content.name, content.data, content.category)
+
     def last_project_path(self) -> str | None:
         """Return the last opened project path from persisted state."""
         return load_editor_state().get("last_project") or None

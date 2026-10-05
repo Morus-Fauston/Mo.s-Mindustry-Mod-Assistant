@@ -1,0 +1,25 @@
+.nested, .node { min-width: 0; }
+.typeRow { display: grid; grid-template-columns: minmax(78px, 132px) minmax(0, 1fr); align-items: center; gap: 9px; padding: 8px 0; }
+.typeRow label { line-height: 1.6; }
+.typeRow select { min-width: 0; width: 100%; min-height: 30px; padding: 4px 10px; border: 1px solid var(--obj-line); background: var(--obj); }
+.container { --container-line: var(--obj-line); --container-bar: var(--obj-bar); --container-bg: var(--obj); min-width: 0; margin: 7px 0; border: 1px solid var(--container-line); border-left: 4px solid var(--container-bar); border-radius: 3px; background: var(--container-bg); }
+.container[data-field-type="arr"] { --container-line: var(--arr-line); --container-bar: var(--arr-bar); --container-bg: var(--arr); }
+.container[aria-invalid="true"] { border-color: var(--error); }
+.heading, .itemHead { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 34px; padding: 3px 7px; }
+.heading > button, .actions > button, .body > button { min-height: 27px; padding: 3px 7px; border: 1px solid var(--line); background: var(--canvas); font: inherit; }
+.heading > .title, .itemHead > .title { display: flex; align-items: center; gap: 5px; min-width: 0; flex: 1; min-height: 28px; padding: 3px 0; border: 0; background: transparent; text-align: left; font: inherit; overflow-wrap: anywhere; }
+.title svg { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.title svg[data-expanded="true"] { transform: rotate(90deg); }
+.heading button:hover, .itemHead button:hover, .body > button:hover { background: var(--panel2); }
+.heading button:active, .itemHead button:active, .body > button:active { background: var(--selected); }
+.body { min-width: 0; padding: 2px 8px 9px; }
+.item { min-width: 0; margin: 5px 0 9px; border: 1px solid var(--line); border-radius: 3px; background: var(--canvas); }
+.itemHead { border-bottom: 1px solid var(--line); background: var(--panel); }
+.itemBody { padding: 2px 7px 7px; }
+.actions { display: flex; flex-wrap: wrap; gap: 5px; }
+.count { margin-left: 4px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.notice, .error { margin: 5px 0; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.notice { color: var(--muted); }
+.error { color: var(--error); }
+.add { margin-top: 3px; }
+@container (max-width: 320px) { .typeRow { grid-template-columns: minmax(0, 1fr); gap: 4px; } .body, .itemBody { padding-left: 4px; padding-right: 4px; } }

@@ -6,7 +6,7 @@ import styles from './App.module.css';
 import { createEditingClient } from './editing/client';
 import { CloseDecision, type CloseChoice } from './editing/CloseDecision';
 import { PreviewPanel } from './preview/PreviewPanel';
-import { BasicForm } from './forms/BasicForm';
+import { NestedForm, decodeFieldKey, encodeFieldKey, type NestedFormPlan, type ObjectPath } from './nested/NestedForm';
 import { createDraftStore } from './editing/drafts';
 import type { ReferenceResult } from './references/types';
 import { SpriteResources, type SpriteTargets } from './resources/SpriteResources';
@@ -29,7 +29,7 @@ export function App() {
   const editor = useSyncExternalStore(editing.subscribe, editing.getSnapshot);
   const documents = editor.state?.documents ?? [];
   const [draftStore] = useState(() => createDraftStore(async (path, field, text) => {
-    await editing.run('set_field', { path, field, text });
+    await editing.run('set_field', { path, ...decodeFieldKey(field), text });
   }));
   const draftState = useSyncExternalStore(draftStore.subscribe, draftStore.getSnapshot);
   const drafts = draftState.drafts;
@@ -103,7 +103,7 @@ export function App() {
       setFailure('');
       const session = projectRef.current?.sessionId;
       const target = typeof payload.field === 'string' && ['set_field', 'delete_field'].includes(action)
-        ? { path, field: payload.field } : undefined;
+        ? { path, field: encodeFieldKey((payload.objectPath ?? []) as ObjectPath, payload.field) } : undefined;
       const replacedDraft = target ? draftStore.getSnapshot().drafts[path]?.[target.field] : undefined;
       await draftStore.flush(target);
       if (session !== projectRef.current?.sessionId) return;
@@ -322,9 +322,9 @@ export function App() {
         </div>}
         {documents.map(document => <section className={styles.document} key={document.path} hidden={activePath !== document.path} role="tabpanel" aria-label={document.path}>
           <h1>{document.name}</h1><p className={styles.description}>内容类型：{document.contentType}</p>
-          <BasicForm document={document} drafts={drafts[document.path] ?? {}} errors={draftState.errors[document.path] ?? {}}
+          <NestedForm document={document} plan={document.form as NestedFormPlan} drafts={drafts[document.path] ?? {}} errors={draftState.errors[document.path] ?? {}}
             disabled={busy || editor.uncertain || decisionBusy}
-            onLoadReference={(field, query) => desktop.request<ReferenceResult>('reference_candidates', { path: document.path, field, query }, document.sessionId)}
+            onLoadReference={(field, query) => desktop.request<ReferenceResult>('reference_candidates', { path: document.path, ...decodeFieldKey(field), query }, document.sessionId)}
             onDraft={(field, text) => draftStore.set(document.path, field, text)}
             onComposition={(field, active) => draftStore.composition(document.path, field, active)}
             onReset={field => { draftStore.resetField(document.path, field); setFailure(''); }}

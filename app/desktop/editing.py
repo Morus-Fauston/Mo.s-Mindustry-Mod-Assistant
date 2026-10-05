@@ -11,8 +11,9 @@ from app.core.content_store import ContentData
 from app.core.metadata import normalize_content_type
 from app.core.session import ProjectSession
 from app.core.settings import get_settings
-from app.desktop.forms import FormCommand, FormMemory, FormService, json_values_equal
+from app.desktop.forms import FormService, json_values_equal
 from app.desktop.references import ReferenceService
+from app.desktop.nested_forms import NestedFormService, NestedFormState
 
 
 class EditingError(Exception):
@@ -57,10 +58,11 @@ class EditingService:
         self._documents: dict[str, ContentData] = {}
         self._opened: dict[str, None] = {}
         self._saved: dict[str, dict] = {}
-        self._saved_forms: dict[str, FormMemory] = {}
+        self._saved_forms: dict[str, NestedFormState] = {}
         self._merge_token = object()
         self.references = ReferenceService(session.metadata, session.project)
         self.forms = FormService(session.metadata, self.references)
+        self.nested = NestedFormService(session.metadata, self.forms)
 
     def reference_candidates(self, payload: dict) -> dict:
         path = payload.get("path")
@@ -70,8 +72,10 @@ class EditingService:
             self.check_revision(payload)
         content = self._documents[path]
         try:
-            field = self.forms.field(content, path, payload.get("field"))
-            return self.references.read(field, content.data.get(field["name"]), payload.get("query", ""))
+            if "objectPath" not in payload or payload["objectPath"] == []:
+                field = self.forms.field(content, path, payload.get("field"))
+                return self.references.read(field, content.data.get(field["name"]), payload.get("query", ""))
+            return self.nested.reference_candidates(content, path, payload)
         except ValueError as exc:
             raise EditingError("INVALID_REFERENCE", str(exc), path) from exc
 
@@ -83,14 +87,17 @@ class EditingService:
         return any(not json_values_equal(self._documents[path].data, self._saved[path]) for path in self._opened)
 
     def opened(self, path: str, content: ContentData) -> dict:
+        first_open = path not in self._documents
         if path not in self._documents:
             self._documents[path] = content
             self._saved[path] = deepcopy(content.data)
-            self._saved_forms[path] = self.forms.snapshot(path)
         if path not in self._opened:
             self._opened[path] = None
             self.revision += 1
-        return self.document(path)
+        document = self.document(path)
+        if first_open:
+            self._saved_forms[path] = self.nested.snapshot(path)
+        return document
 
     def document(self, path: str) -> dict:
         content = self._documents[path]
@@ -100,7 +107,7 @@ class EditingService:
                 "category": content.category, "contentType": normalize_content_type(kind),
                 "data": deepcopy(content.data), "fieldNames": deepcopy(get_field_names_zh()),
                 "fieldDocs": deepcopy(get_field_docs()), "revision": self.revision,
-                "dirty": not json_values_equal(content.data, self._saved[path]), "form": self.forms.plan(content, path)}
+                "dirty": not json_values_equal(content.data, self._saved[path]), "form": self.nested.plan(content, path)}
 
     def state(self) -> dict:
         stack = self.session.command_stack
@@ -120,6 +127,8 @@ class EditingService:
             self.session.project.is_dirty = self.has_dirty()
 
     def set_field(self, payload: dict) -> dict:
+        if "objectPath" in payload and payload["objectPath"] != []:
+            return self.form_action("set_field", payload)
         self.check_revision(payload)
         path, field = payload.get("path"), payload.get("field")
         if not isinstance(path, str) or path not in self._opened:
@@ -152,16 +161,11 @@ class EditingService:
         if not isinstance(path, str) or path not in self._opened:
             raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
         try:
-            command = self.forms.command(action, self._documents[path], path, payload)
+            command = self.nested.command(action, self._documents[path], path, payload)
         except ValueError as exc:
             raise EditingError("INVALID_FORM_ACTION", str(exc), path) from exc
         if command is not None:
-            name = payload.get("field") or payload.get("group")
-            from app.core.form_labels import GROUP_LABELS
-            label = get_field_names_zh().get(name, GROUP_LABELS.get(name, name))
-            verb = {"add_field": "添加字段", "delete_field": "删除字段", "add_group": "添加字段组",
-                    "delete_group": "删除字段组", "set_capability": "开启能力" if payload.get("enabled") else "关闭能力"}[action]
-            self.session.command_stack.execute(DocumentCommand(command, path, f"{verb} {label}（{path}）", self.changed))
+            self.session.command_stack.execute(DocumentCommand(command, path, f"{command.description}（{path}）", self.changed))
         return self.state()
 
     def save(self, payload: dict) -> dict:
@@ -175,7 +179,7 @@ class EditingService:
             except (OSError, ValueError, TypeError) as exc:
                 raise EditingError("SAVE_FAILED", "保存失败，修改仍保留，请检查文件占用和访问权限后重试。", path) from exc
             self._saved[path] = deepcopy(content.data)
-            self._saved_forms[path] = self.forms.snapshot(path)
+            self._saved_forms[path] = self.nested.snapshot(path)
             self.revision += 1
         if self.session.project is not None:
             self.session.project.is_dirty = self.has_dirty()
@@ -195,9 +199,10 @@ class EditingService:
         elif decision == "discard":
             for path in dict.fromkeys(paths):
                 content = self._documents[path]
-                if not json_values_equal(content.data, self._saved[path]) or self.forms.snapshot(path) != self._saved_forms[path]:
+                command = self.nested.replace(content, path, self._saved[path], self._saved_forms[path])
+                if command is not None:
                     self.session.command_stack.execute(DocumentCommand(
-                        FormCommand(self.forms, path, content.data, self._saved[path], self._saved_forms[path]), path,
+                        command, path,
                         f"放弃 {path} 的未保存修改", self.changed))
         for path in paths:
             self._opened.pop(path, None)

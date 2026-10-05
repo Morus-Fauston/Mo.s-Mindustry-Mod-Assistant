@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { Fragment, useEffect, useId, useRef, useState } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import type { DocumentSnapshot } from '../workspace/types';
 import type { FormDrafts, FormErrors, FormField, FormGroup } from './types';
 import { ActionMenu } from './ActionMenu';
@@ -18,6 +18,7 @@ export interface BasicFormProps {
   onComposition: (field: string, composing: boolean) => void;
   onAction: (action: string, payload: Record<string, unknown>) => Promise<void>;
   onLoadReference: (field: string, query: string) => Promise<ReferenceResult>;
+  renderField?: (field: FormField) => ReactNode;
 }
 
 function Chevron({ expanded }: { expanded: boolean }) {
@@ -125,8 +126,8 @@ export function BasicForm(props: BasicFormProps) {
           {!group.locked && <button type="button" className={styles.iconButton} disabled={disabled} aria-label={`删除${group.label}组`} title={`删除${group.label}组`}
             onClick={() => run('delete_group', { group: group.id })}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6" /></svg></button>}
         </div>
-        {open && <div id={bodyId} className={styles.groupBody}>{group.fields.length ? group.fields.map(field => <FieldControl key={field.name} {...props}
-          field={field} error={errors[field.name] ?? field.validationError} />) : <p className={styles.empty}>此组暂无字段，可从右上方添加。</p>}</div>}
+        {open && <div id={bodyId} className={styles.groupBody}>{group.fields.length ? group.fields.map(field => <Fragment key={field.name}>{props.renderField?.(field) ?? <FieldControl {...props}
+          field={field} error={errors[field.name] ?? field.validationError} />}</Fragment>) : <p className={styles.empty}>此组暂无字段，可从右上方添加。</p>}</div>}
       </section>;
     })}
     <div className={styles.formFoot}><ActionMenu label="添加字段组" disabled={disabled} items={doc.form.addableGroups.map(group => ({ id: group.id, label: group.label,

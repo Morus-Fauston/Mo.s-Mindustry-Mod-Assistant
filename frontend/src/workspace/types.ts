@@ -19,19 +19,33 @@ export interface ProjectSnapshot {
   tree: TreeNode[];
 }
 
-export interface DocumentSnapshot {
+interface DocumentCommon {
   sessionId: string;
   path: string;
   name: string;
   category: string;
   contentType: string;
-  data: Record<string, unknown>;
   fieldNames: Record<string, string>;
   fieldDocs: Record<string, string>;
   revision: number;
   dirty: boolean;
+  sourceText?: string;
+  sourceError?: { message: string; line?: number; column?: number } | null;
+}
+
+export interface ValidDocumentSnapshot extends DocumentCommon {
+  validData?: true;
+  data: Record<string, unknown>;
   form: FormPlan;
 }
+export interface RawDocumentSnapshot extends DocumentCommon {
+  validData: false;
+  data: null;
+  form: null;
+  sourceText: string;
+  sourceError: { message: string; line?: number; column?: number };
+}
+export type DocumentSnapshot = ValidDocumentSnapshot | RawDocumentSnapshot;
 
 export interface EditingState {
   sessionId: string | null;

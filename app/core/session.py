@@ -21,7 +21,7 @@ Interface:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .commands import CommandStack
@@ -105,6 +105,38 @@ class ProjectSession:
         if relative_path not in self._open_contents:
             self._open_contents[relative_path] = self._project.contents.get_by_path(relative_path)
         return self._open_contents[relative_path]
+
+    def attach_content(self, relative_path: str, content: ContentData) -> None:
+        """Register an already parsed real object for a source repair command."""
+        if self._project is None:
+            raise ValueError("没有已打开的工程")
+        if not isinstance(relative_path, str) or any(c in relative_path for c in ("\\", ":", "\x00")):
+            raise ValueError("内容路径无效")
+        relative = PurePosixPath(relative_path)
+        if (relative.is_absolute() or len(relative.parts) != 2 or relative.as_posix() != relative_path
+                or ".." in relative.parts or relative.suffix != ".json"):
+            raise ValueError("内容路径必须为分类内的 JSON 文件")
+        target = (self._project.root / "content" / relative_path).resolve()
+        if (not isinstance(content, ContentData) or not isinstance(content.data, dict)
+                or content.name != relative.stem or content.category != relative.parts[0]
+                or content.path != target
+                or not target.is_relative_to(self._project.root.resolve())
+                or not target.is_relative_to((self._project.root / "content").resolve())):
+            raise ValueError("内容身份或路径不属于当前工程")
+        existing = self._open_contents.get(relative_path)
+        if existing is not None and existing is not content:
+            raise ValueError("内容已经由另一对象持有")
+        self._open_contents[relative_path] = content
+
+    def loaded_content(self, relative_path: str) -> ContentData | None:
+        """Inspect current registration without reading a different disk version."""
+        return self._open_contents.get(relative_path)
+
+    def detach_content(self, relative_path: str, expected: ContentData) -> None:
+        """Undo registration only when the command still owns this exact object."""
+        if self._open_contents.get(relative_path) is not expected:
+            raise ValueError("内容不属于当前会话")
+        del self._open_contents[relative_path]
 
     # ── content creation ────────────────────────────────────────────────
 

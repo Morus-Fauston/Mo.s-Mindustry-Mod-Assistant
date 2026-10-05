@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from copy import deepcopy
+from hashlib import sha256
 import json
 from pathlib import Path
 from threading import RLock
@@ -11,12 +12,14 @@ from typing import Callable
 from uuid import uuid4
 
 from app.core.config_loader import get_block_categories
+from app.core.content_store import ContentData
 from app.core.project import Project
 from app.core.session import ProjectSession
 from app.desktop.editing import EditingError, EditingService
 from app.desktop.preview import PreviewService
 from app.desktop.resources import ResourceService
 from app.desktop.resource_watch import ResourceWatch
+from app.desktop.source_editing import RawDocument, SourceEditingService
 
 
 class WorkspaceError(EditingError):
@@ -25,6 +28,8 @@ class WorkspaceError(EditingError):
 
 class WorkspaceService:
     """One window owns one core session; requests never accept arbitrary actions."""
+
+    MAX_RESULT_CACHE_BYTES = 32 * 1024 * 1024
 
     def __init__(self, metadata_dir: Path | str, choose_directory: Callable[[], str | None] | None = None,
                  *, choose_sprite: Callable[[], str | None] | None = None,
@@ -41,6 +46,40 @@ class WorkspaceService:
         self._preview: PreviewService | None = None
         self._lock = RLock()
         self._results: OrderedDict[str, tuple[str, dict]] = OrderedDict()
+        self._result_sizes: dict[str, int] = {}
+        self._result_bytes = 0
+
+    @staticmethod
+    def _expired_result(response: dict) -> dict:
+        return {"ok": False, "protocolVersion": 1, "requestId": response["requestId"],
+                "sessionId": response["sessionId"], "error": {"code": "RESULT_EXPIRED",
+                "message": "此请求已经执行，完整结果已释放，请刷新当前状态确认；不要重复提交。"}}
+
+    def _cache_result(self, request_id: str, fingerprint: str, response: dict) -> None:
+        # Bound retained transport data, including sourceText and repeated form
+        # projections. Small tombstones prevent an evicted mutation being replayed.
+        # Escaped JSON also covers non-content metadata; counting a response
+        # must never fail after its operation has already committed.
+        size = len(json.dumps(response, ensure_ascii=True, allow_nan=False).encode("utf-8"))
+        stored = response if size <= self.MAX_RESULT_CACHE_BYTES else self._expired_result(response)
+        if stored is not response:
+            size = len(json.dumps(stored, ensure_ascii=True).encode("utf-8"))
+        self._results[request_id] = (fingerprint, deepcopy(stored))
+        self._result_sizes[request_id] = size
+        self._result_bytes += size
+        while len(self._results) > 128:
+            old_id, _ = self._results.popitem(last=False)
+            self._result_bytes -= self._result_sizes.pop(old_id)
+        for old_id, (digest, result) in self._results.items():
+            if self._result_bytes <= self.MAX_RESULT_CACHE_BYTES:
+                break
+            expired = self._expired_result(result)
+            expired_size = len(json.dumps(expired, ensure_ascii=True).encode("utf-8"))
+            if expired_size >= self._result_sizes[old_id]:
+                continue
+            self._result_bytes += expired_size - self._result_sizes[old_id]
+            self._result_sizes[old_id] = expired_size
+            self._results[old_id] = (digest, expired)
 
     def request_result(self, request_id: object) -> dict:
         """Inspect a completed operation without replaying or waiting for it."""
@@ -73,7 +112,7 @@ class WorkspaceService:
                     raise WorkspaceError("INVALID_REQUEST", "会话标识无效。")
                 action, payload = envelope.get("action"), envelope.get("payload", {})
                 if action not in ("recent_projects", "open_project", "choose_project", "read_document",
-                                  "editing_state", "set_field", "undo", "redo", "save_opened",
+                                  "editing_state", "set_field", "set_source", "format_source", "undo", "redo", "save_opened",
                                   "close_documents", "close_window", "preview_scene", "preview_resource",
                                   "add_field", "delete_field", "set_capability", "add_group", "delete_group",
                                   "reference_candidates", "sprite_targets", "resource_state",
@@ -85,10 +124,20 @@ class WorkspaceService:
                                   "research_reference_candidates", "research_set", "research_add", "research_remove",
                                   "research_move", "research_objective_type", "planet_add", "planet_remove", "planet_set") or not isinstance(payload, dict):
                     raise WorkspaceError("INVALID_REQUEST", "不支持此请求。")
-                fingerprint = json.dumps(envelope, sort_keys=True, ensure_ascii=False, allow_nan=False)
-                if len(fingerprint) > 16384:
-                    fingerprint = None
+                source_action = action in ("set_source", "format_source")
+                if source_action:
+                    source_text = payload.get("text")
+                    if (not isinstance(source_text, str) or len(source_text) > SourceEditingService.MAX_BYTES
+                            or len(source_text.encode("utf-8")) > SourceEditingService.MAX_BYTES):
+                        raise WorkspaceError("SOURCE_INVALID", "JSON 源码必须为不超过 4 MiB 的 UTF-8 文本。", payload.get("path"))
+                    if set(payload) - {"path", "text", "expectedRevision"}:
+                        raise WorkspaceError("INVALID_REQUEST", "源码请求参数无效。")
+                serialized = json.dumps(envelope, sort_keys=True, ensure_ascii=False, allow_nan=False)
+                # JSON escaping can multiply a source's UTF-8 size by six.
+                limit = SourceEditingService.MAX_BYTES * 6 + 16384 if source_action else 16384
+                if len(serialized.encode("utf-8")) > limit:
                     raise WorkspaceError("INVALID_REQUEST", "请求内容过长。")
+                fingerprint = sha256(serialized.encode("utf-8")).hexdigest()
                 if request_id in self._results:
                     previous, result = self._results[request_id]
                     if previous != fingerprint:
@@ -104,17 +153,16 @@ class WorkspaceService:
                 response.update(ok=True, sessionId=self._session_id, data=data)
             except EditingError as exc:
                 response["error"] = {"code": exc.code, "message": str(exc)}
+                response["error"].update({key: value for key, value in exc.details.items() if key in ("line", "column")})
                 if exc.path is not None:
                     response["error"]["path"] = exc.path
             except (OSError, ValueError, TypeError, RecursionError):
                 response["error"] = {"code": "READ_FAILED", "message": "无法读取工程资料，请检查文件格式和访问权限后重试。"}
             # Preview reads can be repeated explicitly. Keeping their data URLs in
             # the mutation-result cache would retain old scenes after resource cleanup.
-            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource", "reference_candidates", "resource_reference_candidates", "weapon_reference_candidates", "research_reference_candidates", "sprite_targets", "resource_state")
+            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource", "reference_candidates", "resource_reference_candidates", "weapon_reference_candidates", "research_reference_candidates", "sprite_targets", "resource_state", "format_source")
             if cacheable and fingerprint is not None and request_id not in self._results:
-                self._results[request_id] = (fingerprint, deepcopy(response))
-                while len(self._results) > 128:
-                    self._results.popitem(last=False)
+                self._cache_result(request_id, fingerprint, response)
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
@@ -149,6 +197,10 @@ class WorkspaceService:
             return self._editing.state()
         if action == "set_field":
             return self._editing.set_field(payload)
+        if action == "set_source":
+            return self._editing.set_source(payload)
+        if action == "format_source":
+            return self._editing.format_source(payload)
         if action in ("add_field", "delete_field", "set_capability", "add_group", "delete_group",
                       "set_type", "create_object", "array_insert", "array_remove", "array_move",
                       "resource_set", "resource_add", "resource_remove", "resource_move", "consume_add", "consume_remove",
@@ -289,23 +341,63 @@ class WorkspaceService:
             raise WorkspaceError("RESOURCE_FAILED", f"贴图操作失败：{exc}") from exc
 
     def _read(self, path: object) -> dict:
-        return self._editing.opened(path, self._content(path))
+        return self._editing.opened(path, self._load_content(path))
 
-    def _content(self, path: object):
+    def _load_content(self, path: object) -> ContentData | RawDocument:
+        target = self._content_path(path)
+        existing = self._editing.entry(path)
+        if existing is not None:
+            return existing
+        registered = self._session.loaded_content(path[8:])
+        if registered is not None:
+            return registered
+        try:
+            text = self._read_source_text(target)
+        except (OSError, ValueError) as exc:
+            raise WorkspaceError("DOCUMENT_READ_FAILED", "无法读取此内容，请检查大小、编码、路径和访问权限。", path) from exc
+        try:
+            data = SourceEditingService._decode(text)
+        except ValueError as exc:
+            content = RawDocument(target.stem, path.split("/")[1], target, text, SourceEditingService.error_details(exc))
+        else:
+            content = ContentData(target.stem, path.split("/")[1], data, target)
+            self._session.attach_content(path[8:], content)
+        return content
+
+    @staticmethod
+    def _read_source_text(target: Path) -> str:
+        with target.open("rb") as stream:
+            raw = stream.read(SourceEditingService.MAX_BYTES + 1)
+        if len(raw) > SourceEditingService.MAX_BYTES:
+            raise ValueError("内容大小超过允许上限")
+        text = raw.decode("utf-8")
+        if "\x00" in text:
+            raise ValueError("内容不是可编辑的 UTF-8 文本")
+        return text
+
+    def _content_path(self, path: object) -> Path:
         if self._session.project is None:
             raise WorkspaceError("NO_PROJECT", "请先打开工程。")
-        if not isinstance(path, str) or len(path) > 4096 or not path.startswith("content/"):
+        if (not isinstance(path, str) or len(path) > 4096 or not path.startswith("content/")
+                or any(c in path for c in ("\\", ":", "\x00"))):
             raise WorkspaceError("INVALID_PATH", "请选择工程内容文件。")
         parts = path.split("/")
-        if len(parts) != 3 or parts[1] not in ("units", "blocks", "weapons"):
+        if (len(parts) != 3 or parts[1] not in ("units", "blocks", "weapons")
+                or not parts[2].endswith(".json") or parts[2] in (".json", "..")):
             raise WorkspaceError("INVALID_PATH", "内容路径不在支持的分类内。", path)
         try:
             root = self._session.project.root.resolve()
-            if not (root / path).resolve().is_relative_to(root):
+            target = (root / path).resolve()
+            if not target.is_relative_to(root) or not target.is_relative_to((root / "content").resolve()):
                 raise ValueError("Content escapes project")
-            content = self._session.read_content(path[8:])
         except (OSError, ValueError) as exc:
             raise WorkspaceError("DOCUMENT_READ_FAILED", "无法读取此内容，请检查 JSON 格式、路径和文件访问权限。", path) from exc
+        return target
+
+    def _content(self, path: object):
+        content = self._load_content(path)
+        if isinstance(content, RawDocument):
+            raise WorkspaceError("SOURCE_INVALID", "当前源码无效，请先修复 JSON。", path, content.source_error)
         return content
 
     @staticmethod
@@ -326,7 +418,7 @@ class WorkspaceService:
                     leaf = {"id": path, "kind": "content", "label": file.stem, "name": file.stem,
                             "category": category, "path": path}
                     try:
-                        data = project.contents.get_by_path(f"{category}/{file.name}").data
+                        data = SourceEditingService._decode(self._read_source_text(file))
                         display_name = data.get("name")
                         if isinstance(display_name, str) and display_name.strip():
                             leaf["label"] = display_name

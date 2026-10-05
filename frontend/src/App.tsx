@@ -13,6 +13,7 @@ import { SpriteResources, type SpriteTargets } from './resources/SpriteResources
 import { ResourceField, isResourceField, findResourceField } from './resource_fields/ResourceField';
 import { WeaponArray, isWeaponArrayField, findWeaponField } from './weapons/WeaponArray';
 import { ResearchField, isResearchField, findResearchField } from './research/ResearchField';
+import { SourceEditor, SOURCE_DRAFT_FIELD } from './source/SourceEditor';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -32,6 +33,7 @@ export function App() {
   const editor = useSyncExternalStore(editing.subscribe, editing.getSnapshot);
   const documents = editor.state?.documents ?? [];
   const [draftStore] = useState(() => createDraftStore(async (path, field, text) => {
+    if (field === SOURCE_DRAFT_FIELD) { await editing.run('set_source', { path, text }); return; }
     const current = editing.getSnapshot().state?.documents.find(document => document.path === path);
     const resource = current?.form && findResourceField(current.form as NestedFormPlan, field);
     const research = current?.form && findResearchField(current.form as NestedFormPlan, field);
@@ -44,6 +46,7 @@ export function App() {
   const [decisionBusy, setDecisionBusy] = useState(false);
   const [decisionError, setDecisionError] = useState('');
   const [activePath, setActivePath] = useState<string | null>(null);
+  const [sourceViews, setSourceViews] = useState<Record<string, { mode: 'form' | 'source'; seen: boolean }>>({});
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentProject[]>([]);
   const [busy, setBusy] = useState(false);
@@ -100,8 +103,40 @@ export function App() {
   const flushDrafts = draftStore.flush;
 
   async function commitDraft(path: string, field: string) {
-    try { setFailure(''); await draftStore.commit(path, field); }
+    try { await draftStore.commit(path, field); setFailure(''); }
     catch (error) { setFailure(message(error)); throw error; }
+  }
+
+  async function switchView(path: string, mode: 'form' | 'source') {
+    if (draftStore.getSnapshot().composing) { setFailure('请结束中文输入后再切换视图。'); return; }
+    const session = projectRef.current?.sessionId;
+    const fields = draftStore.getSnapshot().drafts[path] ?? {};
+    try {
+      for (const field of Object.keys(fields)) await commitDraft(path, field);
+    } catch {
+      // Invalid source remains visible as a draft; the old form is explicitly read-only.
+      if (mode === 'source' || !(SOURCE_DRAFT_FIELD in fields)) return;
+    }
+    if (session === projectRef.current?.sessionId) setSourceViews(previous => ({ ...previous, [path]: { mode, seen: true } }));
+  }
+
+  async function formatSource(document: DocumentSnapshot) {
+    const owner = generation.current;
+    const path = document.path, text = draftStore.getSnapshot().drafts[path]?.[SOURCE_DRAFT_FIELD] ?? document.sourceText ?? '';
+    try {
+      const result = await desktop.request<{ text: string }>('format_source', {
+        path, text, expectedRevision: editing.getSnapshot().state?.revision,
+      }, document.sessionId);
+      const currentDocument = editing.getSnapshot().state?.documents.find(item => item.path === path);
+      if (owner !== generation.current || projectRef.current?.sessionId !== document.sessionId ||
+          !currentDocument ||
+          (draftStore.getSnapshot().drafts[path]?.[SOURCE_DRAFT_FIELD] ?? currentDocument.sourceText ?? '') !== text) return;
+      draftStore.set(path, SOURCE_DRAFT_FIELD, result.text);
+      await commitDraft(path, SOURCE_DRAFT_FIELD);
+    } catch (error) {
+      if (owner !== generation.current || projectRef.current?.sessionId !== document.sessionId) return;
+      setFailure(message(error)); throw error;
+    }
   }
 
   async function formAction(path: string, action: string, payload: Record<string, unknown>) {
@@ -141,6 +176,7 @@ export function App() {
         generation.current += 1;
         await editing.run('close_documents', { paths: target.paths, decision: choice });
         draftStore.removePaths(target.paths);
+        setSourceViews(previous => Object.fromEntries(Object.entries(previous).filter(([path]) => !target.paths.includes(path))));
       } else if (target.kind === 'project') {
         if (choice === 'save') await editing.run('save_opened');
         clearIntent();
@@ -233,6 +269,7 @@ export function App() {
       setProject(result);
       editing.reset(result.sessionId);
       draftStore.reset();
+      setSourceViews({});
       setActivePath(null);
       setSelectedPath(null);
       setRecent([{ path: result.root, name: result.name }]);
@@ -267,6 +304,7 @@ export function App() {
         path, expectedRevision: editing.getSnapshot().state?.revision ?? 0,
       }, sessionId);
       if (currentGeneration !== generation.current || projectRef.current?.sessionId !== document.sessionId) return;
+      if (document.validData === false) setSourceViews(previous => ({ ...previous, [path]: { mode: 'source', seen: true } }));
       await editing.refresh();
       if (currentGeneration !== generation.current) return;
       if (selection.current === selected) { setActivePath(path); setSelectedPath(path); }
@@ -328,11 +366,22 @@ export function App() {
         </div>}
         {documents.map(document => <section className={styles.document} key={document.path} hidden={activePath !== document.path} role="tabpanel" aria-label={document.path}>
           <h1>{document.name}</h1><p className={styles.description}>内容类型：{document.contentType}</p>
+          <div className={styles.viewTools} role="group" aria-label="编辑视图">
+            <button type="button" aria-pressed={(sourceViews[document.path]?.mode ?? 'form') === 'form'}
+              onClick={() => void switchView(document.path, 'form')}>表单</button>
+            <button type="button" aria-pressed={sourceViews[document.path]?.mode === 'source'}
+              onClick={() => void switchView(document.path, 'source')}>JSON 源码</button>
+            {SOURCE_DRAFT_FIELD in (drafts[document.path] ?? {}) && <button type="button" disabled={draftState.composing || editor.busy}
+              onClick={() => { draftStore.resetField(document.path, SOURCE_DRAFT_FIELD); setFailure(''); }}>放弃源码输入</button>}
+          </div>
+          <div hidden={sourceViews[document.path]?.mode === 'source'}>
+          {SOURCE_DRAFT_FIELD in (drafts[document.path] ?? {}) && <p className={styles.sourceWarning} role="status">源码输入尚未应用，以下显示上一次有效内容，暂不可编辑。</p>}
+          {document.validData === false ? <p className={styles.sourceWarning}>源码无法解析，尚无可用表单。请切换到 JSON 源码修复。</p> :
           <NestedForm document={document} plan={document.form as NestedFormPlan} drafts={drafts[document.path] ?? {}} errors={draftState.errors[document.path] ?? {}}
             renderSpecialField={(field, objectPath, props, renderForm) => isResourceField(field) ? <ResourceField {...props} field={field} objectPath={objectPath} />
               : isResearchField(field) ? <ResearchField {...props} field={field} objectPath={objectPath} />
               : isWeaponArrayField(field) ? <WeaponArray {...props} field={field} objectPath={objectPath} renderForm={renderForm} /> : undefined}
-            disabled={busy || editor.uncertain || decisionBusy}
+            disabled={busy || editor.uncertain || decisionBusy || SOURCE_DRAFT_FIELD in (drafts[document.path] ?? {})}
             onLoadReference={(field, query) => {
               const plan = document.form as NestedFormPlan;
               const weapon = findWeaponField(plan, field);
@@ -344,7 +393,19 @@ export function App() {
             onComposition={(field, active) => draftStore.composition(document.path, field, active)}
             onReset={field => { draftStore.resetField(document.path, field); setFailure(''); }}
             onCommit={field => commitDraft(document.path, field)}
-            onAction={(action, payload) => formAction(document.path, action, payload)} />
+            onAction={(action, payload) => formAction(document.path, action, payload)} />}
+          </div>
+          {(sourceViews[document.path]?.seen || document.validData === false) && <div hidden={sourceViews[document.path]?.mode !== 'source'}>
+            <SourceEditor identity={JSON.stringify([document.sessionId, document.path])}
+              text={drafts[document.path]?.[SOURCE_DRAFT_FIELD] ?? document.sourceText ?? ''}
+              error={SOURCE_DRAFT_FIELD in (drafts[document.path] ?? {})
+                ? draftState.errors[document.path]?.[SOURCE_DRAFT_FIELD] ?? '' : document.sourceError?.message ?? ''}
+              disabled={busy || editor.uncertain || decisionBusy || activePath !== document.path || sourceViews[document.path]?.mode !== 'source'}
+              onDraft={text => draftStore.set(document.path, SOURCE_DRAFT_FIELD, text)}
+              onCommit={() => commitDraft(document.path, SOURCE_DRAFT_FIELD)}
+              onComposition={active => draftStore.composition(document.path, SOURCE_DRAFT_FIELD, active)}
+              onFormat={() => formatSource(document)} onAction={action => void editAction(action)} />
+          </div>}
         </section>)}
         {documents.length === 0 && <div className={styles.welcome}>
           <h1>模组工作台</h1>
@@ -369,7 +430,7 @@ export function App() {
         <PreviewPanel document={documents.find(document => document.path === activePath)} resourceRevision={resourceRevision} />
         <h2 className={styles.panelHead}>图层</h2>
         <p className={styles.emptySide}>暂无图层</p>
-        {project && activePath && <SpriteResources key={`${project.sessionId}:${activePath}`}
+        {project && activePath && documents.find(document => document.path === activePath)?.validData !== false && <SpriteResources key={`${project.sessionId}:${activePath}`}
           sessionId={project.sessionId} path={activePath} revision={(editor.state?.revision ?? 0) + resourceRevision}
           load={() => desktop.request<SpriteTargets>('sprite_targets', { path: activePath }, project.sessionId)}
           onAction={async (action, payload) => {

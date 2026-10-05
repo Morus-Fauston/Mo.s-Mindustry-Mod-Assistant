@@ -65,8 +65,9 @@ def test_failed_open_cancel_and_broken_document_keep_current_session(tmp_path):
     broken = next(n for n in flatten(opened["data"]["tree"]) if n.get("name") == "broken")
     assert broken["error"]
     result = call(service, "read_document", {"path": broken["path"]}, sid, "broken")
-    assert result["error"]["path"] == broken["path"]
-    assert result["error"]["code"] == "DOCUMENT_READ_FAILED"
+    assert result["ok"] and result["data"]["path"] == broken["path"]
+    assert result["data"]["validData"] is False
+    assert result["data"]["data"] is None and result["data"]["sourceText"] == '{bad'
     cancelled = call(service, "choose_project", session=sid, request_id="cancel")
     assert cancelled["data"] == {"cancelled": True}
     assert cancelled["sessionId"] == sid
@@ -154,16 +155,21 @@ def test_read_request_rejects_paths_outside_content_scope(tmp_path, path):
     assert response["ok"] is False
 
 
-def test_broken_content_can_be_retried_with_new_request_id(tmp_path):
+def test_broken_content_stays_in_session_until_project_is_reopened(tmp_path):
     root = project(tmp_path / "existing")
     content = root / "content" / "units" / "broken.json"
     content.write_text("[]", encoding="utf-8")
     service = WorkspaceService("metadata")
     sid = call(service, "open_project", {"path": str(root)})["sessionId"]
     payload = {"path": "content/units/broken.json"}
-    assert not call(service, "read_document", payload, sid, "broken")["ok"]
+    first = call(service, "read_document", payload, sid, "broken")
+    assert first["ok"] and first["data"]["validData"] is False
     content.write_text('{"type":"mech","health":12}', encoding="utf-8")
     recovered = call(service, "read_document", payload, sid, "recovered")
+    assert recovered["data"]["validData"] is False
+    assert recovered["data"]["sourceText"] == "[]"
+    sid = call(service, "open_project", {"path": str(root)}, sid, "reopen")["sessionId"]
+    recovered = call(service, "read_document", payload, sid, "reread")
     assert recovered["data"]["contentType"] == "UnitType"
     assert recovered["data"]["data"]["health"] == 12
 

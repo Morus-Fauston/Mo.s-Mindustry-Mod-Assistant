@@ -52,7 +52,8 @@ test('真实工程树的同名内容、搜索、键盘与标签', async ({ deskt
   await page.getByRole('button', { name: '关闭其他', exact: true }).click();
   await expect(page.getByRole('tab')).toHaveCount(1);
   await page.locator('[data-path="content/units/broken.json"]').click();
-  await expect(page.getByRole('alert')).toContainText('broken.json');
+  await expect(page.getByRole('tabpanel', { name: 'content/units/broken.json' }).locator('.cm-content')).toHaveText('{invalid');
+  await unitNode.click();
   await expect(page.getByRole('tabpanel', { name: 'content/units/twin.json' }).getByRole('textbox', { name: '生命值', exact: true })).toHaveValue('137');
   const measurements = await page.locator('input,textarea,select').evaluateAll(controls => controls.map(element => {
     const rect = element.getBoundingClientRect();

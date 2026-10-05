@@ -7,6 +7,32 @@ const initial: EditingState = { sessionId: 'one', revision: 2, documents: [],
   history: { canUndo: false, canRedo: false, undoDescription: '', redoDescription: '' }, autoSaveInterval: 180 };
 
 describe('编辑操作的真实请求身份', () => {
+  it('已执行结果过期后只刷新权威状态，刷新失败仍可恢复且不重放', async () => {
+    const calls: string[] = [];
+    let failedRefresh = false;
+    const transport: EditingTransport = {
+      async request<T>(action: string) {
+        calls.push(action);
+        if (action === 'editing_state') {
+          if (failedRefresh) throw new DesktopError('BRIDGE_FAILURE', '刷新失败');
+          return { ...initial, revision: calls.length > 2 ? 3 : 2 } as T;
+        }
+        throw new DesktopError('BRIDGE_TIMEOUT', '超时');
+      },
+      async recoverRequest<T>(): Promise<T> { calls.push('query'); throw new DesktopError('RESULT_EXPIRED', '操作已经执行，请刷新状态'); },
+    };
+    const client = createEditingClient(transport);
+    client.reset('one'); await client.refresh();
+    await expect(client.run('set_source', { text: '{}' })).rejects.toThrow('超时');
+    failedRefresh = true;
+    await expect(client.recover()).rejects.toThrow('操作已经执行');
+    expect(client.getSnapshot().uncertain).toBe(true);
+    failedRefresh = false;
+    await client.recover();
+    expect(client.getSnapshot().state?.revision).toBe(3);
+    expect(client.getSnapshot().uncertain).toBe(false);
+    expect(calls).toEqual(['editing_state', 'set_source', 'query', 'editing_state', 'editing_state']);
+  });
   it('超时后只查询原请求，确认之前不允许继续修改', async () => {
     const calls: { action: string; payload: Record<string, unknown>; id?: string }[] = [];
     let recoveredId = '';

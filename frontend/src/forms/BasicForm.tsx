@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
-import type { DocumentSnapshot } from '../workspace/types';
+import type { ValidDocumentSnapshot } from '../workspace/types';
 import type { FormDrafts, FormErrors, FormField, FormGroup } from './types';
 import { ActionMenu } from './ActionMenu';
 import { fieldHint, fieldText, shouldCommitKey } from './presentation';
@@ -8,7 +8,7 @@ import { ContentRefSelector, type ReferenceResult } from '../references/ContentR
 import styles from './BasicForm.module.css';
 
 export interface BasicFormProps {
-  document: DocumentSnapshot;
+  document: ValidDocumentSnapshot;
   drafts: FormDrafts;
   errors: FormErrors;
   disabled: boolean;

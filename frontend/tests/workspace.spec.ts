@@ -6,7 +6,7 @@ import { rm } from 'node:fs/promises';
 test('真实工程树的同名内容、搜索、键盘与标签', async ({ desktopHost }, testInfo) => {
   const { page, projectPath } = desktopHost;
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree');
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true });
   await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) {
     await tree.locator('[aria-expanded="false"]').first().click();
@@ -84,7 +84,7 @@ test('原生目录选择支持取消与中文空格路径', async ({ desktopHost
     throw error;
   }
   await expect(page.locator('footer').getByRole('status')).toContainText('已取消打开工程');
-  await expect(page.getByRole('tree')).toHaveCount(0);
+  await expect(page.getByRole('tree', { name: '工程文件', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '打开工程', exact: true }).click();
   let opened: string;
   try { opened = runDialog('select'); }
@@ -92,7 +92,7 @@ test('原生目录选择支持取消与中文空格路径', async ({ desktopHost
     await testInfo.attach('目录输入框枚举', { body: String((error as { stdout?: string }).stdout ?? ''), contentType: 'text/plain' });
     throw error;
   }
-  await expect(page.getByRole('tree')).toBeVisible();
+  await expect(page.getByRole('tree', { name: '工程文件', exact: true })).toBeVisible();
   await expect(page.locator('footer').getByRole('status')).toContainText('已打开 真实验收工程');
   await testInfo.attach('原生目录选择', { body: cancelled + opened, contentType: 'text/plain' });
   await page.screenshot({ path: testInfo.outputPath('原生选择后.png') });
@@ -118,9 +118,9 @@ test('打开响应超时后查询原结果，关闭全部隔离迟到读取', as
   await page.getByRole('button').filter({ hasText: projectPath }).click();
   await expect.poll(() => page.evaluate(() => (window as any).openCompleted)).toBe(true);
   await page.getByRole('button', { name: '查询打开结果' }).click({ timeout: 22_000 });
-  await expect(page.getByRole('tree')).toBeVisible();
+  await expect(page.getByRole('tree', { name: '工程文件', exact: true })).toBeVisible();
   await page.evaluate(() => (window as any).releaseOpen());
-  const tree = page.getByRole('tree');
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true });
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await page.locator('[data-path="content/units/twin.json"]').click();
   await expect(page.getByRole('tab')).toHaveCount(1);
@@ -154,5 +154,5 @@ test('最近工程路径失效时反馈错误且不显示假工程', async ({ de
   await rm(resolve(projectPath, 'mod.json'));
   await recent.click();
   await expect(page.getByRole('alert')).toContainText('无法打开工程');
-  await expect(page.getByRole('tree')).toHaveCount(0);
+  await expect(page.getByRole('tree', { name: '工程文件', exact: true })).toHaveCount(0);
 });

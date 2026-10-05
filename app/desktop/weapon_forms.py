@@ -13,6 +13,7 @@ from app.core.form_plan import type_default
 from app.core.form_types import BULLET_TYPES, TYPE_LABELS
 from app.desktop.forms import FormService, json_values_equal
 from app.desktop.nested_forms import _NestedCommand, _NodeForms
+from app.desktop.preview import WeaponPreviewResolver
 
 
 _REFERENCE_FIELDS = ('x', 'y', 'reload', 'top', 'rotate', 'mirror')
@@ -36,11 +37,20 @@ def _name(value):
 
 
 class _WeaponNodeForms(_NodeForms):
-    def __init__(self, original, reference):
+    def __init__(self, original, reference, coordinates):
         super().__init__(original.metadata, original.references, original.kind, original.definition)
         self.reference = reference
+        self.coordinates = coordinates
 
     def project(self, plan, content):
+        effective = None
+        if self.reference and any(name not in content.data for name in ('x', 'y')):
+            try:
+                effective = self.coordinates(content.data)
+            except (OSError, ValueError, TypeError, RecursionError, OverflowError):
+                # Keep the card readable when a referenced file cannot supply
+                # coordinates; never present a fabricated zero as its value.
+                pass
         for group in plan['groups']:
             for descriptor in group['fields']:
                 if descriptor['name'] == 'name':
@@ -49,8 +59,13 @@ class _WeaponNodeForms(_NodeForms):
                                       nullable=False, deletable=False)
                     if self.reference:
                         descriptor.update(mode='STRING_REF', refSource='Weapons', categories=['Weapons'])
+                if self.reference and descriptor['name'] in ('x', 'y') and not descriptor['present']:
+                    value = effective[0 if descriptor['name'] == 'x' else 1] if effective is not None else None
+                    descriptor.update(displayValue=value, defaultValue=value, defaultSource='引用武器有效坐标')
+                    if effective is None:
+                        descriptor.update(readOnly=True, validationError='引用武器坐标读取失败，请先修复武器定义。')
             if self.reference:
-                group['fields'] = [field for field in group['fields'] if field['name'] == 'name' or field['name'] in content.data]
+                group['fields'] = [field for field in group['fields'] if field['name'] in ('name', 'x', 'y') or field['name'] in content.data]
                 group.update(locked=True, addableFields=[])
         if self.reference:
             plan['groups'] = [group for group in plan['groups'] if group['fields']]
@@ -73,6 +88,7 @@ class _WeaponNodeForms(_NodeForms):
 class WeaponFormsService:
     def __init__(self, nested, project):
         self.nested, self.project = nested, project
+        self._coordinates = WeaponPreviewResolver(project).coordinates if project is not None else lambda _: (0.0, 0.0)
         self._arrays = {}
         self._entries = {}
         self._vanilla = frozenset(nested.metadata.list_instances('Weapons'))
@@ -136,7 +152,7 @@ class WeaponFormsService:
             if item_key not in nodes or not child['knownType']:
                 continue
             child_data, original_forms, document, _, scalar = nodes[item_key]
-            forms = _WeaponNodeForms(original_forms, reference)
+            forms = _WeaponNodeForms(original_forms, reference, self._coordinates)
             forms.restore(item_key, original_forms.snapshot(item_key))
             forms.project(child, document)
             nodes[item_key] = (child_data, forms, document, child, scalar)

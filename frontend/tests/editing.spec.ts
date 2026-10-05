@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test';
 
 async function openUnit(page: Page, projectPath: string) {
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree');
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true });
   await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await page.locator('[data-path="content/units/twin.json"]').click();

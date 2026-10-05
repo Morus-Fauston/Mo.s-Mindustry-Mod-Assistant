@@ -10,7 +10,7 @@ async function openWeapons(host: { page: import('@playwright/test').Page; projec
   await writeFile(file, JSON.stringify({ type: 'flying', health: 137, weapons: [
     { name: 'native-test-laser', x: 2, reload: 9 }, { name: 'missing-source', x: 4 }] }));
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await tree.locator('[data-path="content/units/twin.json"]').click();
   const form = page.getByRole('tabpanel', { name: 'content/units/twin.json' });

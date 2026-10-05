@@ -1,4 +1,4 @@
-.preview { min-height: 210px; height: 46%; display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
+.preview { min-height: 210px; height: 46%; flex-shrink: 0; display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; padding: 5px 8px; min-height: 34px; background: var(--panel); border-bottom: 1px solid var(--line); }
 .button { min-height: 24px; padding: 2px 7px; border: 1px solid transparent; background: transparent; font-size: 12px; white-space: nowrap; }
 .button:hover { background: var(--panel2); }

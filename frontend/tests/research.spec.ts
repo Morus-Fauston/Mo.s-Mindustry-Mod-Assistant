@@ -7,7 +7,7 @@ async function openResearch(host: { page: import('@playwright/test').Page; proje
   const file = join(projectPath, 'content/blocks/twin.json');
   await writeFile(file, JSON.stringify({ type: 'Wall', health: 100, research, shownPlanets: ['serpulo'] }));
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await tree.locator('[data-path="content/blocks/twin.json"]').click();
   const form = page.getByRole('tabpanel', { name: 'content/blocks/twin.json' });

@@ -14,6 +14,7 @@ import { ResourceField, isResourceField, findResourceField } from './resource_fi
 import { WeaponArray, isWeaponArrayField, findWeaponField } from './weapons/WeaponArray';
 import { ResearchField, isResearchField, findResearchField } from './research/ResearchField';
 import { SourceEditor, SOURCE_DRAFT_FIELD } from './source/SourceEditor';
+import type { WeaponAnchor } from './layers/types';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -47,6 +48,9 @@ export function App() {
   const [decisionError, setDecisionError] = useState('');
   const [activePath, setActivePath] = useState<string | null>(null);
   const [sourceViews, setSourceViews] = useState<Record<string, { mode: 'form' | 'source'; seen: boolean }>>({});
+  const [formFocus, setFormFocus] = useState<{ path: string; token: number; objectPath: ObjectPath; field: string }>();
+  const [layerFocus, setLayerFocus] = useState<{ path: string; token: number; nodeId: string }>();
+  const focusSequence = useRef(0);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentProject[]>([]);
   const [busy, setBusy] = useState(false);
@@ -139,6 +143,14 @@ export function App() {
     }
   }
 
+  async function revealParameters(anchor: WeaponAnchor) {
+    if (anchor.sessionId !== projectRef.current?.sessionId || anchor.path !== activePath) return;
+    const owner = generation.current;
+    await switchView(anchor.path, 'form');
+    if (owner !== generation.current || anchor.sessionId !== projectRef.current?.sessionId) return;
+    setFormFocus({ path: anchor.path, objectPath: anchor.objectPath, field: 'x', token: ++focusSequence.current });
+  }
+
   async function formAction(path: string, action: string, payload: Record<string, unknown>) {
     try {
       setFailure('');
@@ -177,6 +189,8 @@ export function App() {
         await editing.run('close_documents', { paths: target.paths, decision: choice });
         draftStore.removePaths(target.paths);
         setSourceViews(previous => Object.fromEntries(Object.entries(previous).filter(([path]) => !target.paths.includes(path))));
+        setFormFocus(previous => previous && target.paths.includes(previous.path) ? undefined : previous);
+        setLayerFocus(previous => previous && target.paths.includes(previous.path) ? undefined : previous);
       } else if (target.kind === 'project') {
         if (choice === 'save') await editing.run('save_opened');
         clearIntent();
@@ -270,6 +284,7 @@ export function App() {
       editing.reset(result.sessionId);
       draftStore.reset();
       setSourceViews({});
+      setFormFocus(undefined); setLayerFocus(undefined);
       setActivePath(null);
       setSelectedPath(null);
       setRecent([{ path: result.root, name: result.name }]);
@@ -319,6 +334,7 @@ export function App() {
   }
 
   const metadata = startup.phase === 'ready' ? startup.data.metadata : null;
+  const activeDocument = documents.find(document => document.path === activePath);
   const status = startup.phase === 'ready' ? '离线元数据已就绪' : startup.phase === 'error' ? '启动未完成' : '正在连接桌面程序';
 
   return <div className={styles.app} data-startup={startup.phase}>
@@ -378,9 +394,13 @@ export function App() {
           {SOURCE_DRAFT_FIELD in (drafts[document.path] ?? {}) && <p className={styles.sourceWarning} role="status">源码输入尚未应用，以下显示上一次有效内容，暂不可编辑。</p>}
           {document.validData === false ? <p className={styles.sourceWarning}>源码无法解析，尚无可用表单。请切换到 JSON 源码修复。</p> :
           <NestedForm document={document} plan={document.form as NestedFormPlan} drafts={drafts[document.path] ?? {}} errors={draftState.errors[document.path] ?? {}}
+            focusRequest={formFocus?.path === document.path ? formFocus : undefined}
             renderSpecialField={(field, objectPath, props, renderForm) => isResourceField(field) ? <ResourceField {...props} field={field} objectPath={objectPath} />
               : isResearchField(field) ? <ResearchField {...props} field={field} objectPath={objectPath} />
-              : isWeaponArrayField(field) ? <WeaponArray {...props} field={field} objectPath={objectPath} renderForm={renderForm} /> : undefined}
+              : isWeaponArrayField(field) ? <WeaponArray {...props} field={field} objectPath={objectPath} renderForm={renderForm}
+                  revealItem={formFocus?.path === document.path && objectPath.length === 0 && typeof formFocus.objectPath[1] === 'object'
+                    ? { itemId: formFocus.objectPath[1].itemId, token: formFocus.token } : undefined}
+                  onRevealLayer={objectPath.length === 0 ? itemId => setLayerFocus({ path: document.path, nodeId: `weapon:${itemId}`, token: ++focusSequence.current }) : undefined} /> : undefined}
             disabled={busy || editor.uncertain || decisionBusy || SOURCE_DRAFT_FIELD in (drafts[document.path] ?? {})}
             onLoadReference={(field, query) => {
               const plan = document.form as NestedFormPlan;
@@ -427,9 +447,14 @@ export function App() {
         </div>}
       </section>
       <aside className={styles.right} aria-label="预览与图层">
-        <PreviewPanel document={documents.find(document => document.path === activePath)} resourceRevision={resourceRevision} />
-        <h2 className={styles.panelHead}>图层</h2>
-        <p className={styles.emptySide}>暂无图层</p>
+        <PreviewPanel document={activeDocument} projectSessionId={project?.sessionId} resourceRevision={resourceRevision} openPaths={documents.map(document => document.path)} revealLayer={layerFocus}
+          layers={activePath ? {
+            disabled: busy || editor.busy || editor.uncertain || decisionBusy || SOURCE_DRAFT_FIELD in (drafts[activePath] ?? {}),
+            drafts: drafts[activePath] ?? {}, errors: draftState.errors[activePath] ?? {},
+            onDraft: (field, text) => draftStore.set(activePath, field, text), onCommit: field => commitDraft(activePath, field),
+            onReset: field => draftStore.resetField(activePath, field), onComposition: (field, active) => draftStore.composition(activePath, field, active),
+            onRevealParameters: anchor => void revealParameters(anchor),
+          } : undefined} />
         {project && activePath && documents.find(document => document.path === activePath)?.validData !== false && <SpriteResources key={`${project.sessionId}:${activePath}`}
           sessionId={project.sessionId} path={activePath} revision={(editor.state?.revision ?? 0) + resourceRevision}
           load={() => desktop.request<SpriteTargets>('sprite_targets', { path: activePath }, project.sessionId)}

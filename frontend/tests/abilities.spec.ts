@@ -9,7 +9,7 @@ test('能力数组同名项重排删除撤销与未知类型保留', async ({ de
   await writeFile(file, JSON.stringify({ type: 'flying', health: 137, abilities: [
     { type: 'RegenAbility', amount: 1 }, { type: 'RegenAbility', amount: 2 }, unknown] }));
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await tree.locator('[data-path="content/units/twin.json"]').click();
   const form = page.getByRole('tabpanel', { name: 'content/units/twin.json' });

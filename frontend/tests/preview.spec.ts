@@ -18,7 +18,7 @@ w.save(p/'sprites/weapons/laser.png')
 f=p/'content/units/twin.json'; d=json.loads(f.read_text(encoding='utf-8')); d['weapons']=[{'name':'laser','x':3,'y':2,'mirror':True}]; f.write_text(json.dumps(d),encoding='utf-8')`, projectPath], { windowsHide: true });
   const original = await readFile(join(projectPath, 'content/units/twin.json'), 'utf8');
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await page.locator('[data-path="content/units/twin.json"]').click();
   const preview = page.getByRole('region', { name: '贴图预览', exact: true });
@@ -72,7 +72,7 @@ test('缺失损坏素材可刷新恢复，部分图层仍可操作', async ({ de
   const original = await readFile(png);
   await rename(png, `${png}.backup`);
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await page.locator('[data-path="content/units/twin.json"]').click();
   const preview = page.getByRole('region', { name: '贴图预览', exact: true });
@@ -96,7 +96,7 @@ test('缺失损坏素材可刷新恢复，部分图层仍可操作', async ({ de
 test('切页后迟到场景不覆盖当前内容', async ({ desktopHost }) => {
   const { page, projectPath } = desktopHost;
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await page.evaluate(() => {
     const host = window as any, original = host.pywebview.api.request;

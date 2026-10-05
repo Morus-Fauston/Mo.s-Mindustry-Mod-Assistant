@@ -1,5 +1,7 @@
+import type { LayerNode } from '../layers/types';
 /** Scene coordinates already include the core's PPU=4 and Y-axis conversion. */
 export interface PreviewLayer {
+  nodeId?: string;
   key: string;
   resourceId: string;
   x: number;
@@ -12,6 +14,7 @@ export interface PreviewLayer {
 }
 
 export interface PreviewCircle {
+  nodeId?: string;
   key: string;
   cx: number;
   cy: number;
@@ -22,6 +25,9 @@ export interface PreviewCircle {
 }
 
 export interface PreviewScene {
+  path?: string;
+  revision?: number;
+  tree?: LayerNode[];
   sessionId: string;
   width: number;
   height: number;

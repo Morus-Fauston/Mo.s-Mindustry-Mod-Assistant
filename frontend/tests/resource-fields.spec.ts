@@ -8,7 +8,7 @@ test('资源列表与消耗真实编辑重排校验保存及撤销', async ({ de
   await writeFile(file, JSON.stringify({ type: 'GenericCrafter', requirements: [{ item: 'copper', amount: 2 }, { item: 'lead', amount: 3 }],
     outputItem: { item: 'copper', amount: 1 }, consumes: { power: 1.5, liquid: { liquid: 'water', amount: 2 } } }));
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await tree.locator('[data-path="content/blocks/twin.json"]').click();
   const form = page.getByRole('tabpanel', { name: 'content/blocks/twin.json' });
@@ -86,7 +86,7 @@ test.describe('资源窄栏页面缩放', () => {
     await writeFile(join(projectPath, 'content/items', `${longName}.json`), '{}');
     await writeFile(file, JSON.stringify({ type: 'GenericCrafter', consumes: {}, requirements: [] }));
     await page.getByRole('button').filter({ hasText: projectPath }).click();
-    const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+    const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
     while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
     await tree.locator('[data-path="content/blocks/twin.json"]').click();
     const form = page.getByRole('tabpanel', { name: 'content/blocks/twin.json' });

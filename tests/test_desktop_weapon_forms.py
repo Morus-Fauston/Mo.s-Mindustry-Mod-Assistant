@@ -260,3 +260,109 @@ def test_recursive_weapons_share_nested_ids_and_commands(tmp_path):
     stack.undo()
     refreshed = fields(fields(rows(service, content)[0]['form'])['bullet']['child'])['spawnUnit']['child']
     assert fields(refreshed)['weapons']['items'][0]['itemId'] == inner['itemId']
+
+
+def test_missing_reference_coordinates_display_effective_source_without_materializing(tmp_path):
+    original = {'type': 'mech', 'weapons': [{'name': 'probe-gun'}]}
+    service, nested, project, content, stack = setup(tmp_path, deepcopy(original))
+    project.contents.save('gun', {'name': 'gun', 'x': -3, 'y': 2.5, 'bullet': {'damage': 8}}, 'weapons')
+    source_path = project.root / 'content/weapons/gun.json'
+    source_before = source_path.read_bytes()
+    first = rows(service, content)[0]
+    coordinates = fields(first['form'])
+    assert coordinates['x']['displayValue'] == -3
+    assert coordinates['y']['displayValue'] == 2.5
+    assert all(not coordinates[key]['present'] and not coordinates[key]['readOnly']
+               and coordinates[key]['control'] == 'number' for key in ('x', 'y'))
+    assert rows(service, content)[0]['itemId'] == first['itemId']
+    assert content.data == original and not stack.can_undo
+    assert source_path.read_bytes() == source_before
+
+
+@pytest.mark.parametrize('raw', ['{broken', '[]', '{"x":3,"y":"bad"}'])
+def test_unreadable_coordinate_source_marks_virtual_fields_without_breaking_form(tmp_path, raw):
+    original = {'type': 'mech', 'weapons': [{'name': 'probe-gun', 'x': 7}]}
+    service, nested, project, content, stack = setup(tmp_path, deepcopy(original))
+    (project.root / 'content/weapons/gun.json').write_text(raw, encoding='utf-8')
+    item = rows(service, content)[0]
+    coordinates = fields(item['form'])
+    assert coordinates['x']['displayValue'] == 7 and not coordinates['x']['readOnly']
+    assert coordinates['y']['displayValue'] is None
+    assert coordinates['y']['readOnly'] and coordinates['y']['validationError']
+    assert content.data == original and not stack.can_undo
+    with pytest.raises(ValueError):
+        nested.command('set_field', content, PATH, {'objectPath': item['objectPath'], 'field': 'y', 'value': 2})
+
+
+def test_virtual_coordinate_edit_undo_redo_preserves_missing_field_and_stable_item_after_move(tmp_path):
+    original = {'type': 'mech', 'weapons': [{'name': 'probe-gun'}, {'name': 'probe-gun', 'x': 9}]}
+    service, nested, project, content, stack = setup(tmp_path, deepcopy(original))
+    source = {'x': -3, 'y': 2.5, 'bullet': {'damage': 8}}
+    project.contents.save('gun', source, 'weapons')
+    first, second = rows(service, content)
+    apply(service, content, stack, 'weapon_move', field='weapons', itemId=first['itemId'], beforeItemId=None)
+    command = nested.command('set_field', content, PATH,
+        {'objectPath': first['objectPath'], 'field': 'x', 'text': '-7.5'})
+    assert content.data['weapons'][1] == {'name': 'probe-gun'}
+    stack.execute(command)
+    assert content.data['weapons'] == [{'name': 'probe-gun', 'x': 9}, {'name': 'probe-gun', 'x': -7.5}]
+    edited = rows(service, content)[1]
+    assert edited['itemId'] == first['itemId']
+    assert fields(edited['form'])['x']['present']
+    assert fields(edited['form'])['y']['displayValue'] == 2.5
+    stack.undo()
+    restored = rows(service, content)[1]
+    assert restored['itemId'] == first['itemId']
+    assert content.data['weapons'][1] == {'name': 'probe-gun'}
+    assert not fields(restored['form'])['x']['present']
+    assert fields(restored['form'])['x']['displayValue'] == -3
+    stack.redo()
+    project.contents.save('unit', content.data, 'units')
+    reopened = Project.open(project.root).contents.get_by_path('units/unit.json').data
+    assert reopened['weapons'][1] == {'name': 'probe-gun', 'x': -7.5}
+    assert project.contents.get_by_path('weapons/gun.json').data == source
+    stack.undo(); stack.undo()
+    assert content.data == original
+    assert [item['itemId'] for item in rows(service, content)] == [first['itemId'], second['itemId']]
+
+
+@pytest.mark.parametrize('name,source,overrides,expected', [
+    ('gun', {'x': -3, 'y': 2}, {}, (-3, 2)),
+    ('probe-gun', {'x': -3}, {}, (-3, 0)),
+    ('probe-gun', {'x': -3, 'y': 2}, {'x': 0}, (0, 2)),
+    ('probe-gun', {'x': -3, 'y': 2}, {'y': -8}, (-3, -8)),
+    ('missing', None, {}, (0, 0)),
+    ('beam-weapon', None, {}, (0, 0)),
+])
+def test_virtual_coordinates_follow_preview_local_alias_override_and_absence_policy(tmp_path, name, source, overrides, expected):
+    from app.desktop.preview import WeaponPreviewResolver
+    original = {'type': 'mech', 'weapons': [{'name': name, **overrides}]}
+    service, nested, project, content, stack = setup(tmp_path, deepcopy(original))
+    if source is not None:
+        project.contents.save('gun', source, 'weapons')
+    item = rows(service, content)[0]
+    descriptors = fields(item['form'])
+    assert (descriptors['x']['displayValue'], descriptors['y']['displayValue']) == expected
+    assert WeaponPreviewResolver(project).coordinates(original['weapons'][0]) == expected
+    assert content.data == original and not stack.can_undo
+
+
+@pytest.mark.parametrize('payload', [{'text': ''}, {'text': 'not-number'}, {'text': '1e999'},
+    {'value': True}, {'value': None}, {'value': float('inf')}, {'value': float('nan')}])
+def test_virtual_coordinates_reuse_strict_number_validation_without_mutation(tmp_path, payload):
+    original = {'type': 'mech', 'weapons': [{'name': 'missing'}]}
+    service, nested, project, content, stack = setup(tmp_path, deepcopy(original))
+    item = rows(service, content)[0]
+    state = nested.snapshot(PATH)
+    with pytest.raises(ValueError):
+        nested.command('set_field', content, PATH, {'objectPath': item['objectPath'], 'field': 'x', **payload})
+    assert content.data == original and not stack.can_undo and nested.snapshot(PATH) == state
+
+
+def test_virtual_coordinates_do_not_enable_other_hidden_reference_fields(tmp_path):
+    service, nested, project, content, stack = setup(tmp_path, {'type': 'mech', 'weapons': [{'name': 'missing'}]})
+    item = rows(service, content)[0]
+    assert 'reload' not in fields(item['form'])
+    with pytest.raises(ValueError, match='添加字段'):
+        nested.command('set_field', content, PATH, {'objectPath': item['objectPath'], 'field': 'reload', 'value': 10})
+    assert content.data['weapons'][0] == {'name': 'missing'} and not stack.can_undo

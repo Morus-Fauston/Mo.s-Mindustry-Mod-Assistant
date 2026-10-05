@@ -10,6 +10,7 @@ export type { NestedFormPlan, ObjectPath } from './types';
 
 export interface NestedFormProps extends Omit<BasicFormProps, 'renderField'> {
   plan: NestedFormPlan;
+  focusRequest?: { token: number; objectPath: ObjectPath; field: string };
   renderSpecialField?: (field: NestedField, objectPath: ObjectPath, props: Omit<BasicFormProps, 'renderField'>, renderForm: (plan: NestedFormPlan) => ReactNode) => ReactNode;
 }
 
@@ -53,6 +54,9 @@ function NodeForm({ root, plan }: NodeProps) {
   const run = (action: string, payload: Record<string, unknown>) => root.onAction(action, { ...payload, objectPath: plan.objectPath });
   const type = plan.typeSelector;
   const selectedKnown = type?.choices.some(choice => choice.value === type.value);
+  const focus = root.focusRequest;
+  const matches = focus && plan.objectPath.every((segment, index) => JSON.stringify(segment) === JSON.stringify(focus.objectPath[index]));
+  const focusField = matches ? focus.objectPath.length === plan.objectPath.length ? focus.field : focus.objectPath[plan.objectPath.length] : null;
   return <div className={styles.node} data-object-path={JSON.stringify(plan.objectPath)}>
     {type && <div className={styles.typeRow}>
       <label htmlFor={id}>{root.document.fieldNames.type ?? '类型'}</label>
@@ -64,6 +68,7 @@ function NodeForm({ root, plan }: NodeProps) {
     </div>}
     {plan.notice && <p className={styles.notice} role="status">{plan.notice}</p>}
     <BasicForm document={{ ...root.document, form: { ...plan, groups: plan.groups.map(group => ({ ...group, fields: group.fields.map(shellField) })) } }}
+      revealField={focus && typeof focusField === 'string' ? { token: focus.token, field: focusField, focus: focus.objectPath.length === plan.objectPath.length } : undefined}
       drafts={scopedFields(root.drafts, plan.objectPath, allFields)} errors={scopedFields(root.errors, plan.objectPath, allFields)} disabled={root.disabled}
       onDraft={(field, text) => root.onDraft(fieldKey(field), text)} onCommit={field => root.onCommit(fieldKey(field))}
       onReset={field => root.onReset(fieldKey(field))} onComposition={(field, composing) => root.onComposition(fieldKey(field), composing)}

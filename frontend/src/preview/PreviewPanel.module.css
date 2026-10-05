@@ -4,3 +4,4 @@
 .heading button:hover { color: var(--ink); background: var(--panel2); }
 .heading button:active { background: var(--selected); }
 .error { margin: 0; padding: 8px 12px; color: var(--error); line-height: 1.6; }
+.empty { margin: 12px; color: var(--muted); }

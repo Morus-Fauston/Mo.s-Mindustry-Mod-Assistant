@@ -14,7 +14,7 @@ test('原生PNG替换取消、删除撤销、外部刷新及全部输入起点',
     '-File', resolve(import.meta.dirname, 'folder-dialog.ps1'), '-TestProcessId', String(pid), '-DialogName', '打开',
     '-Action', action, '-ProjectPath', path], { windowsHide: true, encoding: 'utf8', timeout: 20_000, stdio: ['ignore', 'pipe', 'pipe'] });
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await tree.locator('[data-path="content/units/twin.json"]').click();
   const resources = page.getByRole('region', { name: '贴图资源', exact: true });
@@ -66,7 +66,7 @@ test('原生选择损坏PNG保留旧资源，导入缺失主体并重做', async
   const target = join(projectPath, 'sprites/units/twin.png');
   const original = await readFile(target);
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await tree.locator('[data-path="content/units/twin.json"]').click();
   const resources = page.getByRole('region', { name: '贴图资源', exact: true });

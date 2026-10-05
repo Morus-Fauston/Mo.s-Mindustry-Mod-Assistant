@@ -6,7 +6,7 @@ import base64
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from uuid import uuid4
+from hashlib import sha256
 import math
 import os
 import re
@@ -19,6 +19,57 @@ from app.core.config_loader import get_sprite_layers
 from app.core.metadata import normalize_content_type
 from app.core.preview_math import compute_engine_circles, compute_weapon_layers, weapon_xy
 from app.core.project import Project
+
+
+def _preview_name(value: str) -> str:
+    if (not isinstance(value, str) or not value or len(value) > 255 or value in ('.', '..')
+            or re.search(r'[\\/:\x00-\x1f<>"|?*]', value)):
+        raise ValueError('素材名称无效')
+    return value
+
+
+class WeaponPreviewResolver:
+    """One read-only name/coordinate policy for scene drawing and layer rows."""
+
+    MAX_SOURCE_BYTES = 16 * 1024 * 1024
+
+    def __init__(self, project: Project):
+        self.project = project
+
+    def local_name(self, name: str) -> str:
+        name = _preview_name(name)
+        prefix = self.project.mod_info.name + '-'
+        return _preview_name(name[len(prefix):] if name.startswith(prefix) else name)
+
+    def sprite_names(self, name: str) -> tuple[str, ...]:
+        local = self.local_name(name)
+        return tuple(dict.fromkeys((name, local)))
+
+    @staticmethod
+    def number(value: object) -> float:
+        try:
+            number = float(value)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError('预览坐标必须是有限数字') from exc
+        if not math.isfinite(number) or abs(number) > 1_000_000:
+            raise ValueError('预览坐标超出支持范围')
+        return number
+
+    def coordinates(self, weapon: dict) -> tuple[float, float]:
+        local = self.local_name(weapon.get('name'))
+        defaults = (0, 0)
+        if weapon.get('x') is None or weapon.get('y') is None:
+            root = self.project.root.resolve()
+            path = root / 'content' / 'weapons' / f'{local}.json'
+            if not path.resolve().is_relative_to(root / 'content' / 'weapons'):
+                raise ValueError('引用武器文件超出预览读取范围')
+            if path.exists():
+                if not path.is_file() or path.stat().st_size > self.MAX_SOURCE_BYTES:
+                    raise ValueError('引用武器文件超出预览读取范围')
+                reference = self.project.contents.get_by_path(f'weapons/{local}.json').data
+                defaults = (reference.get('x', 0), reference.get('y', 0))
+        coordinates = weapon_xy(weapon, defaults)
+        return self.number(coordinates[0]), self.number(coordinates[1])
 
 
 class PreviewService:
@@ -42,12 +93,11 @@ class PreviewService:
         self._paths: dict[Path, str] = {}
         self._cache_bytes = 0
         self._scene_pixels = 0
+        self._weapons_resolver = WeaponPreviewResolver(project)
 
     @staticmethod
     def _name(value: str) -> str:
-        if not isinstance(value, str) or not value or len(value) > 255 or value in (".", "..") or any(c in value for c in '/\\:\x00'):
-            raise ValueError("素材名称无效")
-        return value
+        return _preview_name(value)
 
     def _safe_path(self, path: Path) -> Path:
         resolved = path.resolve()
@@ -92,7 +142,7 @@ class PreviewService:
         data_url = "data:image/png;base64," + base64.b64encode(encoded).decode("ascii")
         if self._cache_bytes + len(data_url) > self.MAX_CACHE_BYTES:
             raise ValueError("预览资源缓存已达上限")
-        resource_id = uuid4().hex
+        resource_id = sha256(self._session_id.encode("utf-8") + str(path).encode("utf-8") + encoded).hexdigest()
         resource = {"sessionId": self._session_id, "resourceId": resource_id,
                     "mime": "image/png", "dataUrl": data_url, "width": width, "height": height}
         self._resources[resource_id] = resource
@@ -160,10 +210,12 @@ class PreviewService:
                 center[1] - resource["height"] / 2, level, layer.get("label", suffix)))
 
     def _weapon_resource(self, name: str, category: str) -> dict:
-        self._name(name)
-        for path in (self._project.sprite_path("weapons", name), self._project.sprite_path(category, name)):
-            if path.exists():
-                return self._load(path)
+        names = self._weapons_resolver.sprite_names(name)
+        for source_category in dict.fromkeys(('weapons', category)):
+            for candidate in names:
+                path = self._project.sprite_path(source_category, candidate)
+                if path.exists():
+                    return self._load(path)
         sprites = self._project.sprites_dir
         if not sprites.resolve().is_relative_to(self._root):
             raise ValueError("贴图目录超出工程范围")
@@ -174,31 +226,17 @@ class PreviewService:
                 raise ValueError("贴图检索数量超出上限，请将武器贴图放入武器目录")
             folders[:] = sorted(folder for folder in folders
                                 if (Path(directory) / folder).resolve().is_relative_to(self._root))
-            if f"{name}.png" in files:
-                return self._load(Path(directory) / f"{name}.png")
+            for candidate in names:
+                if f"{candidate}.png" in files:
+                    return self._load(Path(directory) / f"{candidate}.png")
         raise ValueError("缺少武器 PNG 贴图")
 
     @staticmethod
     def _number(value: object) -> float:
-        try:
-            number = float(value)
-        except (TypeError, ValueError, OverflowError) as exc:
-            raise ValueError("预览坐标必须是有限数字") from exc
-        if not math.isfinite(number) or abs(number) > 1_000_000:
-            raise ValueError("预览坐标超出支持范围")
-        return number
+        return WeaponPreviewResolver.number(value)
 
     def _weapon_xy(self, weapon: dict, name: str) -> tuple[float, float]:
-        defaults = (0, 0)
-        if weapon.get("x") is None or weapon.get("y") is None:
-            path = self._root / "content" / "weapons" / f"{name}.json"
-            if path.exists():
-                if not path.resolve().is_relative_to(self._root) or path.stat().st_size > self.MAX_FILE_BYTES:
-                    raise ValueError("引用武器文件超出预览读取范围")
-                reference = self._project.contents.get_by_path(f"weapons/{name}.json").data
-                defaults = (reference.get("x", 0), reference.get("y", 0))
-        coordinates = weapon_xy(weapon, defaults)
-        return self._number(coordinates[0]), self._number(coordinates[1])
+        return self._weapons_resolver.coordinates(weapon)
 
     def _weapons(self, content: ContentData, scene: dict, center: tuple[float, float]) -> None:
         weapons = content.data.get("weapons", [])

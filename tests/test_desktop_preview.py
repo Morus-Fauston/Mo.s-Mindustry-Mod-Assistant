@@ -117,7 +117,11 @@ def test_resources_are_session_scoped_immutable_and_released_on_scene_switch(tmp
     for invalid in (rid, "sprites/blocks/unit.png", "../mod.json"):
         with pytest.raises(ValueError):
             PreviewService(project, "second").resource(invalid)
-    service.scene(doc)
+    # Coordinates and redraws keep the identity of unchanged decoded bytes.
+    assert service.scene(doc)["layers"][0]["resourceId"] == rid
+    assert service.resource(rid)["dataUrl"].startswith("data:image/png;base64,")
+    other = ContentData("missing", "blocks", {"type": "Wall"}, project.root / "content/blocks/missing.json")
+    service.scene(other)
     with pytest.raises(ValueError):
         service.resource(rid)
 
@@ -261,3 +265,48 @@ def test_scene_pixel_budget_counts_shared_weapon_resource_only_once(tmp_path, mo
     scene = service.scene(doc)
     assert scene["status"] == "ready" and len(scene["layers"]) == 4
     assert len({layer["resourceId"] for layer in scene["layers"]}) == 2
+
+
+def test_project_qualified_weapon_uses_local_source_coordinates_and_sprite(tmp_path):
+    project = Project.create(tmp_path, "test", "测试")
+    doc = content(project, {"type": "mech", "weapons": [{"name": "test-gun", "mirror": True}]})
+    project.contents.save("gun", {"x": -3, "y": 2}, "weapons")
+    # A basename resembling a qualified reference cannot override its canonical source.
+    project.contents.save("test-gun", {"x": 100, "y": 200}, "weapons")
+    png(project, "units", "unit", size=(32, 32))
+    png(project, "weapons", "gun", size=(8, 12))
+    scene = PreviewService(project, "session").scene(doc)
+    assert scene["status"] == "ready"
+    assert [(layer["x"], layer["y"], layer["flipX"]) for layer in scene["layers"][1:]] == [(0, 2, False), (24, 2, True)]
+    assert doc.data["weapons"] == [{"name": "test-gun", "mirror": True}]
+
+
+def test_qualified_weapon_sprite_prefers_existing_exact_name_then_local_weapon_before_sibling(tmp_path):
+    project = Project.create(tmp_path, 'test', '测试')
+    doc = content(project, {'type': 'mech', 'weapons': [{'name': 'test-gun', 'x': 0, 'y': 0}]})
+    png(project, 'units', 'unit')
+    exact = png(project, 'weapons', 'test-gun', (5, 5))
+    local = png(project, 'weapons', 'gun', (7, 7))
+    png(project, 'units', 'test-gun', (9, 9))
+    service = PreviewService(project, 'session')
+    assert service.scene(doc)['layers'][1]['width'] == 5
+    exact.unlink()
+    assert service.scene(doc)['layers'][1]['width'] == 7
+    local.unlink()
+    assert service.scene(doc)['layers'][1]['width'] == 9
+
+
+def test_qualified_weapon_reference_does_not_read_symlinked_foreign_coordinates(tmp_path):
+    project = Project.create(tmp_path, 'test', '测试')
+    doc = content(project, {'type': 'mech', 'weapons': [{'name': 'test-gun'}]})
+    png(project, 'units', 'unit')
+    png(project, 'weapons', 'gun')
+    foreign = tmp_path / 'foreign.json'
+    foreign.write_text('{"x":3,"y":2}', encoding='utf-8')
+    try:
+        (project.root / 'content/weapons/gun.json').symlink_to(foreign)
+    except OSError:
+        pytest.skip('当前权限不支持符号链接')
+    scene = PreviewService(project, 'session').scene(doc)
+    assert len(scene['layers']) == 1 and scene['status'] == 'missing'
+    assert any('超出' in warning for warning in scene['warnings'])

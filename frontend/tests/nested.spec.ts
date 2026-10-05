@@ -8,7 +8,7 @@ async function openWeapon(host: { page: import('@playwright/test').Page; project
   await writeFile(file, JSON.stringify({ type: 'Weapon', reload: 31, bullet: { type: 'BasicBulletType', damage: 12,
     status: 'burning', spawnBullets: [{ type: 'BasicBulletType', damage: 1 }, { type: 'BasicBulletType', damage: 2 }] } }));
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await tree.locator('[data-path="content/weapons/laser.json"]').click();
   const form = page.getByRole('tabpanel', { name: 'content/weapons/laser.json' });
@@ -80,7 +80,7 @@ test('单位类型真实切换，未知子弹类型保留而不自动选择', as
   const unitFile = join(projectPath, 'content/units/twin.json');
   await writeFile(join(projectPath, 'content/weapons/laser.json'), JSON.stringify({ bullet: { type: 'CustomBullet', damage: 3 } }));
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await tree.locator('[data-path="content/units/twin.json"]').click();
   const panel = page.getByRole('tabpanel');

@@ -15,6 +15,8 @@ export interface WeaponArrayProps extends Omit<BasicFormProps, 'renderField'> {
   field: WeaponArrayField;
   objectPath: ObjectPath;
   renderForm: (plan: NestedFormPlan) => ReactNode;
+  revealItem?: { itemId: string; token: number };
+  onRevealLayer?: (itemId: string) => void;
 }
 
 export function WeaponArray(props: WeaponArrayProps) {
@@ -28,6 +30,11 @@ function Fold({ expanded }: { expanded: boolean }) {
 
 function WeaponArrayBody(props: WeaponArrayProps & { owner: string }) {
   const { field } = props;
+  useEffect(() => {
+    if (!props.revealItem || !field.items.some(item => item.itemId === props.revealItem?.itemId)) return;
+    setExpanded(true);
+    setClosed(previous => ({ ...previous, [props.revealItem!.itemId]: false }));
+  }, [props.revealItem?.token]);
   const [controller] = useState(createWeaponController);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const action = useRef(props.onAction); action.current = props.onAction;
@@ -113,6 +120,7 @@ function WeaponArrayBody(props: WeaponArrayProps & { owner: string }) {
                 onClick={() => setClosed(previous => ({ ...previous, [item.itemId]: open }))}><Fold expanded={open} />第 {index + 1} 项
                 <span className={styles.mode}>{item.mode === 'reference' ? '引用' : item.mode === 'inline' ? '内联' : '原始数据'}</span></button>
               <div className={styles.actions}>
+                {props.onRevealLayer && <button type="button" disabled={locked} aria-label={`定位第 ${index + 1} 项图层`} onClick={() => props.onRevealLayer!(item.itemId)}>定位图层</button>}
                 <button type="button" disabled={locked || !field.canMove || index === 0} aria-label={`上移第 ${index + 1} 项`} onClick={() => move(item.itemId, 'up')}>上移</button>
                 <button type="button" disabled={locked || !field.canMove || index === field.items.length - 1} aria-label={`下移第 ${index + 1} 项`} onClick={() => move(item.itemId, 'down')}>下移</button>
                 <button type="button" disabled={locked || !field.canRemove} aria-label={`删除第 ${index + 1} 项`} onClick={() => void remove(item.itemId)}>删除</button>

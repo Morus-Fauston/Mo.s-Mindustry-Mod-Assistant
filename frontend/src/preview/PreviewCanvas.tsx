@@ -9,16 +9,18 @@ import styles from './PreviewCanvas.module.css';
 export interface PreviewCanvasProps {
   scene: PreviewScene | null;
   loadResource: (id: string) => Promise<PreviewResource>;
+  hiddenIds?: string[];
+  selectedId?: string | null;
 }
 
 interface Images {
-  scene: PreviewScene | null;
+  identity: string;
   images: Map<string, HTMLImageElement>;
   errors: string[];
   loading: boolean;
 }
 
-export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
+export function PreviewCanvas({ scene, loadResource, hiddenIds = [], selectedId = null }: PreviewCanvasProps) {
   const hasLayers = Boolean(scene && (scene.layers.length || scene.circles.length));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
@@ -33,7 +35,11 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
   const [retry, setRetry] = useState(0);
   const [dragging, setDragging] = useState(false);
   const drag = useRef<{ id: number; point: Point } | null>(null);
-  const [loaded, setLoaded] = useState<Images>({ scene: null, images: new Map(), errors: [], loading: false });
+  const resourceIdentity = JSON.stringify([scene?.sessionId, [...new Set(scene?.layers.map(layer => layer.resourceId) ?? [])].sort()]);
+  const [loaded, setLoaded] = useState<Images>({ identity: '', images: new Map(), errors: [], loading: false });
+  const fitted = useRef(false);
+  const autoFit = useRef(true);
+  const fittedSize = useRef<Size | null>(null);
 
   useLayoutEffect(() => {
     const surface = surfaceRef.current!;
@@ -64,9 +70,12 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
   }, []);
 
   useLayoutEffect(() => {
-    setViewport(fitViewport(sceneBounds(scene), size));
-    drag.current = null;
-    setDragging(false);
+    const resized = fittedSize.current?.width !== size.width || fittedSize.current?.height !== size.height;
+    if ((!fitted.current || autoFit.current && resized) && hasLayers && size.width > 1 && size.height > 1) {
+      fitted.current = true;
+      fittedSize.current = size;
+      setViewport(fitViewport(sceneBounds(scene), size));
+    }
   }, [scene, size]);
 
   useEffect(() => {
@@ -74,7 +83,7 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
     const images = new Map<string, HTMLImageElement>();
     const errors: string[] = [];
     const loader = loaderRef.current;
-    setLoaded({ scene, images, errors: [], loading: Boolean(scene?.layers.length) });
+    setLoaded({ identity: resourceIdentity, images, errors: [], loading: Boolean(scene?.layers.length) });
     if (!scene) return () => controller.abort();
     const ids = [...new Set(scene.layers.map(layer => layer.resourceId))];
     const reservePixels = createDecodeBudget(scene.layers);
@@ -98,14 +107,14 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
       }
     };
     void Promise.all(Array.from({ length: Math.min(4, ids.length) }, worker)).then(() => {
-      if (!controller.signal.aborted) setLoaded({ scene, images, errors, loading: false });
+      if (!controller.signal.aborted) setLoaded({ identity: resourceIdentity, images, errors, loading: false });
     });
     return () => {
       controller.abort();
       for (const image of images.values()) image.src = '';
       images.clear();
     };
-  }, [scene, retry]);
+  }, [resourceIdentity, retry]);
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current!;
@@ -144,13 +153,14 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
       ...scene.circles.map(circle => ({ kind: 'circle' as const, value: circle })),
     ].sort((a, b) => a.value.z - b.value.z);
     for (const item of items) {
+      if (item.value.nodeId && hiddenIds.includes(item.value.nodeId)) continue;
       if (item.kind === 'circle') {
         const circle = item.value;
         context.fillStyle = circle.color;
         context.beginPath(); context.arc(circle.cx, circle.cy, circle.radius, 0, Math.PI * 2); context.fill();
       } else {
         const layer = item.value;
-        const image = loaded.scene === scene ? loaded.images.get(layer.resourceId) : null;
+        const image = loaded.identity === resourceIdentity ? loaded.images.get(layer.resourceId) : null;
         if (!image) continue;
         context.save();
         context.translate(layer.x + (layer.flipX ? layer.width : 0), layer.y);
@@ -158,8 +168,19 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
         context.drawImage(image, 0, 0, layer.width, layer.height);
         context.restore();
       }
+      if (selectedId && item.value.nodeId === selectedId) {
+        context.strokeStyle = tokens.getPropertyValue('--accent');
+        context.lineWidth = 2 / viewport.scale;
+        if (item.kind === 'layer') {
+          const layer = item.value;
+          context.strokeRect(layer.x, layer.y, layer.width, layer.height);
+        } else {
+          const circle = item.value;
+          context.beginPath(); context.arc(circle.cx, circle.cy, circle.radius, 0, Math.PI * 2); context.stroke();
+        }
+      }
     }
-  }, [scene, loaded, viewport, size, dpr, checker, grid, themeVersion]);
+  }, [scene, loaded, viewport, size, dpr, checker, grid, themeVersion, hiddenIds, selectedId, resourceIdentity]);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -169,17 +190,19 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
       const rect = canvas.getBoundingClientRect();
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? size.height : 1);
       const factor = Math.exp(-Math.max(-1000, Math.min(1000, delta)) * 0.0015);
+      autoFit.current = false;
       setViewport(current => zoomAt(current, { x: event.clientX - rect.left, y: event.clientY - rect.top }, factor));
     };
     canvas.addEventListener('wheel', wheel, { passive: false });
     return () => canvas.removeEventListener('wheel', wheel);
   }, [hasLayers, size.height]);
 
-  const fit = () => setViewport(fitViewport(sceneBounds(scene), size));
-  const zoom = (factor: number) => setViewport(current => zoomAt(current, { x: size.width / 2, y: size.height / 2 }, factor));
+  const fit = () => { autoFit.current = true; fittedSize.current = size; setViewport(fitViewport(sceneBounds(scene), size)); };
+  const zoom = (factor: number) => { autoFit.current = false; setViewport(current => zoomAt(current, { x: size.width / 2, y: size.height / 2 }, factor)); };
   const pointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
     if (!hasLayers || (event.button !== 0 && event.button !== 1)) return;
     event.preventDefault(); event.currentTarget.focus();
+    autoFit.current = false;
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = { id: event.pointerId, point: { x: event.clientX, y: event.clientY } };
     setDragging(true);
@@ -192,7 +215,7 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
     } else if (scene) {
       const rect = event.currentTarget.getBoundingClientRect();
       const point = screenToScene(viewport, { x: event.clientX - rect.left, y: event.clientY - rect.top });
-      const layer = [...scene.layers].sort((a, b) => b.z - a.z).find(item => point.x >= item.x && point.y >= item.y && point.x <= item.x + item.width && point.y <= item.y + item.height);
+      const layer = [...scene.layers].filter(item => !item.nodeId || !hiddenIds.includes(item.nodeId)).sort((a, b) => b.z - a.z).find(item => point.x >= item.x && point.y >= item.y && point.x <= item.x + item.width && point.y <= item.y + item.height);
       event.currentTarget.title = layer?.tooltip || '滚轮缩放，拖动平移；方向键平移，加减键缩放，回车适应窗口。';
     }
   };
@@ -204,14 +227,14 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
   const keyDown = (event: KeyboardEvent<HTMLCanvasElement>) => {
     if (!hasLayers) return;
     const moves: Record<string, Point> = { ArrowLeft: { x: -20, y: 0 }, ArrowRight: { x: 20, y: 0 }, ArrowUp: { x: 0, y: -20 }, ArrowDown: { x: 0, y: 20 } };
-    if (moves[event.key]) { event.preventDefault(); setViewport(current => panBy(current, moves[event.key])); }
+    if (moves[event.key]) { event.preventDefault(); autoFit.current = false; setViewport(current => panBy(current, moves[event.key])); }
     else if (event.key === '+' || event.key === '=') { event.preventDefault(); zoom(1.25); }
     else if (event.key === '-') { event.preventDefault(); zoom(0.8); }
     else if (event.key === 'Enter' || event.key === 'Home') { event.preventDefault(); fit(); }
   };
 
   const ready = hasLayers;
-  const current = loaded.scene === scene;
+  const current = loaded.identity === resourceIdentity;
   const loading = Boolean(scene?.layers.length) && (!current || loaded.loading);
   const errors = current ? loaded.errors : [];
   const visibleLayers = current && (loaded.images.size > 0 || Boolean(scene?.circles.length));
@@ -230,6 +253,7 @@ export function PreviewCanvas({ scene, loadResource }: PreviewCanvasProps) {
     <div ref={surfaceRef} className={styles.surface}>
       <canvas ref={canvasRef} className={styles.canvas} tabIndex={ready ? 0 : -1} aria-label="静态贴图预览；滚轮缩放，拖动平移，回车适应窗口" data-dragging={dragging}
         data-scale={viewport.scale} data-offset-x={viewport.x} data-offset-y={viewport.y} data-dpr={dpr}
+        data-selected-layer={selectedId ?? ''} data-visible-layers={scene?.layers.filter(layer => !layer.nodeId || !hiddenIds.includes(layer.nodeId)).length ?? 0}
         onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd} onKeyDown={keyDown} onDoubleClick={fit}>
         当前浏览器无法显示贴图预览。
       </canvas>

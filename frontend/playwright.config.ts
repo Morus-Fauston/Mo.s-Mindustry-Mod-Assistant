@@ -7,7 +7,7 @@ export default defineConfig({
   fullyParallel: false,
   reporter: [['list'], ['json', { outputFile: 'test-results/host-results.json' }]],
   projects: [
-    { name: 'host', testMatch: ['startup.spec.ts', 'workspace.spec.ts', 'editing.spec.ts', 'preview.spec.ts', 'forms.spec.ts', 'references.spec.ts', 'resources.spec.ts', 'nested.spec.ts', 'resource-fields.spec.ts', 'abilities.spec.ts', 'weapons.spec.ts', 'research.spec.ts', 'source.spec.ts'] },
+    { name: 'host', testMatch: ['startup.spec.ts', 'workspace.spec.ts', 'editing.spec.ts', 'preview.spec.ts', 'forms.spec.ts', 'references.spec.ts', 'resources.spec.ts', 'nested.spec.ts', 'resource-fields.spec.ts', 'abilities.spec.ts', 'weapons.spec.ts', 'research.spec.ts', 'source.spec.ts', 'layers.spec.ts'] },
     { name: 'package', testMatch: 'package.spec.ts' },
   ],
 });

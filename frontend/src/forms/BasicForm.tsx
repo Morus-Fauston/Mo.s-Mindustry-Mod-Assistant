@@ -19,6 +19,7 @@ export interface BasicFormProps {
   onAction: (action: string, payload: Record<string, unknown>) => Promise<void>;
   onLoadReference: (field: string, query: string) => Promise<ReferenceResult>;
   renderField?: (field: FormField) => ReactNode;
+  revealField?: { token: number; field: string; focus: boolean };
 }
 
 function Chevron({ expanded }: { expanded: boolean }) {
@@ -37,7 +38,7 @@ function Checkbox({ checked, label, disabled, onChange, invalid = false }: {
   </span>;
 }
 
-function FieldControl({ field, drafts, error, disabled, onDraft, onCommit, onReset, onComposition, onAction, onLoadReference }: {
+export function FieldControl({ field, drafts, error, disabled, onDraft, onCommit, onReset, onComposition, onAction, onLoadReference }: {
   field: FormField; drafts: FormDrafts; error: string;
 } & Pick<BasicFormProps, 'disabled' | 'onDraft' | 'onCommit' | 'onReset' | 'onComposition' | 'onAction' | 'onLoadReference'>) {
   const composing = useRef(false);
@@ -100,10 +101,22 @@ export function BasicForm(props: BasicFormProps) {
   const { document: doc, drafts, errors, disabled, onAction } = props;
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const prefix = useId();
+  const formRef = useRef<HTMLDivElement>(null);
+  const focusedToken = useRef<number | undefined>(undefined);
   useEffect(() => setExpanded({}), [doc.path, doc.sessionId]);
+  useEffect(() => {
+    const group = doc.form.groups.find(group => group.fields.some(field => field.name === props.revealField?.field));
+    if (group && (!group.capability || group.enabled)) setExpanded(current => ({ ...current, [group.id]: true }));
+  }, [props.revealField?.token]);
+  useEffect(() => {
+    const request = props.revealField;
+    if (!request?.focus || request.token === focusedToken.current) return;
+    const target = formRef.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(request.field)}"] input, [data-field="${CSS.escape(request.field)}"] select, [data-field="${CSS.escape(request.field)}"] button`);
+    if (target) { focusedToken.current = request.token; target.scrollIntoView({ block: 'center' }); target.focus({ preventScroll: true }); }
+  }, [expanded, props.revealField?.token]);
   const toggle = (group: FormGroup) => setExpanded(current => ({ ...current, [group.id]: !(current[group.id] ?? group.defaultExpanded) }));
   const run = (action: string, payload: Record<string, unknown>) => { void onAction(action, payload).catch(() => {}); };
-  return <div className={styles.form} aria-label="内容字段">
+  return <div ref={formRef} className={styles.form} aria-label="内容字段">
     {doc.form.groups.map(group => {
       const open = (expanded[group.id] ?? group.defaultExpanded) && (!group.capability || group.enabled);
       const bodyId = `${prefix}-${group.id}`;

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 async function openSource(host: { page: import('@playwright/test').Page; projectPath: string }, path = 'content/units/twin.json') {
   const { page, projectPath } = host;
   await page.getByRole('button').filter({ hasText: projectPath }).click();
-  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  const tree = page.getByRole('tree', { name: '工程文件', exact: true }); await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await tree.locator(`[data-path="${path}"]`).click();
   const panel = page.getByRole('tabpanel', { name: path });

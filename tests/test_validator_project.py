@@ -37,6 +37,25 @@ def project(tmp_path):
 
 
 class TestValidateProject:
+    @pytest.mark.parametrize("data", [[], None, {"type": ["Wall"]},
+                                      {"type": "UnitType", "weapons": [{"name": ["bad"]}]},
+                                      {"type": "Wall", "requirements": [{"item": {"bad": 1}}]}])
+    def test_malformed_business_shapes_report_errors_instead_of_throwing(self, project, data):
+        (project.root / "content/units/soldier.json").write_text(json.dumps(data), encoding="utf-8")
+        assert any(issue.severity == "error" for issue in validate_project(project, None))
+
+    def test_nonstring_mod_name_reports_error(self, project):
+        (project.root / "mod.json").write_text('{"name":["bad"]}', encoding="utf-8")
+        assert any(issue.path == "mod.json" and issue.severity == "error" for issue in validate_project(project, None))
+
+    def test_current_content_reader_validates_unsaved_data_without_writing(self, project):
+        before = (project.root / "content/units/soldier.json").read_bytes()
+        issues = validate_project(project, None, read_content=lambda relative: {
+            "type": "UnitType", "weapons": [{"name": "missing-weapon"}],
+        })
+        assert any(issue.path == "units/soldier.json" and issue.field == "weapons" for issue in issues)
+        assert (project.root / "content/units/soldier.json").read_bytes() == before
+
     def test_clean_project_no_issues(self, project):
         issues = validate_project(project, None)
         assert issues == []

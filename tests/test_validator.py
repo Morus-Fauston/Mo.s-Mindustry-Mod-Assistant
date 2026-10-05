@@ -31,6 +31,10 @@ def validator(meta):
 
 
 class TestValidateBasic:
+    @pytest.mark.parametrize("data", [None, [], {"type": ["Wall"]}, {"type": {"bad": True}}, {"type": 42}])
+    def test_malformed_root_or_type_reports_error(self, validator, data):
+        assert any(issue.severity == "error" for issue in validator.validate(data))
+
     def test_missing_type_field(self, validator):
         issues = validator.validate({"health": 100})
         assert any(i.path == "type" and i.severity == "error" for i in issues)

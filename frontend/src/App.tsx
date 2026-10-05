@@ -15,6 +15,9 @@ import { WeaponArray, isWeaponArrayField, findWeaponField } from './weapons/Weap
 import { ResearchField, isResearchField, findResearchField } from './research/ResearchField';
 import { SourceEditor, SOURCE_DRAFT_FIELD } from './source/SourceEditor';
 import type { WeaponAnchor } from './layers/types';
+import { ValidationReportPanel } from './validation/ValidationReportPanel';
+import type { ValidationIssue, ValidationReport } from './validation/types';
+import { resolveIssueField } from './validation/location';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -50,6 +53,12 @@ export function App() {
   const [sourceViews, setSourceViews] = useState<Record<string, { mode: 'form' | 'source'; seen: boolean }>>({});
   const [formFocus, setFormFocus] = useState<{ path: string; token: number; objectPath: ObjectPath; field: string }>();
   const [layerFocus, setLayerFocus] = useState<{ path: string; token: number; nodeId: string }>();
+  const [sourceFocus, setSourceFocus] = useState<{ path: string; token: number; line: number; column: number }>();
+  const [validation, setValidation] = useState<ValidationReport | null>(null);
+  const [reportVisible, setReportVisible] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const validating = useRef(false);
+  const [validationBusy, setValidationBusy] = useState(false);
   const focusSequence = useRef(0);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentProject[]>([]);
@@ -105,6 +114,78 @@ export function App() {
   }, [project?.sessionId, editor.state?.revision, editing]);
 
   const flushDrafts = draftStore.flush;
+
+  useEffect(() => {
+    const completed = editor.result;
+    if (!completed || !['validate_project', 'export_project'].includes(completed.action)) return;
+    const result = completed.data as { report: ValidationReport; cancelled?: boolean; exported?: boolean; output?: { path: string } };
+    if (result.report.sessionId !== projectRef.current?.sessionId) return;
+    setValidation(result.report); setReportVisible(true); setValidationError('');
+    setNotice(completed.action === 'export_project' ? result.cancelled ? '已保存，已取消导出'
+      : result.exported && result.output ? `已导出：${result.output.path}` : '未生成导出文件'
+      : `校验完成：错误 ${result.report.errors} 项，警告 ${result.report.warnings} 项`);
+  }, [editor.result]);
+
+  async function validateOrExport(action: 'validate_project' | 'export_project') {
+    if (validating.current || busy || editor.busy || editor.uncertain || intentRef.current || !projectRef.current) return;
+    validating.current = true; setValidationBusy(true); setValidationError(''); setFailure(''); setReportVisible(true);
+    const owner = projectRef.current.sessionId;
+    try {
+      await flushDrafts();
+      if (owner !== projectRef.current?.sessionId) return;
+      await editing.run(action);
+    } catch (error) {
+      if (owner === projectRef.current?.sessionId) { setValidationError(message(error)); setFailure(message(error)); }
+    } finally { validating.current = false; setValidationBusy(false); }
+  }
+
+  async function locateIssue(issue: ValidationIssue) {
+    const report = validation, owner = projectRef.current?.sessionId;
+    if (!report || report.sessionId !== owner || !issue.path || !/^content\/(units|blocks|weapons)\/[^/]+\.json$/.test(issue.path)) {
+      setNotice('此问题没有可在工作台打开的位置。'); return;
+    }
+    if (editor.busy || editor.uncertain || busy || intentRef.current || validating.current) return;
+    const path = issue.path, epoch = generation.current, selected = selection.current + 1;
+    const wasCurrent = report.revision === editing.getSnapshot().state?.revision && !Object.keys(draftStore.getSnapshot().drafts).length;
+    await openNode({ id: path, path, kind: 'content', label: path });
+    if (epoch !== generation.current || owner !== projectRef.current?.sessionId || selected !== selection.current) return;
+    let state = editing.getSnapshot().state;
+    let locatedIssue = issue, locatedReport = report;
+    // Registering a previously unopened document advances the session revision.
+    // Revalidate the actual loaded bytes before applying a precise position.
+    if (wasCurrent && state?.revision !== report.revision) {
+      try {
+        await editing.run('validate_project');
+        const result = editing.getSnapshot().result?.data as { report: ValidationReport };
+        if (epoch !== generation.current || owner !== projectRef.current?.sessionId || selected !== selection.current) return;
+        const fresh = result.report.issues.find(candidate => candidate.id === issue.id && candidate.path === path);
+        if (!fresh) { setNotice('已打开文件，原问题已发生变化，请查看最新报告。'); return; }
+        locatedIssue = fresh; locatedReport = result.report; state = editing.getSnapshot().state;
+      } catch (error) { setFailure(message(error)); return; }
+    }
+    const document = state?.documents.find(item => item.path === path);
+    if (!document) { setNotice(`无法打开问题文件：${path}`); return; }
+    setActivePath(path); setSelectedPath(path);
+    const current = wasCurrent && locatedReport.revision === state?.revision && !(path in draftStore.getSnapshot().drafts);
+    if (!current) { setNotice('报告位置已过期或存在未应用输入，已打开对应文件，请重新校验。'); return; }
+    if (locatedIssue.target === 'source') {
+      await switchView(path, 'source');
+      if (epoch !== generation.current || owner !== projectRef.current?.sessionId) return;
+      if (locatedIssue.line && locatedIssue.column) {
+        setSourceFocus({ path, token: ++focusSequence.current, line: locatedIssue.line, column: locatedIssue.column });
+        setNotice(`已打开源码问题位置：${path}，第 ${locatedIssue.line} 行，第 ${locatedIssue.column} 列`);
+      } else {
+        setSourceFocus(undefined); setNotice(`已打开源码：${path}；此问题未提供精确行列。`);
+      }
+    } else {
+      const location = document.form && resolveIssueField(document.form as NestedFormPlan, locatedIssue);
+      if (!location) { setNotice(`已打开 ${path}；此问题没有可用的精确字段位置。`); return; }
+      await switchView(path, 'form');
+      if (epoch !== generation.current || owner !== projectRef.current?.sessionId) return;
+      setFormFocus({ path, token: ++focusSequence.current, ...location });
+      setNotice(`已打开字段所在位置：${path}`);
+    }
+  }
 
   async function commitDraft(path: string, field: string) {
     try { await draftStore.commit(path, field); setFailure(''); }
@@ -191,6 +272,7 @@ export function App() {
         setSourceViews(previous => Object.fromEntries(Object.entries(previous).filter(([path]) => !target.paths.includes(path))));
         setFormFocus(previous => previous && target.paths.includes(previous.path) ? undefined : previous);
         setLayerFocus(previous => previous && target.paths.includes(previous.path) ? undefined : previous);
+        setSourceFocus(previous => previous && target.paths.includes(previous.path) ? undefined : previous);
       } else if (target.kind === 'project') {
         if (choice === 'save') await editing.run('save_opened');
         clearIntent();
@@ -285,6 +367,7 @@ export function App() {
       draftStore.reset();
       setSourceViews({});
       setFormFocus(undefined); setLayerFocus(undefined);
+      setSourceFocus(undefined); setValidation(null); setValidationError(''); setReportVisible(false);
       setActivePath(null);
       setSelectedPath(null);
       setRecent([{ path: result.root, name: result.name }]);
@@ -347,12 +430,20 @@ export function App() {
         onClick={() => needsRecovery ? void openProject() : void requestIntent({ kind: 'project' })}>{needsRecovery ? '查询打开结果' : '打开工程'}</button>
       <button className={styles.button} disabled={!documents.length || busy || editor.uncertain || decisionBusy}
         onClick={() => void editAction('save_opened')}>保存已打开内容</button>
+      <button className={styles.button} disabled={!project || busy || editor.busy || editor.uncertain || validationBusy}
+        onClick={() => void validateOrExport('validate_project')}>校验工程</button>
+      <button className={styles.button} disabled={!project || busy || editor.busy || editor.uncertain || validationBusy}
+        onClick={() => void validateOrExport('export_project')}>导出模组</button>
+      {validation && <button className={styles.button} aria-pressed={reportVisible} onClick={() => setReportVisible(value => !value)}>校验报告</button>}
       <button className={styles.button} disabled={!editor.state?.history.canUndo || busy || editor.busy || editor.uncertain}
         title={editor.state?.history.undoDescription || '没有可撤销的操作'} onClick={() => void editAction('undo')}>撤销</button>
       <button className={styles.button} disabled={!editor.state?.history.canRedo || busy || editor.busy || editor.uncertain}
         title={editor.state?.history.redoDescription || '没有可重做的操作'} onClick={() => void editAction('redo')}>重做</button>
       {editor.uncertain && <button className={styles.button} disabled={editor.busy} onClick={() => {
-        void editing.recover().then(() => { setFailure(''); setNotice('已取得原操作结果'); }).catch(error => setFailure(message(error)));
+        void editing.recover().then(() => {
+          setFailure('');
+          if (!['validate_project', 'export_project'].includes(editing.getSnapshot().result?.action ?? '')) setNotice('已取得原操作结果');
+        }).catch(error => setFailure(message(error)));
       }}>查询操作结果</button>}
       <span title={project?.root}>{project?.name ?? '未打开工程'}</span>
     </div>
@@ -417,6 +508,7 @@ export function App() {
           </div>
           {(sourceViews[document.path]?.seen || document.validData === false) && <div hidden={sourceViews[document.path]?.mode !== 'source'}>
             <SourceEditor identity={JSON.stringify([document.sessionId, document.path])}
+              focusRequest={sourceFocus?.path === document.path ? sourceFocus : undefined}
               text={drafts[document.path]?.[SOURCE_DRAFT_FIELD] ?? document.sourceText ?? ''}
               error={SOURCE_DRAFT_FIELD in (drafts[document.path] ?? {})
                 ? draftState.errors[document.path]?.[SOURCE_DRAFT_FIELD] ?? '' : document.sourceError?.message ?? ''}
@@ -444,6 +536,12 @@ export function App() {
               </Fragment>)}
             </dl>
           </>}
+        </div>}
+        {reportVisible && <div className={styles.validation}>
+          <ValidationReportPanel report={validation} currentSessionId={project?.sessionId ?? null}
+            currentRevision={Object.keys(drafts).length ? null : editor.state?.revision ?? null}
+            busy={validationBusy || editor.busy || editor.uncertain || busy} error={validationError}
+            onValidate={() => validateOrExport('validate_project')} onLocate={issue => void locateIssue(issue)} />
         </div>}
       </section>
       <aside className={styles.right} aria-label="预览与图层">

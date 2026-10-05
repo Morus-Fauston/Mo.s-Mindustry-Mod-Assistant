@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { BasicForm, type BasicFormProps } from '../forms/BasicForm';
 import type { FormField } from '../forms/types';
 import { encodeFieldKey, moveBefore, scopedFields } from './address';
+import { createNestedRevealTracker, type NestedFocusRequest } from './reveal';
 import type { NestedArrayField, NestedArrayItem, NestedField, NestedFormPlan, NestedObjectField, ObjectPath } from './types';
 import styles from './NestedForm.module.css';
 
@@ -10,11 +11,12 @@ export type { NestedFormPlan, ObjectPath } from './types';
 
 export interface NestedFormProps extends Omit<BasicFormProps, 'renderField'> {
   plan: NestedFormPlan;
-  focusRequest?: { token: number; objectPath: ObjectPath; field: string };
+  focusRequest?: NestedFocusRequest;
   renderSpecialField?: (field: NestedField, objectPath: ObjectPath, props: Omit<BasicFormProps, 'renderField'>, renderForm: (plan: NestedFormPlan) => ReactNode) => ReactNode;
 }
 
-interface NodeProps { root: NestedFormProps; plan: NestedFormPlan }
+interface RuntimeProps extends NestedFormProps { revealTracker: ReturnType<typeof createNestedRevealTracker> }
+interface NodeProps { root: RuntimeProps; plan: NestedFormPlan }
 
 function shellField(field: NestedField): FormField {
   return field.control === 'object' || field.control === 'array' || field.control === 'resource_list' || field.control === 'resource_slot' || field.control === 'consumes' || field.control === 'weapon_array' || field.control === 'research' || field.control === 'planet_set'
@@ -27,6 +29,8 @@ export function NestedForm(props: NestedFormProps) {
   const [error, setError] = useState('');
   const busy = useRef(false);
   const owner = `${props.document.sessionId}/${props.document.path}`;
+  const reveal = useRef({ owner, tracker: createNestedRevealTracker() });
+  if (reveal.current.owner !== owner) reveal.current = { owner, tracker: createNestedRevealTracker() };
   const ownerRef = useRef(owner);
   ownerRef.current = owner;
   useEffect(() => { busy.current = false; setPending(false); setError(''); }, [owner]);
@@ -43,7 +47,7 @@ export function NestedForm(props: NestedFormProps) {
   };
   return <div className={styles.nested} aria-label="嵌套内容字段" aria-busy={pending}>
     {error && <p className={styles.error} role="alert">{error}</p>}
-    <NodeForm key={owner} root={{ ...props, disabled: props.disabled || pending, onAction: action }} plan={props.plan} />
+    <NodeForm key={owner} root={{ ...props, disabled: props.disabled || pending, onAction: action, revealTracker: reveal.current.tracker }} plan={props.plan} />
   </div>;
 }
 
@@ -96,6 +100,9 @@ function ObjectControl({ root, plan, field }: NodeProps & { field: NestedObjectF
   const locked = root.disabled || field.readOnly || Boolean(field.inactiveReason);
   const error = root.errors[encodeFieldKey(plan.objectPath, field.name)] ?? field.validationError;
   const run = (action: string) => void root.onAction(action, { objectPath: plan.objectPath, field: field.name }).catch(() => {});
+  useEffect(() => {
+    if (root.revealTracker.consume(root.focusRequest, [...plan.objectPath, field.name], root.disabled)) setExpanded(true);
+  }, [root.focusRequest, root.disabled, root.revealTracker, plan.objectPath, field.name]);
   return <section className={styles.container} data-field={field.name} data-field-type="obj" aria-label={field.label} aria-invalid={Boolean(error)}>
     <header className={styles.heading}>
       <button type="button" className={styles.title} aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(value => !value)} title={field.help}>
@@ -123,6 +130,15 @@ function ArrayControl({ root, plan, field }: NodeProps & { field: NestedArrayFie
   const locked = root.disabled || field.readOnly || Boolean(field.inactiveReason);
   const error = root.errors[encodeFieldKey(plan.objectPath, field.name)] ?? field.validationError;
   const run = (action: string, payload: Record<string, unknown> = {}) => root.onAction(action, { ...payload, objectPath: plan.objectPath, field: field.name });
+
+  useEffect(() => {
+    const container: ObjectPath = [...plan.objectPath, field.name];
+    const item = root.focusRequest?.objectPath[container.length];
+    if (item !== undefined && (typeof item !== 'object' || !field.items.some(candidate => candidate.itemId === item.itemId))) return;
+    if (!root.revealTracker.consume(root.focusRequest, container, root.disabled)) return;
+    setExpanded(true);
+    if (typeof item === 'object') setClosedItems(current => ({ ...current, [item.itemId]: false }));
+  }, [root.focusRequest, root.disabled, root.revealTracker, plan.objectPath, field.name, field.items]);
 
   useEffect(() => {
     if (root.disabled || restoreFocus.current === undefined) return;

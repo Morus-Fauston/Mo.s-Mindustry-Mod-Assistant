@@ -8,13 +8,16 @@ Interface (2 static methods):
 from __future__ import annotations
 
 import json
+import os
 import re
+import time
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 from .content_store import ContentStore
+from .project_files import open_project_file
 
 # mod.json 的 name 字段（同时也是目录名）允许的字符：小写字母、数字、连字符
 _MOD_ID_RE = re.compile(r"^[a-z0-9-]+$")
@@ -142,7 +145,7 @@ class Project:
         for src, dst in renames:
             src.rename(dst)
 
-    def export_zip(self, dest: str | Path) -> Path:
+    def export_zip(self, dest: str | Path, *, exclude_paths: Iterable[str | Path] = ()) -> Path:
         """打包工程为 Mindustry 可导入的 zip（mod.json 位于压缩包根目录）。
 
         覆盖 mod.json / content / sprites / scripts / maps 等全部工程文件，
@@ -150,15 +153,44 @@ class Project:
         """
         dest = Path(dest)
         dest.parent.mkdir(parents=True, exist_ok=True)
+        root = self.root.resolve()
+        excluded = {Path(path).resolve() for path in exclude_paths} | {dest.resolve()}
         skip_dirs = {".git", ".idea", ".vscode", "__pycache__", ".venv"}
-        with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
-            for p in sorted(self.root.rglob("*")):
+        files = []
+        def scan_failed(error):
+            raise error
+        # pathlib glob suppresses directory scan errors. Export must fail rather
+        # than announce a successful package with an unreadable subtree omitted.
+        for directory, dirs, names in os.walk(self.root, onerror=scan_failed, followlinks=False):
+            dirs[:] = [name for name in dirs if name not in skip_dirs]
+            for name in dirs + names:
+                p = Path(directory) / name
+                rel = p.relative_to(self.root)
+                if name in skip_dirs or p.resolve() in excluded or name.startswith("."):
+                    continue
+                if not p.resolve().is_relative_to(root):
+                    raise ValueError("导出文件超出工程范围")
                 if p.is_dir():
                     continue
-                rel = p.relative_to(self.root)
-                if any(part in skip_dirs for part in rel.parts):
-                    continue
-                if rel.name.startswith("."):
-                    continue
-                zf.write(p, rel.as_posix())
+                if not p.is_file():
+                    raise ValueError("导出来源不是普通文件")
+                files.append((p, rel))
+        with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
+            for p, rel in sorted(files):
+                with open_project_file(root, p) as source:
+                    info = os.fstat(source.fileno())
+                    entry = zipfile.ZipInfo(rel.as_posix(), time.localtime(info.st_mtime)[:6])
+                    entry.compress_type = zf.compression
+                    entry.external_attr = (info.st_mode & 0xFFFF) << 16
+                    entry.file_size = info.st_size
+                    with zf.open(entry, "w") as output:
+                        remaining = info.st_size
+                        while remaining:
+                            chunk = source.read(min(remaining, 1024 * 1024))
+                            if not chunk:
+                                raise OSError("导出来源在读取时缩短，请刷新后重试")
+                            output.write(chunk)
+                            remaining -= len(chunk)
+                        if source.read(1):
+                            raise OSError("导出来源在读取时增长，请刷新后重试")
         return dest

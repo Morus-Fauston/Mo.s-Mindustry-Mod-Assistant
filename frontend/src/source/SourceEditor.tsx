@@ -7,6 +7,7 @@ import { openSearchPanel, search, searchKeymap } from '@codemirror/search';
 import { tags } from '@lezer/highlight';
 import { createSourceInput } from './input';
 import { forwardSourceChanges, sourceEcho, sourceLanguage } from './editor';
+import { createSourceLocator, type SourceFocusRequest } from './location';
 import styles from './SourceEditor.module.css';
 
 export { SOURCE_DRAFT_FIELD } from './input';
@@ -16,6 +17,7 @@ export interface SourceEditorProps {
   text: string;
   error: string;
   disabled: boolean;
+  focusRequest?: SourceFocusRequest;
   onDraft(text: string): void;
   onCommit(): Promise<void>;
   onComposition(active: boolean): void;
@@ -29,6 +31,7 @@ interface Instance {
   input: ReturnType<typeof createSourceInput>;
   view: EditorView;
   status: Compartment;
+  reveal: ReturnType<typeof createSourceLocator>;
 }
 
 const highlight = HighlightStyle.define([
@@ -55,7 +58,7 @@ export function SourceEditor(props: SourceEditorProps) {
   useLayoutEffect(() => {
     if (!mount.current) return;
     // Each lifetime keeps its own callbacks, including cleanup of the old path's IME flag.
-    const instance = { identity: props.identity, props, status: new Compartment() } as Instance;
+    const instance = { identity: props.identity, props, status: new Compartment(), reveal: createSourceLocator() } as Instance;
     instance.input = createSourceInput({
       onDraft: text => instance.props.onDraft(text),
       onCommit: () => instance.props.onCommit(),
@@ -111,7 +114,8 @@ export function SourceEditor(props: SourceEditorProps) {
     }
     const text = instance.view.state.doc.toString();
     if (text !== props.text) instance.view.dispatch(sourceEcho(text, props.text));
-  }, [props, errorId]);
+    instance.reveal(instance.view, props.focusRequest, props.disabled);
+  }, [props, errorId, composing]);
 
   return <section className={styles.source} aria-label="源码编辑" data-disabled={props.disabled}>
     <div className={styles.toolbar}>

@@ -53,9 +53,14 @@ def main() -> None:
         def reveal_file(path):
             subprocess.Popen(['explorer.exe', f'/select,{path}'], creationflags=subprocess.CREATE_NO_WINDOW)
 
+        def choose_export(default_filename):
+            selected = window.create_file_dialog(webview.FileDialog.SAVE, save_filename=default_filename,
+                                                 file_types=('ZIP 压缩包 (*.zip)',))
+            return selected[0] if isinstance(selected, (tuple, list)) and selected else selected or None
+
         api = DesktopApi(metadata_dir(), choose_directory,
                          on_close=lambda: guard.approve(), on_close_ready=lambda: guard.ready(),
-                         choose_sprite=choose_sprite, reveal_file=reveal_file)
+                         choose_sprite=choose_sprite, choose_export=choose_export, reveal_file=reveal_file)
         webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
         window = webview.create_window(
             "MoMA 模组助手", str(page), js_api=api,

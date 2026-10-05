@@ -70,7 +70,7 @@ if ($Action -eq 'cancel') {
     exit 0
 }
 $children | ConvertTo-Json -Depth 3
-$inputId = if ($DialogName -eq '打开') { 1148 } else { 1152 }
+$inputId = if ($DialogName -eq '另存为') { 1001 } elseif ($DialogName -eq '打开') { 1148 } else { 1152 }
 $target = $children | Where-Object { $_.Class -eq 'Edit' -and $_.Id -eq $inputId } | Select-Object -First 1
 if (-not $target) { throw '未找到目录输入框' }
 [void][NativeDialog]::SendMessage($target.Handle, 0x0C, [IntPtr]::Zero, $ProjectPath)

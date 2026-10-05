@@ -102,6 +102,10 @@ class EditingService:
     def entry(self, path: str) -> ContentData | RawDocument | None:
         return self._raw_documents.get(path) or self._documents.get(path)
 
+    def document_entries(self) -> dict[str, ContentData | RawDocument]:
+        """Enumerate registered identities for same-lock read-only validation."""
+        return {**self._documents, **self._raw_documents}
+
     def require_content(self, path: str) -> ContentData:
         entry = self.entry(path)
         if isinstance(entry, RawDocument):

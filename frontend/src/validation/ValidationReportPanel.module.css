@@ -1,0 +1,20 @@
+.panel { min-width: 0; border-top: 1px solid var(--line); background: var(--panel); font-size: 12px; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; }
+.heading h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.button, .locate { min-height: 28px; flex-shrink: 0; padding: 3px 9px; border: 1px solid var(--line); background: var(--canvas); color: var(--ink); }
+.button:active, .locate:active { background: var(--selected); }
+.summary { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 12px 8px; font-variant-numeric: tabular-nums; }
+.summary [data-severity="error"], .issue[data-severity="error"] .severity { color: var(--error); }
+.summary [data-severity="warning"], .issue[data-severity="warning"] .severity { color: var(--accent); }
+.error, .notice { margin: 0 12px 10px; line-height: 1.7; overflow-wrap: anywhere; }
+.error { color: var(--error); }
+.notice { color: var(--muted); }
+.issues { margin: 0; padding: 0; list-style: none; max-height: 340px; overflow: auto; overscroll-behavior: contain; }
+.issue { padding: 8px 12px 10px; border-top: 1px solid var(--line); }
+.issueHeading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.severity { font-weight: 600; }
+.locate { min-height: 26px; padding: 2px 8px; background: transparent; }
+.message { margin: 5px 0; line-height: 1.7; overflow-wrap: anywhere; white-space: pre-wrap; }
+.path, .locationNotice { margin: 3px 0 0; color: var(--muted); line-height: 1.6; overflow-wrap: anywhere; }
+.position { display: block; font-variant-numeric: tabular-nums; }
+@media (hover: hover) { .button:not(:disabled):hover, .locate:not(:disabled):hover { background: var(--panel2); } }

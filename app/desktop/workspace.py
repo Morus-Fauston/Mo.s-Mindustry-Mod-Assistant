@@ -21,6 +21,7 @@ from app.desktop.preview_layers import PreviewLayerService
 from app.desktop.resources import ResourceService
 from app.desktop.resource_watch import ResourceWatch
 from app.desktop.source_editing import RawDocument, SourceEditingService
+from app.desktop.validation_export import ValidationExportService
 
 
 class WorkspaceError(EditingError):
@@ -34,10 +35,12 @@ class WorkspaceService:
 
     def __init__(self, metadata_dir: Path | str, choose_directory: Callable[[], str | None] | None = None,
                  *, choose_sprite: Callable[[], str | None] | None = None,
+                 choose_export: Callable[[str], str | None] | None = None,
                  reveal_file: Callable[[Path], None] | None = None):
         self._metadata_dir = Path(metadata_dir)
         self._choose_directory = choose_directory
         self._choose_sprite, self._reveal_file = choose_sprite, reveal_file
+        self._choose_export = choose_export
         self._resources: ResourceService | None = None
         self._resource_watch: ResourceWatch | None = None
         self._session = ProjectSession(metadata_dir)
@@ -113,7 +116,7 @@ class WorkspaceService:
                     raise WorkspaceError("INVALID_REQUEST", "会话标识无效。")
                 action, payload = envelope.get("action"), envelope.get("payload", {})
                 if action not in ("recent_projects", "open_project", "choose_project", "read_document",
-                                  "editing_state", "set_field", "set_source", "format_source", "undo", "redo", "save_opened",
+                                  "editing_state", "validate_project", "export_project", "set_field", "set_source", "format_source", "undo", "redo", "save_opened",
                                   "close_documents", "close_window", "preview_scene", "preview_resource",
                                   "add_field", "delete_field", "set_capability", "add_group", "delete_group",
                                   "reference_candidates", "sprite_targets", "resource_state",
@@ -167,6 +170,12 @@ class WorkspaceService:
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
+        if action in ("validate_project", "export_project"):
+            service = ValidationExportService(self._session, self._session_id, self._editing, self._choose_export)
+            if action == "export_project":
+                return service.export(payload)
+            report = service.validate(payload)
+            return {"state": self._editing.state(), "report": report}
         if action == "resource_state":
             return self._resource_state()
         if action in ("sprite_targets", "import_sprite", "delete_sprite", "reveal_sprite"):

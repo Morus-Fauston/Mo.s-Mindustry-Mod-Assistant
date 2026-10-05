@@ -7,6 +7,27 @@ const initial: EditingState = { sessionId: 'one', revision: 2, documents: [],
   history: { canUndo: false, canRedo: false, undoDescription: '', redoDescription: '' }, autoSaveInterval: 180 };
 
 describe('编辑操作的真实请求身份', () => {
+  it('导出超时查询接收真实保存状态和报告，不重复打开原生选择器', async () => {
+    let requests = 0;
+    const result = { state: { ...initial, revision: 3 }, cancelled: true, exported: false,
+      report: { sessionId: 'one', revision: 3, issues: [] } };
+    const client = createEditingClient({
+      async request<T>(action: string) {
+        if (action === 'editing_state') return initial as T;
+        requests++; throw new DesktopError('BRIDGE_TIMEOUT', '超时');
+      },
+      async recoverRequest<T>() { return result as T; },
+    });
+    client.reset('one'); await client.refresh();
+    await expect(client.run('export_project')).rejects.toThrow('超时');
+    await client.recover();
+    expect(requests).toBe(1);
+    expect(client.getSnapshot().state).toEqual(result.state);
+    expect(client.getSnapshot().result?.data).toEqual(result);
+    expect(client.getSnapshot().result?.action).toBe('export_project');
+    client.reset('two');
+    expect(client.getSnapshot().result).toBeUndefined();
+  });
   it('已执行结果过期后只刷新权威状态，刷新失败仍可恢复且不重放', async () => {
     const calls: string[] = [];
     let failedRefresh = false;

@@ -6,7 +6,8 @@ export interface EditingTransport {
   recoverRequest<T>(action: string, payload: Record<string, unknown>, sessionId: string | null, requestId: string): Promise<T>;
 }
 
-export interface EditingSnapshot { state: EditingState | null; busy: boolean; uncertain: boolean }
+export interface EditingSnapshot { state: EditingState | null; busy: boolean; uncertain: boolean;
+  result?: { action: string; requestId: string; data: unknown } }
 interface Operation { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string }
 
 export function uncertainResult(error: unknown): boolean {
@@ -40,11 +41,15 @@ export function createEditingClient(transport: EditingTransport) {
     publish({ busy: true });
     try {
       const call = recovering ? transport.recoverRequest : transport.request;
-      const state = await call<EditingState>(operation.action, operation.payload, operation.sessionId, operation.requestId);
+      const data = await call<EditingState | { state: EditingState }>(operation.action, operation.payload, operation.sessionId, operation.requestId);
       if (current !== generation) throw new DesktopError('STALE_SESSION', '工程已切换。');
+      const state = 'state' in data ? data.state : data;
+      if (state.sessionId !== sessionId || !Number.isInteger(state.revision) || !Array.isArray(state.documents)) {
+        throw new DesktopError('INVALID_RESPONSE', '操作返回资料无效，请查询原操作结果。');
+      }
       accept(state, current);
       unresolved = null;
-      publish({ uncertain: false });
+      publish({ uncertain: false, result: { action: operation.action, requestId: operation.requestId, data } });
       return state;
     } catch (error) {
       if (current === generation) {
@@ -68,7 +73,7 @@ export function createEditingClient(transport: EditingTransport) {
       generation += 1;
       sessionId = nextSessionId;
       unresolved = null;
-      publish({ state: null, busy: false, uncertain: false });
+      publish({ state: null, busy: false, uncertain: false, result: undefined });
     },
     refresh,
     async run(action: string, payload: Record<string, unknown> = {}) {

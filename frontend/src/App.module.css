@@ -56,6 +56,7 @@
 .viewTools button { padding: 5px 11px; border: 1px solid var(--line); background: var(--canvas); color: var(--ink); font: inherit; }
 .viewTools button[aria-pressed="true"] { background: var(--selected); border-color: var(--accent); }
 .sourceWarning { color: var(--error); line-height: 1.7; }
+.validation { flex: 0 1 32%; min-height: 140px; overflow: auto; border-top: 1px solid var(--line); background: var(--panel); }
 .numberField[data-field-type="num"] { display: flex; position: relative; max-width: 310px; }
 .numberField[data-field-type="num"]::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; border-radius: 2px; background: var(--num-bar); }
 .numberField input { width: 100%; min-height: 30px; padding: 4px 10px; border: 1px solid var(--num-line); background: var(--num); font-family: inherit; font-variant-numeric: tabular-nums; }

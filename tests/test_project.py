@@ -47,6 +47,66 @@ class TestOpen:
 
 
 class TestExportZip:
+    def test_verified_handle_export_keeps_legacy_entries_and_bytes(self, tmp_path):
+        import zipfile
+
+        root = _make_project(tmp_path / "mod")
+        for name, data in {"scripts/main.js": b"script", ".custom/keep.txt": b"custom",
+                           "sprites/units/body.png": b"png bytes", "content/units/body.json": b"{}",
+                           ".git/HEAD": b"skip", ".hidden": b"skip", "kept.zip": b"asset"}.items():
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        target, legacy = tmp_path / "new.zip", tmp_path / "legacy.zip"
+        Project.open(root).export_zip(target)
+        # The pre-migration algorithm is the oracle, not another call to the
+        # revised export_zip implementation.
+        skipped = {".git", ".idea", ".vscode", "__pycache__", ".venv"}
+        with zipfile.ZipFile(legacy, "w", zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(root.rglob("*")):
+                if path.is_file() and not path.name.startswith(".") and not any(part in skipped for part in path.relative_to(root).parts):
+                    archive.write(path, path.relative_to(root).as_posix())
+        with zipfile.ZipFile(target) as actual, zipfile.ZipFile(legacy) as expected:
+            assert actual.namelist() == expected.namelist()
+            for name in actual.namelist():
+                assert actual.read(name) == expected.read(name)
+                a, e = actual.getinfo(name), expected.getinfo(name)
+                assert (a.file_size, a.CRC, a.compress_type, a.external_attr, a.date_time) == (
+                    e.file_size, e.CRC, e.compress_type, e.external_attr, e.date_time)
+
+    def test_export_scan_failure_is_not_silently_omitted(self, tmp_path, monkeypatch):
+        import os
+
+        root = _make_project(tmp_path / "mod")
+        denied = root / "scripts"
+        denied.mkdir()
+        (denied / "main.js").write_text("keep", encoding="utf-8")
+        target = tmp_path / "out.zip"
+        target.write_bytes(b"old archive")
+        scandir = os.scandir
+        def failing_scandir(path):
+            if Path(path) == denied:
+                raise PermissionError("脚本目录不可读")
+            return scandir(path)
+        monkeypatch.setattr(os, "scandir", failing_scandir)
+        with pytest.raises(PermissionError):
+            Project.open(root).export_zip(target)
+        assert target.read_bytes() == b"old archive"
+
+    def test_export_inside_project_excludes_itself_and_explicit_old_target(self, tmp_path):
+        import zipfile
+
+        root = _make_project(tmp_path)
+        (root / "previous.zip").write_bytes(b"previous archive")
+        (root / "kept.zip").write_bytes(b"unrelated project asset")
+        project = Project.open(root)
+        dest = root / "temporary.zip"
+        project.export_zip(dest, exclude_paths=[root / "previous.zip"])
+        with zipfile.ZipFile(dest) as archive:
+            assert "temporary.zip" not in archive.namelist()
+            assert "previous.zip" not in archive.namelist()
+            assert archive.read("kept.zip") == b"unrelated project asset"
+
     """导出 Mod 为 Mindustry 可导入的 zip（F-55）。"""
 
     def test_export_zip_contains_mod_json_and_content(self, tmp_path):

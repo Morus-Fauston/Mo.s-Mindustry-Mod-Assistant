@@ -14,7 +14,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Any
+from pathlib import PurePosixPath
+from typing import Any, Callable, Iterable
 
 from .metadata import Metadata, FieldDef
 from .field_dependencies import inactive_dependencies
@@ -33,7 +34,8 @@ class Issue:
     field: str = ""  # 关联的字段（空 = 不定位字段）
 
 
-def validate_project(project, metadata: Metadata) -> list[Issue]:
+def validate_project(project, metadata: Metadata, *, read_content: Callable[[str], dict] | None = None,
+                     extra_paths: Iterable[str] = (), read_mod: Callable[[], dict] | None = None) -> list[Issue]:
     """项目级全量验证（F-51）。
 
     检查项（严重度见规格文档 18.9）：
@@ -45,6 +47,8 @@ def validate_project(project, metadata: Metadata) -> list[Issue]:
     - 精灵图缺失（有 content 无主体 png）（warning）
 
     不 import Qt（core 层约束）。返回按严重度排序（error 在前）的列表。
+    可选读取器让桌面校验当前会话快照；不传时保留原磁盘行为。
+    extra_paths 补充已登记但磁盘已被外部删除的内容身份，不写入任何文件。
     """
     from .project import Project
 
@@ -61,14 +65,14 @@ def validate_project(project, metadata: Metadata) -> list[Issue]:
         try:
             import json as _json
 
-            mod_data = _json.loads(mod_json.read_text(encoding="utf-8"))
+            mod_data = read_mod() if read_mod is not None else _json.loads(mod_json.read_text(encoding="utf-8"))
             if not isinstance(mod_data, dict):
                 issues.append(Issue("mod.json", "error", "mod.json 应为 JSON 对象"))
             else:
                 mod_name = mod_data.get("name", "")
                 if not mod_name:
                     issues.append(Issue("mod.json", "error", "mod.json 缺少 name 字段"))
-                elif not _MOD_NAME_RE.match(mod_name):
+                elif not isinstance(mod_name, str) or not _MOD_NAME_RE.fullmatch(mod_name):
                     issues.append(Issue(
                         "mod.json", "error",
                         f"mod.json name 非法: {mod_name!r}（须小写字母/数字/连字符）",
@@ -77,35 +81,37 @@ def validate_project(project, metadata: Metadata) -> list[Issue]:
             issues.append(Issue("mod.json", "error", f"mod.json 不是合法 JSON: {e}"))
 
     # ── content 文件 ────────────────────────────────────────────────────
-    all_content: list = []
     categories = _project_categories(project)
+    paths = set(extra_paths)
     for cat in categories:
         cat_dir = project.contents.content_dir / cat
         if not cat_dir.is_dir():
             continue
-        for f in sorted(cat_dir.glob("*.json")):
-            name = f.stem
-            all_content.append((cat, name, f))
-            try:
-                data = _load_json(f)
-            except ValueError as e:
-                issues.append(Issue(
-                    f"{cat}/{name}.json", "error", f"JSON 解析失败: {e}",
-                    content_name=name,
-                ))
-                continue
-            if not data.get("type"):
-                issues.append(Issue(
-                    f"{cat}/{name}.json", "error", "缺少 type 字段",
-                    content_name=name,
-                ))
-                continue
-            # 跨文件武器引用存在性（error）
-            _check_weapon_refs(project, cat, name, data, issues)
-            # requirements 物品存在性（warning）
-            _check_requirements(project, metadata, cat, name, data, issues)
-            # 精灵图缺失（warning）
-            _check_sprite_missing(project, cat, name, issues)
+        for f in _json_files(cat_dir):
+            paths.add(f"{cat}/{f.name}")
+    for relative in sorted(paths):
+        identity = PurePosixPath(relative)
+        if (identity.is_absolute() or len(identity.parts) != 2 or identity.as_posix() != relative
+                or identity.suffix.lower() != ".json" or ".." in identity.parts
+                or any(character in relative for character in ("\\", ":", "\x00"))):
+            raise ValueError("校验内容路径无效")
+        cat, name = identity.parts[0], identity.stem
+        try:
+            data = read_content(relative) if read_content is not None else _load_json(project.contents.content_dir / relative)
+            if not isinstance(data, dict):
+                raise ValueError("内容应为 JSON 对象")
+        except ValueError as e:
+            issues.append(Issue(relative, "error", f"JSON 解析失败: {e}", content_name=name))
+            continue
+        if not data.get("type"):
+            issues.append(Issue(relative, "error", "缺少 type 字段", content_name=name))
+            continue
+        if not isinstance(data["type"], str):
+            issues.append(Issue(relative, "error", "type 应为类型名称文本", content_name=name, field="type"))
+            continue
+        _check_weapon_refs(project, cat, name, data, issues)
+        _check_requirements(project, metadata, cat, name, data, issues)
+        _check_sprite_missing(project, cat, name, issues)
 
     # 同分类文件名重复（error）
     _check_duplicate_names(categories, project, issues)
@@ -124,6 +130,11 @@ def _load_json(path) -> dict:
     return _json.loads(path.read_text(encoding="utf-8"))
 
 
+def _json_files(directory):
+    """Unlike glob, a failed scan must remain a visible validation failure."""
+    return sorted(path for path in directory.iterdir() if path.suffix.lower() == ".json")
+
+
 def _project_categories(project) -> list[str]:
     """列出工程 content 下的所有分类目录。"""
     d = project.contents.content_dir
@@ -139,7 +150,7 @@ def _check_duplicate_names(categories, project, issues: list[Issue]) -> None:
         if not cat_dir.is_dir():
             continue
         seen: dict[str, Path] = {}
-        for f in sorted(cat_dir.glob("*.json")):
+        for f in _json_files(cat_dir):
             name = f.stem
             if name in seen:
                 issues.append(Issue(
@@ -164,7 +175,7 @@ def _check_weapon_refs(project, cat, name, data, issues: list[Issue]) -> None:
     known_weapons = set()
     wdir = project.contents.content_dir / "weapons"
     if wdir.is_dir():
-        known_weapons = {f.stem for f in wdir.glob("*.json")}
+        known_weapons = {f.stem for f in _json_files(wdir)}
     for i, w in enumerate(weapons):
         if not isinstance(w, dict):
             continue
@@ -172,6 +183,10 @@ def _check_weapon_refs(project, cat, name, data, issues: list[Issue]) -> None:
         if "bullet" in w:
             continue
         wname = w.get("name", "")
+        if not isinstance(wname, str):
+            issues.append(Issue(f"{cat}/{name}.json", "error", f"武器名称应为文本（weapons[{i}].name）",
+                                content_name=name, field="weapons"))
+            continue
         if wname and wname not in known_weapons:
             issues.append(Issue(
                 f"{cat}/{name}.json", "error",
@@ -185,7 +200,16 @@ def _check_requirements(project, metadata, cat, name, data, issues: list[Issue])
     reqs = data.get("requirements")
     if not isinstance(reqs, list):
         return
-    items = {r.get("item") for r in reqs if isinstance(r, dict) and r.get("item")}
+    items = set()
+    for index, row in enumerate(reqs):
+        if not isinstance(row, dict):
+            continue
+        item = row.get("item")
+        if item is not None and not isinstance(item, str):
+            issues.append(Issue(f"{cat}/{name}.json", "error", f"物品引用应为文本（requirements[{index}].item）",
+                                content_name=name, field="requirements"))
+        elif item:
+            items.add(item)
     if not items:
         return
     known: set[str] = set()
@@ -195,7 +219,7 @@ def _check_requirements(project, metadata, cat, name, data, issues: list[Issue])
         pass
     idir = project.contents.content_dir / "items"
     if idir.is_dir():
-        known |= {f.stem for f in idir.glob("*.json")}
+        known |= {f.stem for f in _json_files(idir)}
     for it in sorted(items):
         if it not in known:
             issues.append(Issue(
@@ -226,10 +250,14 @@ class Validator:
         """Validate content data at the specified level."""
         issues: list[Issue] = []
 
+        if not isinstance(data, dict):
+            return [Issue("", "error", "内容应为 JSON 对象")]
         content_type = data.get("type")
         if not content_type:
             issues.append(Issue("type", "error", "缺少 type 字段"))
             return issues
+        if not isinstance(content_type, str):
+            return [Issue("type", "error", "type 应为类型名称文本")]
 
         # Get class definition
         try:

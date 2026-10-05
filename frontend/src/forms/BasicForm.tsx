@@ -111,9 +111,10 @@ export function BasicForm(props: BasicFormProps) {
   useEffect(() => {
     const request = props.revealField;
     if (!request?.focus || request.token === focusedToken.current) return;
-    const target = formRef.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(request.field)}"] input, [data-field="${CSS.escape(request.field)}"] select, [data-field="${CSS.escape(request.field)}"] button`);
+      if (disabled) return;
+      const target = formRef.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(request.field)}"] input:not(:disabled), [data-field="${CSS.escape(request.field)}"] textarea:not(:disabled), [data-field="${CSS.escape(request.field)}"] select:not(:disabled), [data-field="${CSS.escape(request.field)}"] button:not(:disabled)`);
     if (target) { focusedToken.current = request.token; target.scrollIntoView({ block: 'center' }); target.focus({ preventScroll: true }); }
-  }, [expanded, props.revealField?.token]);
+    }, [expanded, props.revealField?.token, disabled]);
   const toggle = (group: FormGroup) => setExpanded(current => ({ ...current, [group.id]: !(current[group.id] ?? group.defaultExpanded) }));
   const run = (action: string, payload: Record<string, unknown>) => { void onAction(action, payload).catch(() => {}); };
   return <div ref={formRef} className={styles.form} aria-label="内容字段">

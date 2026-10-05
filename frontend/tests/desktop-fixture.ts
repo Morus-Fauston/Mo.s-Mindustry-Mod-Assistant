@@ -5,10 +5,12 @@ import { mkdtemp, writeFile, mkdir, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 
-interface DesktopHostFixture { page: Page; temporary: string; projectPath: string; pid: number }
+interface NativeView { zoomFactor: number; deviceDpi: number; monitorScalePercent: number; clientWidth: number; clientHeight: number }
+interface DesktopHostFixture { page: Page; temporary: string; projectPath: string; pid: number; nativeView: NativeView }
 
-export const test = base.extend<{ desktopHost: DesktopHostFixture }>({
-  desktopHost: async ({}, use, testInfo) => {
+export const test = base.extend<{ desktopHost: DesktopHostFixture; nativeZoom: number }>({
+  nativeZoom: [1, { option: true }],
+  desktopHost: async ({ nativeZoom }, use, testInfo) => {
     const root = resolve(import.meta.dirname, '../..');
     const temporary = await mkdtemp(join(tmpdir(), 'moma-workspace-'));
     const projectPath = join(temporary, '中文 空格工程');
@@ -34,7 +36,8 @@ export const test = base.extend<{ desktopHost: DesktopHostFixture }>({
     let output = '';
     let spawnError: Error | undefined;
     const child = spawn(resolve(root, '.venv-web/Scripts/python.exe'),
-      [resolve(root, 'frontend/tests/host.py'), String(port), stop], { cwd: root, windowsHide: true });
+      [resolve(root, 'frontend/tests/host.py'), String(port), stop], { cwd: root, windowsHide: true,
+        env: { ...process.env, MOMA_TEST_PAGE_ZOOM: String(nativeZoom) } });
     child.on('error', error => { spawnError = error; });
     child.stdout?.on('data', data => { output += data; });
     child.stderr?.on('data', data => { output += data; });
@@ -52,7 +55,12 @@ export const test = base.extend<{ desktopHost: DesktopHostFixture }>({
       await expect(page.locator('[data-startup="ready"]')).toBeVisible();
       const nativePid = Number(output.match(/MOMA_HOST_PID=(\d+)/)?.[1]);
       expect(nativePid).toBeGreaterThan(0);
-      await use({ page, temporary, projectPath, pid: nativePid });
+      await expect.poll(() => output.includes('MOMA_NATIVE_VIEW=')).toBe(true);
+      const nativeView = JSON.parse(output.match(/MOMA_NATIVE_VIEW=(\{[^\r\n]+\})/)![1]) as NativeView;
+      expect(nativeView.zoomFactor).toBe(nativeZoom);
+      await expect.poll(() => page.evaluate(() => devicePixelRatio)).toBeCloseTo(nativeView.monitorScalePercent / 100 * nativeZoom, 2);
+      await testInfo.attach('原生尺寸与缩放', { body: JSON.stringify(nativeView), contentType: 'application/json' });
+      await use({ page, temporary, projectPath, pid: nativePid, nativeView });
     } finally {
       await browser?.close();
       await writeFile(stop, 'stop');

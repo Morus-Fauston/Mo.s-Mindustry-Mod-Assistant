@@ -43,6 +43,7 @@ from ..core.config_loader import (
     get_content_names_zh,
 )
 from ..core.content_store import ContentData
+from ..core.form_labels import GROUP_LABELS
 from ..core.form_plan import (
     GroupPlan,
     compute_form_plan,
@@ -122,43 +123,7 @@ class EditorPanel(QWidget):
     Each group has a "+" button to add more fields from metadata.
     """
 
-    GROUP_LABELS = {
-        "basic": "基础属性",
-        "movement": "移动属性",
-        "combat": "战斗属性",
-        "weapons_range": "武器与射程",
-        "target_selection": "目标选择",
-        "attack_behavior": "攻击行为",
-        "mining": "采矿",
-        "building": "建造",
-        "capacity": "容量",
-        "boost": "加速",
-        "tank": "坦克/履带",
-        "flying_engine": "飞行引擎",
-        "legs": "腿部",
-        "mech": "机甲",
-        "segment": "节段",
-        "abilities": "技能",
-        "appearance": "外观设置",
-        "sound": "音效",
-        "death": "死亡与残骸",
-        "ai": "AI与控制",
-        "physics": "物理与碰撞",
-        "env": "环境",
-        "meta": "研究树与说明",
-        "tech_tree": "科技树",
-        "defense": "防御属性",
-        "visual": "视觉",
-        "build": "建造需求",
-        "shooting": "射击模式",
-        "targeting": "目标选择",
-        "continuous": "持续射击",
-        "consumption": "消耗",
-        "behavior": "行为",
-        "effects": "音效与特效",
-        "rendering": "渲染",
-        "bullet": "子弹",
-    }
+    GROUP_LABELS = GROUP_LABELS
 
     def __init__(
         self,

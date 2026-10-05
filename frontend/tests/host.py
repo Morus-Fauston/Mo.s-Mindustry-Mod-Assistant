@@ -4,6 +4,7 @@ import sys
 import os
 import threading
 import time
+import json
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
@@ -33,6 +34,52 @@ def tracked_guard(*args, **kwargs):
 
 
 desktop_main.WindowCloseGuard = tracked_guard
+
+# Integration-only native page zoom. This uses the actual WebView2 controller,
+# never a CDP-emulated device scale. The Windows monitor DPI remains unchanged.
+test_zoom = float(os.environ.get("MOMA_TEST_PAGE_ZOOM", "1"))
+if test_zoom not in (1, 1.25, 1.5, 2):
+    raise ValueError("Unsupported test page zoom")
+original_create_window = webview.create_window
+
+
+def create_test_window(*args, **kwargs):
+    window = original_create_window(*args, **kwargs)
+
+    def configure_view():
+        from System import Action
+        import ctypes
+
+        def apply():
+            native = window.native
+            # WinForms DeviceDpi may stay at 96 under its compatibility mode.
+            # Read the actual monitor scale separately from the WebView zoom.
+            user32 = ctypes.windll.user32
+            user32.MonitorFromWindow.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+            user32.MonitorFromWindow.restype = ctypes.c_void_p
+            monitor = user32.MonitorFromWindow(native.Handle.ToInt64(), 2)
+            scale = ctypes.c_int()
+            get_scale = ctypes.windll.shcore.GetScaleFactorForMonitor
+            get_scale.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_int)]
+            get_scale.restype = ctypes.c_long
+            if get_scale(monitor, ctypes.byref(scale)) != 0:
+                raise RuntimeError("Cannot read test monitor scale")
+            native.browser.webview.ZoomFactor = test_zoom
+            print("MOMA_NATIVE_VIEW=" + json.dumps({
+                "zoomFactor": native.browser.webview.ZoomFactor,
+                "deviceDpi": native.DeviceDpi,
+                "monitorScalePercent": scale.value,
+                "clientWidth": native.ClientSize.Width,
+                "clientHeight": native.ClientSize.Height,
+            }), flush=True)
+
+        window.native.Invoke(Action(apply))
+
+    window.events.loaded += configure_view
+    return window
+
+
+webview.create_window = create_test_window
 
 
 def watch_stop():

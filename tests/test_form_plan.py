@@ -1,5 +1,8 @@
 """Tests for app.core.form_plan — pure form computation logic, no Qt."""
 
+from copy import deepcopy
+from pathlib import Path
+
 import pytest
 
 from app.core.form_plan import (
@@ -13,7 +16,8 @@ from app.core.form_plan import (
     type_default,
     get_addable_fields,
 )
-from app.core.metadata import ClassDef, FieldDef
+from app.core.config_loader import get_field_groups
+from app.core.metadata import ClassDef, FieldDef, Metadata
 
 
 # ── Fixtures ───────────────────────────────────────────────────────────
@@ -56,6 +60,61 @@ SAMPLE_GROUPS = {
         },
     }
 }
+
+
+@pytest.fixture
+def real_unit_form():
+    metadata_dir = Path(__file__).resolve().parents[1] / "metadata"
+    if not metadata_dir.is_dir():
+        pytest.skip("metadata/ directory not found — run the extractor first")
+    return Metadata(metadata_dir).get_class("UnitType"), get_field_groups()
+
+
+class TestGameUnitForms:
+    @pytest.mark.parametrize(
+        ("alias", "group_name", "field_name"),
+        [
+            ("tank", "tank", "treadFrames"),
+            ("legs", "legs", "legLength"),
+            ("flying", "flying_engine", "engineSize"),
+            ("mech", "mech", "mechStride"),
+        ],
+    )
+    def test_raw_alias_keeps_subtype_group_and_lock(
+        self, real_unit_form, alias, group_name, field_name,
+    ):
+        class_def, groups = real_unit_form
+        # No heuristic flags: the game's explicit type must identify its group.
+        data = {"type": alias, field_name: 4}
+        before = deepcopy(data)
+        plans = compute_form_plan(class_def, data, groups)
+        by_name = {plan.group_name: plan for plan in plans}
+
+        assert group_name in by_name
+        assert by_name[group_name].locked is True
+        assert by_name[group_name].expanded is False
+        assert field_name in [field.field_def.name for field in by_name[group_name].fields]
+        assert {"tank", "legs", "flying_engine", "mech"} & by_name.keys() == {group_name}
+        assert not any(
+            field.field_def.name == field_name
+            for plan in plans if plan.group_name == "_other"
+            for field in plan.fields
+        )
+        assert data == before
+
+    @pytest.mark.parametrize("alias", ["tank", "legs", "flying", "mech"])
+    def test_raw_alias_has_configured_addable_fields(self, real_unit_form, alias):
+        class_def, groups = real_unit_form
+        data = {"type": alias, "hovering": True}
+        basic = get_addable_fields(class_def, data, groups, "basic")
+        names = {field.name for field in basic}
+
+        assert {"description", "lowAltitude"} <= names
+        assert "hovering" not in names
+        assert "health" not in names
+        assert all(not field.is_internal for field in basic)
+        other = get_addable_fields(class_def, data, groups, "_other")
+        assert not {"description", "lowAltitude", "health"} & {field.name for field in other}
 
 
 # ── infer_subtype ──────────────────────────────────────────────────────

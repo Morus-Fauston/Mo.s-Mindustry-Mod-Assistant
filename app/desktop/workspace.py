@@ -67,7 +67,8 @@ class WorkspaceService:
                 action, payload = envelope.get("action"), envelope.get("payload", {})
                 if action not in ("recent_projects", "open_project", "choose_project", "read_document",
                                   "editing_state", "set_field", "undo", "redo", "save_opened",
-                                  "close_documents", "close_window", "preview_scene", "preview_resource") or not isinstance(payload, dict):
+                                  "close_documents", "close_window", "preview_scene", "preview_resource",
+                                  "add_field", "delete_field", "set_capability", "add_group", "delete_group") or not isinstance(payload, dict):
                     raise WorkspaceError("INVALID_REQUEST", "不支持此请求。")
                 fingerprint = json.dumps(envelope, sort_keys=True, ensure_ascii=False, allow_nan=False)
                 if len(fingerprint) > 16384:
@@ -121,6 +122,8 @@ class WorkspaceService:
             return self._editing.state()
         if action == "set_field":
             return self._editing.set_field(payload)
+        if action in ("add_field", "delete_field", "set_capability", "add_group", "delete_group"):
+            return self._editing.form_action(action, payload)
         if action in ("undo", "redo"):
             return self._editing.history(action, payload)
         if action == "save_opened":

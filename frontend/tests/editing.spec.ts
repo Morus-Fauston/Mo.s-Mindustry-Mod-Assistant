@@ -10,7 +10,7 @@ async function openUnit(page: Page, projectPath: string) {
   await expect(tree).toBeVisible();
   while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
   await page.locator('[data-path="content/units/twin.json"]').click();
-  const input = page.getByRole('tabpanel', { name: 'content/units/twin.json' }).getByRole('textbox');
+  const input = page.getByRole('tabpanel', { name: 'content/units/twin.json' }).getByRole('textbox', { name: '生命值', exact: true });
   await expect(input).toHaveValue('137');
   return input;
 }

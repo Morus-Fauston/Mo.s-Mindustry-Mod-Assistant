@@ -23,7 +23,20 @@
   --arr: #f1fbfd;
   --arr-line: #b5e5ed;
   --arr-bar: #97dbe6;
+  --color: #fef4f8;
+  --color-line: #f7c9d8;
+  --color-bar: #f4b1c9;
+  --ref: #faf4fb;
+  --ref-line: #e0c0e8;
+  --ref-bar: #d3a6de;
+  --obj: #fffdf2;
+  --obj-line: #f2e7a6;
+  --obj-bar: #eddd82;
+  --bool-checked: #e8f8e8;
+  --bool-check: #44794e;
+  --bool-check-line: #92bf9a;
   --error: #c13e3e;
+  --font-number: Consolas, "Microsoft YaHei UI", monospace;
   --left: 218px;
   --right: 370px;
   font-family: "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
@@ -54,6 +67,18 @@
   --arr: #163035;
   --arr-line: #3a6a74;
   --arr-bar: #5ca3b0;
+  --color: #331d24;
+  --color-line: #77455a;
+  --color-bar: #b86e8a;
+  --ref: #2c1f31;
+  --ref-line: #66476e;
+  --ref-bar: #a070aa;
+  --obj: #302d17;
+  --obj-line: #6f6838;
+  --obj-bar: #b0a65c;
+  --bool-checked: #274633;
+  --bool-check: #a8dcad;
+  --bool-check-line: #63a877;
   --error: #ec9090;
 }
 

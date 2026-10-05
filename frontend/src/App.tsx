@@ -6,6 +6,8 @@ import styles from './App.module.css';
 import { createEditingClient } from './editing/client';
 import { CloseDecision, type CloseChoice } from './editing/CloseDecision';
 import { PreviewPanel } from './preview/PreviewPanel';
+import { BasicForm } from './forms/BasicForm';
+import { createDraftStore } from './editing/drafts';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -24,9 +26,11 @@ export function App() {
   const [editing] = useState(() => createEditingClient(desktop));
   const editor = useSyncExternalStore(editing.subscribe, editing.getSnapshot);
   const documents = editor.state?.documents ?? [];
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const draftsRef = useRef(drafts);
-  const committing = useRef<Promise<void> | null>(null);
+  const [draftStore] = useState(() => createDraftStore(async (path, field, text) => {
+    await editing.run('set_field', { path, field, text });
+  }));
+  const draftState = useSyncExternalStore(draftStore.subscribe, draftStore.getSnapshot);
+  const drafts = draftState.drafts;
   const [intent, setIntent] = useState<CloseIntent | null>(null);
   const intentRef = useRef<CloseIntent | null>(null);
   const [decisionBusy, setDecisionBusy] = useState(false);
@@ -62,24 +66,27 @@ export function App() {
     if (startup.phase === 'ready') void editing.refresh().catch(error => setFailure(message(error)));
   }, [startup.phase, editing]);
 
-  function updateDrafts(next: Record<string, string>) { draftsRef.current = next; setDrafts(next); }
+  const flushDrafts = draftStore.flush;
 
-  async function flushDrafts() {
-    if (committing.current) await committing.current;
-    const task = (async () => {
-      for (const [path, text] of Object.entries(draftsRef.current)) {
-        const value = Number(text);
-        if (!text.trim() || !Number.isFinite(value) || value < 0) throw new Error('请输入非负有限数值后再保存。');
-        const current = editing.getSnapshot().state?.documents.find(document => document.path === path);
-        if (!current) continue;
-        if (current.data.health !== value) await editing.run('set_field', { path, field: 'health', value });
-        if (draftsRef.current[path] === text) {
-          const next = { ...draftsRef.current }; delete next[path]; updateDrafts(next);
-        }
+  async function commitDraft(path: string, field: string) {
+    try { setFailure(''); await draftStore.commit(path, field); }
+    catch (error) { setFailure(message(error)); throw error; }
+  }
+
+  async function formAction(path: string, action: string, payload: Record<string, unknown>) {
+    try {
+      setFailure('');
+      const session = projectRef.current?.sessionId;
+      const target = typeof payload.field === 'string' && ['set_field', 'delete_field'].includes(action)
+        ? { path, field: payload.field } : undefined;
+      const replacedDraft = target ? draftStore.getSnapshot().drafts[path]?.[target.field] : undefined;
+      await draftStore.flush(target);
+      if (session !== projectRef.current?.sessionId) return;
+      await editing.run(action, { ...payload, path });
+      if (target && draftStore.getSnapshot().drafts[path]?.[target.field] === replacedDraft) {
+        draftStore.resetField(path, target.field);
       }
-    })();
-    committing.current = task;
-    try { await task; } finally { if (committing.current === task) committing.current = null; }
+    } catch (error) { setFailure(message(error)); throw error; }
   }
 
   async function editAction(action: 'save_opened' | 'undo' | 'redo') {
@@ -102,9 +109,7 @@ export function App() {
       if (target.kind === 'documents') {
         generation.current += 1;
         await editing.run('close_documents', { paths: target.paths, decision: choice });
-        const next = { ...draftsRef.current };
-        target.paths.forEach(path => { delete next[path]; });
-        updateDrafts(next);
+        draftStore.removePaths(target.paths);
       } else if (target.kind === 'project') {
         if (choice === 'save') await editing.run('save_opened');
         clearIntent();
@@ -119,12 +124,12 @@ export function App() {
 
   async function requestIntent(target: CloseIntent) {
     if (intentRef.current || openingProject.current || unresolvedOpen.current || editing.getSnapshot().uncertain) return;
-    if (committing.current) { try { await committing.current; } catch { /* Present discard/cancel for invalid input. */ } }
+    await draftStore.settled();
     if (editing.getSnapshot().busy) return;
     // Reconcile completed reads before closing, including responses still in flight.
     const state = await editing.refresh().catch(error => { setFailure(message(error)); return null; });
     if (!state) return;
-    const dirty = state.documents.filter(document => document.dirty || document.path in draftsRef.current)
+    const dirty = state.documents.filter(document => document.dirty || document.path in draftStore.getSnapshot().drafts)
       .filter(document => target.kind !== 'documents' || target.paths.includes(document.path));
     if (dirty.length) { intentRef.current = target; setIntent(target); setDecisionError(''); }
     else await executeIntent(target, 'discard');
@@ -135,7 +140,7 @@ export function App() {
   useEffect(() => {
     const close = () => { void handlers.current.requestIntent({ kind: 'window' }); };
     const keys = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.altKey || intentRef.current) return;
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.isComposing || intentRef.current) return;
       const key = event.key.toLowerCase();
       if (key === 's' || key === 'z' || key === 'y') {
         event.preventDefault();
@@ -158,8 +163,8 @@ export function App() {
     if (!project || interval <= 0) return;
     const timer = setInterval(() => {
       const snapshot = editing.getSnapshot();
-      if (!snapshot.busy && !snapshot.uncertain && !intentRef.current &&
-          (snapshot.state?.documents.some(document => document.dirty) || Object.keys(draftsRef.current).length)) {
+      if (!snapshot.busy && !snapshot.uncertain && !intentRef.current && !draftStore.getSnapshot().composing &&
+          (snapshot.state?.documents.some(document => document.dirty) || Object.keys(draftStore.getSnapshot().drafts).length)) {
         void handlers.current.editAction('save_opened');
       }
     }, interval * 1000);
@@ -196,7 +201,7 @@ export function App() {
       projectRef.current = result;
       setProject(result);
       editing.reset(result.sessionId);
-      updateDrafts({});
+      draftStore.reset();
       setActivePath(null);
       setSelectedPath(null);
       setRecent([{ path: result.root, name: result.name }]);
@@ -292,21 +297,13 @@ export function App() {
         </div>}
         {documents.map(document => <section className={styles.document} key={document.path} hidden={activePath !== document.path} role="tabpanel" aria-label={document.path}>
           <h1>{document.name}</h1><p className={styles.description}>内容类型：{document.contentType}</p>
-          <dl className={styles.fields}>{Object.entries(document.data).map(([key, value]) => <Fragment key={key}>
-            <dt title={document.fieldDocs[key] ?? key}>{document.fieldNames[key] ?? key}</dt>
-            <dd>{key === 'health' && document.category === 'units' ? <div className={styles.numberField} data-field-type="num">
-              <input aria-label={document.fieldNames[key] ?? key} title={document.fieldDocs[key] ?? key}
-                inputMode="decimal" value={drafts[document.path] ?? String(value)}
-                disabled={busy || editor.uncertain || decisionBusy}
-                aria-invalid={document.path in drafts && (!drafts[document.path].trim() || !Number.isFinite(Number(drafts[document.path])) || Number(drafts[document.path]) < 0)}
-                onChange={event => updateDrafts({ ...draftsRef.current, [document.path]: event.target.value })}
-                onBlur={() => { void flushDrafts().catch(error => setFailure(message(error))); }}
-                onKeyDown={event => {
-                  if (event.key === 'Enter') { event.preventDefault(); void flushDrafts().catch(error => setFailure(message(error))); }
-                  if (event.key === 'Escape') { const next = { ...draftsRef.current }; delete next[document.path]; updateDrafts(next); setFailure(''); }
-                }} />
-            </div> : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}</dd>
-          </Fragment>)}</dl>
+          <BasicForm document={document} drafts={drafts[document.path] ?? {}} errors={draftState.errors[document.path] ?? {}}
+            disabled={busy || editor.uncertain || decisionBusy}
+            onDraft={(field, text) => draftStore.set(document.path, field, text)}
+            onComposition={(field, active) => draftStore.composition(document.path, field, active)}
+            onReset={field => { draftStore.resetField(document.path, field); setFailure(''); }}
+            onCommit={field => commitDraft(document.path, field)}
+            onAction={(action, payload) => formAction(document.path, action, payload)} />
         </section>)}
         {documents.length === 0 && <div className={styles.welcome}>
           <h1>模组工作台</h1>

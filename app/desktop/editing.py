@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from math import isfinite
 from typing import Callable
 
-from app.core.commands import Command, ReplaceDataCommand, SetFieldCommand
+from app.core.commands import Command, SetFieldCommand
 from app.core.config_loader import get_field_docs, get_field_names_zh
 from app.core.content_store import ContentData
 from app.core.metadata import normalize_content_type
 from app.core.session import ProjectSession
 from app.core.settings import get_settings
+from app.desktop.forms import FormCommand, FormMemory, FormService, json_values_equal
 
 
 class EditingError(Exception):
@@ -53,18 +53,21 @@ class EditingService:
         self._documents: dict[str, ContentData] = {}
         self._opened: dict[str, None] = {}
         self._saved: dict[str, dict] = {}
+        self._saved_forms: dict[str, FormMemory] = {}
+        self.forms = FormService(session.metadata)
 
     def check_revision(self, payload: dict) -> None:
         if type(payload.get("expectedRevision")) is not int or payload["expectedRevision"] != self.revision:
             raise EditingError("STALE_REVISION", "内容已更新，请刷新后重试。")
 
     def has_dirty(self) -> bool:
-        return any(self._documents[path].data != self._saved[path] for path in self._opened)
+        return any(not json_values_equal(self._documents[path].data, self._saved[path]) for path in self._opened)
 
     def opened(self, path: str, content: ContentData) -> dict:
         if path not in self._documents:
             self._documents[path] = content
             self._saved[path] = deepcopy(content.data)
+            self._saved_forms[path] = self.forms.snapshot(path)
         if path not in self._opened:
             self._opened[path] = None
             self.revision += 1
@@ -78,7 +81,7 @@ class EditingService:
                 "category": content.category, "contentType": normalize_content_type(kind),
                 "data": deepcopy(content.data), "fieldNames": deepcopy(get_field_names_zh()),
                 "fieldDocs": deepcopy(get_field_docs()), "revision": self.revision,
-                "dirty": content.data != self._saved[path]}
+                "dirty": not json_values_equal(content.data, self._saved[path]), "form": self.forms.plan(content, path)}
 
     def state(self) -> dict:
         stack = self.session.command_stack
@@ -99,18 +102,15 @@ class EditingService:
 
     def set_field(self, payload: dict) -> dict:
         self.check_revision(payload)
-        path, field, value = payload.get("path"), payload.get("field"), payload.get("value")
+        path, field = payload.get("path"), payload.get("field")
         if not isinstance(path, str) or path not in self._opened:
             raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
-        try:
-            valid = field == "health" and type(value) in (int, float) and isfinite(value) and value >= 0
-        except OverflowError:
-            valid = False
-        if not valid:
-            label = get_field_names_zh().get("health", "health")
-            raise EditingError("INVALID_FIELD_VALUE", f"{label}必须为非负有限数值。", path)
         content = self._documents[path]
-        if content.data.get(field) == value and field in content.data:
+        try:
+            value = self.forms.parse(content, path, payload)
+        except ValueError as exc:
+            raise EditingError("INVALID_FIELD_VALUE", str(exc), path) from exc
+        if field in content.data and json_values_equal(content.data[field], value):
             return self.state()
         label = get_field_names_zh().get(field, field)
         self.session.command_stack.execute(DocumentCommand(
@@ -125,6 +125,24 @@ class EditingService:
             self.session.redo()
         return self.state()
 
+    def form_action(self, action: str, payload: dict) -> dict:
+        self.check_revision(payload)
+        path = payload.get("path")
+        if not isinstance(path, str) or path not in self._opened:
+            raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
+        try:
+            command = self.forms.command(action, self._documents[path], path, payload)
+        except ValueError as exc:
+            raise EditingError("INVALID_FORM_ACTION", str(exc), path) from exc
+        if command is not None:
+            name = payload.get("field") or payload.get("group")
+            from app.core.form_labels import GROUP_LABELS
+            label = get_field_names_zh().get(name, GROUP_LABELS.get(name, name))
+            verb = {"add_field": "添加字段", "delete_field": "删除字段", "add_group": "添加字段组",
+                    "delete_group": "删除字段组", "set_capability": "开启能力" if payload.get("enabled") else "关闭能力"}[action]
+            self.session.command_stack.execute(DocumentCommand(command, path, f"{verb} {label}（{path}）", self.changed))
+        return self.state()
+
     def save(self, payload: dict) -> dict:
         self.check_revision(payload)
         for path in self._opened:
@@ -134,6 +152,7 @@ class EditingService:
             except (OSError, ValueError, TypeError) as exc:
                 raise EditingError("SAVE_FAILED", "保存失败，修改仍保留，请检查文件占用和访问权限后重试。", path) from exc
             self._saved[path] = deepcopy(content.data)
+            self._saved_forms[path] = self.forms.snapshot(path)
             self.revision += 1
         if self.session.project is not None:
             self.session.project.is_dirty = self.has_dirty()
@@ -153,9 +172,9 @@ class EditingService:
         elif decision == "discard":
             for path in dict.fromkeys(paths):
                 content = self._documents[path]
-                if content.data != self._saved[path]:
+                if not json_values_equal(content.data, self._saved[path]) or self.forms.snapshot(path) != self._saved_forms[path]:
                     self.session.command_stack.execute(DocumentCommand(
-                        ReplaceDataCommand(content.data, self._saved[path]), path,
+                        FormCommand(self.forms, path, content.data, self._saved[path], self._saved_forms[path]), path,
                         f"放弃 {path} 的未保存修改", self.changed))
         for path in paths:
             self._opened.pop(path, None)

@@ -1,3 +1,5 @@
+import type { FormPlan } from '../forms/types';
+
 export interface TreeNode {
   id: string;
   kind: 'group' | 'content' | 'sprite';
@@ -28,6 +30,7 @@ export interface DocumentSnapshot {
   fieldDocs: Record<string, string>;
   revision: number;
   dirty: boolean;
+  form: FormPlan;
 }
 
 export interface EditingState {

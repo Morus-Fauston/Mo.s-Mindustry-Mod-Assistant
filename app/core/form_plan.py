@@ -104,8 +104,9 @@ def compute_form_plan(
         Ordered list of GroupPlan, including an "_other" group for
         fields present in data but not in any configured group.
     """
-    content_type = normalize_content_type(data.get("type", ""))
-    groups_config = field_groups.get(content_type, {})
+    content_type = data.get("type", "")
+    # Normalize only the configuration key; the raw game type identifies its subtype.
+    groups_config = field_groups.get(normalize_content_type(content_type), {})
     all_fields = {f.name: f for f in class_def.fields}
     subtype = infer_subtype(content_type, data)
 
@@ -311,7 +312,7 @@ def get_addable_fields(
     For named groups: optional fields of that group not yet in data.
     Internal fields are always excluded.
     """
-    content_type = data.get("type", "")
+    content_type = normalize_content_type(data.get("type", ""))
     groups_config = field_groups.get(content_type, {})
     data_keys = set(data.keys())
 

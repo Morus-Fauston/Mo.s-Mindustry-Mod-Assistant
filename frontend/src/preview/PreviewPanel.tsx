@@ -65,7 +65,7 @@ export function PreviewPanel({ document, resourceRevision = 0, layers, openPaths
     </div>
     {error && <p className={styles.error} role="alert">{error}</p>}
     {!valid && <p className={styles.error}>源码尚未解析，无法预览。</p>}
-    <PreviewCanvas key={scope} scene={scene} loadResource={loadResource} hiddenIds={view.hiddenIds} selectedId={view.selectedId} />
+    <PreviewCanvas key={scope} scene={scene} loadResource={loadResource} hiddenIds={view.hiddenIds} selectedId={view.selectedId} dynamicReady={live && !loading} />
     <div className={styles.heading}><h2>图层</h2>{loading && <span role="status">正在同步</span>}</div>
     {document && scene?.tree && layers ? <LayerTree {...layers} sessionId={document.sessionId} path={document.path}
       nodes={scene.tree} selectedId={view.selectedId} hiddenIds={view.hiddenIds} closedIds={view.closedIds}

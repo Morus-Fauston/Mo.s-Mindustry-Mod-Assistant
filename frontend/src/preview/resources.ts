@@ -3,7 +3,7 @@ import type { PreviewLayer, PreviewResource } from './types';
 const MAX_SCENE_PIXELS = 16 * 1024 * 1024;
 
 /** Reserve before starting an asynchronous decode, shared by all scene workers. */
-export function createDecodeBudget(layers: PreviewLayer[]): (resource: PreviewResource) => void {
+export function createDecodeBudget(layers: Pick<PreviewLayer, 'resourceId' | 'width' | 'height'>[]): (resource: PreviewResource) => void {
   const reserved = new Set<string>();
   let pixels = 0;
   return resource => {

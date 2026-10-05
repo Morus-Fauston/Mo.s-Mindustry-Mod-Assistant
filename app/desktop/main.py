@@ -75,6 +75,15 @@ def main() -> None:
         finished, failed = Event(), Event()
         window.events.loaded += finished.set
         window.events.closed += finished.set
+        # Window focus is not visibility: a background but visible workbench
+        # may continue animating. Minimize/restore explicitly suspend its clock.
+        def report_hidden(hidden):
+            value = "true" if hidden else "false"
+            window.evaluate_js(f"window.__momaWindowHidden={value};window.dispatchEvent(new CustomEvent('moma-window-hidden',{{detail:{value}}}))")
+
+        window.events.minimized += lambda: report_hidden(True)
+        window.events.restored += lambda: report_hidden(False)
+        window.events.maximized += lambda: report_hidden(False)
         webview.start(func=lambda: _watch_startup(window, finished, failed),
                       gui="edgechromium", debug=options.debug, http_server=True)
         if failed.is_set():

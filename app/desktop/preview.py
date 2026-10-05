@@ -107,6 +107,10 @@ class PreviewService:
             raise ValueError("素材必须是当前工程中的 PNG 文件")
         return resolved
 
+    def register_resource(self, path: Path) -> dict:
+        """Add a dynamic frame to this scene's existing bounded registry."""
+        return self._load(path)
+
     def _load(self, path: Path) -> dict:
         path = self._safe_path(path)
         if path in self._paths:

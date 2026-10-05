@@ -18,6 +18,7 @@ from app.core.session import ProjectSession
 from app.desktop.editing import EditingError, EditingService
 from app.desktop.preview import PreviewService
 from app.desktop.preview_layers import PreviewLayerService
+from app.desktop.dynamic_preview import DynamicPreviewService
 from app.desktop.resources import ResourceService
 from app.desktop.resource_watch import ResourceWatch
 from app.desktop.source_editing import RawDocument, SourceEditingService
@@ -195,8 +196,10 @@ class WorkspaceService:
             try:
                 path = payload.get("path")
                 form = self._editing.nested.plan(content, path)
-                return PreviewLayerService(self._session.project).decorate(
+                scene = PreviewLayerService(self._session.project).decorate(
                     self._preview.scene(content), content, form, path, self._editing.revision)
+                scene["dynamic"] = DynamicPreviewService(self._session.project, self._preview.register_resource).describe(content, scene)
+                return scene
             except (ValueError, OSError) as exc:
                 raise WorkspaceError("PREVIEW_FAILED", "预览组装失败，请检查内容与素材后刷新预览。") from exc
         if action == "preview_resource":

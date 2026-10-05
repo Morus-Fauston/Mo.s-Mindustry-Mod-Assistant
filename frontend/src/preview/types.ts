@@ -1,4 +1,5 @@
 import type { LayerNode } from '../layers/types';
+import type { DynamicPreviewDescriptor } from '../dynamic_preview/types';
 /** Scene coordinates already include the core's PPU=4 and Y-axis conversion. */
 export interface PreviewLayer {
   nodeId?: string;
@@ -25,6 +26,7 @@ export interface PreviewCircle {
 }
 
 export interface PreviewScene {
+  dynamic?: DynamicPreviewDescriptor;
   path?: string;
   revision?: number;
   tree?: LayerNode[];

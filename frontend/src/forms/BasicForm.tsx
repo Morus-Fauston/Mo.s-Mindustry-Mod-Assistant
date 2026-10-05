@@ -4,6 +4,7 @@ import type { DocumentSnapshot } from '../workspace/types';
 import type { FormDrafts, FormErrors, FormField, FormGroup } from './types';
 import { ActionMenu } from './ActionMenu';
 import { fieldHint, fieldText, shouldCommitKey } from './presentation';
+import { ContentRefSelector, type ReferenceResult } from '../references/ContentRefSelector';
 import styles from './BasicForm.module.css';
 
 export interface BasicFormProps {
@@ -16,6 +17,7 @@ export interface BasicFormProps {
   onReset: (field: string) => void;
   onComposition: (field: string, composing: boolean) => void;
   onAction: (action: string, payload: Record<string, unknown>) => Promise<void>;
+  onLoadReference: (field: string, query: string) => Promise<ReferenceResult>;
 }
 
 function Chevron({ expanded }: { expanded: boolean }) {
@@ -34,9 +36,9 @@ function Checkbox({ checked, label, disabled, onChange, invalid = false }: {
   </span>;
 }
 
-function FieldControl({ field, drafts, error, disabled, onDraft, onCommit, onReset, onComposition, onAction }: {
+function FieldControl({ field, drafts, error, disabled, onDraft, onCommit, onReset, onComposition, onAction, onLoadReference }: {
   field: FormField; drafts: FormDrafts; error: string;
-} & Pick<BasicFormProps, 'disabled' | 'onDraft' | 'onCommit' | 'onReset' | 'onComposition' | 'onAction'>) {
+} & Pick<BasicFormProps, 'disabled' | 'onDraft' | 'onCommit' | 'onReset' | 'onComposition' | 'onAction' | 'onLoadReference'>) {
   const composing = useRef(false);
   const compositionCallback = useRef(onComposition);
   compositionCallback.current = onComposition;
@@ -70,6 +72,9 @@ function FieldControl({ field, drafts, error, disabled, onDraft, onCommit, onRes
     <div className={styles.valueColumn}>
       <div className={styles.control} data-control={field.control} data-field-type={field.fieldType} title={fieldHint(field)}>
         {isReadonly ? <output className={styles.readonly} aria-label={field.label} aria-invalid={Boolean(error)}>{field.displayValue === null ? '空值' : typeof field.displayValue === 'object' ? JSON.stringify(field.displayValue, null, 2) : String(field.displayValue ?? '')}</output>
+          : field.control === 'reference' ? <ContentRefSelector label={field.label} value={field.displayValue == null ? null : String(field.displayValue)}
+            disabled={locked} nullable={field.nullable} invalid={Boolean(error)} load={query => onLoadReference(field.name, query)}
+            onSelect={value => onAction('set_field', { field: field.name, value })} />
           : field.control === 'boolean' ? <div className={styles.booleanControl}><Checkbox checked={field.present && field.value === null ? null : Boolean(field.displayValue)}
             label={field.label} disabled={locked} invalid={Boolean(error)} onChange={action} /></div>
             : multiline ? <textarea {...inputProps} rows={3} />

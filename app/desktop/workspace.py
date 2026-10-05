@@ -68,7 +68,8 @@ class WorkspaceService:
                 if action not in ("recent_projects", "open_project", "choose_project", "read_document",
                                   "editing_state", "set_field", "undo", "redo", "save_opened",
                                   "close_documents", "close_window", "preview_scene", "preview_resource",
-                                  "add_field", "delete_field", "set_capability", "add_group", "delete_group") or not isinstance(payload, dict):
+                                  "add_field", "delete_field", "set_capability", "add_group", "delete_group",
+                                  "reference_candidates") or not isinstance(payload, dict):
                     raise WorkspaceError("INVALID_REQUEST", "不支持此请求。")
                 fingerprint = json.dumps(envelope, sort_keys=True, ensure_ascii=False, allow_nan=False)
                 if len(fingerprint) > 16384:
@@ -95,7 +96,7 @@ class WorkspaceService:
                 response["error"] = {"code": "READ_FAILED", "message": "无法读取工程资料，请检查文件格式和访问权限后重试。"}
             # Preview reads can be repeated explicitly. Keeping their data URLs in
             # the mutation-result cache would retain old scenes after resource cleanup.
-            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource")
+            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource", "reference_candidates")
             if cacheable and fingerprint is not None and request_id not in self._results:
                 self._results[request_id] = (fingerprint, deepcopy(response))
                 while len(self._results) > 128:
@@ -103,6 +104,8 @@ class WorkspaceService:
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
+        if action == "reference_candidates":
+            return self._editing.reference_candidates(payload)
         if action == "preview_scene":
             content = self._content(payload.get("path"))
             if self._preview is None:

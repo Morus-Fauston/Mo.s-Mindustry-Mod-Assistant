@@ -8,6 +8,7 @@ import { CloseDecision, type CloseChoice } from './editing/CloseDecision';
 import { PreviewPanel } from './preview/PreviewPanel';
 import { BasicForm } from './forms/BasicForm';
 import { createDraftStore } from './editing/drafts';
+import type { ReferenceResult } from './references/types';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -299,6 +300,7 @@ export function App() {
           <h1>{document.name}</h1><p className={styles.description}>内容类型：{document.contentType}</p>
           <BasicForm document={document} drafts={drafts[document.path] ?? {}} errors={draftState.errors[document.path] ?? {}}
             disabled={busy || editor.uncertain || decisionBusy}
+            onLoadReference={(field, query) => desktop.request<ReferenceResult>('reference_candidates', { path: document.path, field, query }, document.sessionId)}
             onDraft={(field, text) => draftStore.set(document.path, field, text)}
             onComposition={(field, active) => draftStore.composition(document.path, field, active)}
             onReset={field => { draftStore.resetField(document.path, field); setFailure(''); }}

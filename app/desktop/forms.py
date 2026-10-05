@@ -17,6 +17,7 @@ from app.core.form_plan import (CAPABILITY_GROUPS, CAPABILITY_LINKAGE, compute_f
 from app.core.field_dependencies import inactive_dependencies
 from app.core.group_ops import cache_group_fields, group_field_names, remove_group_fields, resolve_field_value, restore_group_fields
 from app.core.metadata import ClassDef, FieldDef, Metadata, normalize_content_type
+from app.desktop.references import ReferenceService
 
 
 # Configured editor semantics take precedence over the raw JSON value shape.
@@ -119,8 +120,9 @@ class _DraftCommands:
 
 
 class FormService:
-    def __init__(self, metadata: Metadata):
+    def __init__(self, metadata: Metadata, references: ReferenceService | None = None):
         self.metadata = metadata
+        self.references = references or ReferenceService(metadata)
         self._memories: dict[str, FormMemory] = {}
 
     def snapshot(self, path: str) -> FormMemory:
@@ -147,6 +149,8 @@ class FormService:
     def control(field: FieldDef, group: dict) -> str:
         if field.name in ("name", "type") or group.get("widgets", {}).get(field.name):
             return "readonly"
+        if field.mode == "STRING_REF" and field.java_type != "ObjectMap" and "<" not in field.java_type:
+            return "reference"
         if field.mode != "PRIMITIVE":
             return "readonly"
         if field.java_type in ("int", "long", "short", "float", "double"):
@@ -194,7 +198,7 @@ class FormService:
                 raise ValueError(f"数值不能小于 {field['minimum']}。")
         elif control == "boolean" and type(value) is not bool:
             raise ValueError("此字段需要布尔值。")
-        elif control == "string" and not isinstance(value, str):
+        elif control in ("string", "reference") and not isinstance(value, str):
             raise ValueError("此字段需要文本。")
         elif control == "color":
             color_channels(value)
@@ -236,7 +240,10 @@ class FormService:
                         raise ValueError("RGBA 颜色对象格式不正确。") from exc
         elif field["control"] == "color" and isinstance(value, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", value):
             value = select_rgb(value, content.data.get(field["name"]))
-        return self.validate(field, value)
+        value = self.validate(field, value)
+        if field["control"] == "reference":
+            return self.references.validate(field, value, content.data.get(field["name"]))
+        return value
 
     def command(self, action: str, content: ContentData, path: str, payload: dict) -> Command | None:
         data, definition, config = self.context(content)
@@ -340,6 +347,9 @@ class FormService:
                     "present": present, "value": value, "displayValue": display,
                     "defaultValue": deepcopy(default), "defaultSource": source,
                     "inactiveReason": "", "validationError": ""}
+                if control == "reference":
+                    descriptor["refSource"] = field.ref_source
+                    descriptor["categories"] = [field.ref_source] if field.ref_source else []
                 if field.name in inactive:
                     reason = re.sub(r"[A-Za-z_][A-Za-z_0-9]*", lambda match:
                         {"true": "开启", "false": "关闭"}.get(match[0], names.get(match[0], match[0])), inactive[field.name])

@@ -12,6 +12,7 @@ from app.core.metadata import normalize_content_type
 from app.core.session import ProjectSession
 from app.core.settings import get_settings
 from app.desktop.forms import FormCommand, FormMemory, FormService, json_values_equal
+from app.desktop.references import ReferenceService
 
 
 class EditingError(Exception):
@@ -23,9 +24,11 @@ class EditingError(Exception):
 class DocumentCommand(Command):
     """Retain document identity when session-wide history reopens a closed tab."""
 
-    def __init__(self, command: Command, path: str, description: str, on_change: Callable[[str], None]):
+    def __init__(self, command: Command, path: str, description: str, on_change: Callable[[str], None],
+                 merge_token: object | None = None):
         self.command, self.path = command, path
         self._description, self._on_change = description, on_change
+        self._merge_token = merge_token
 
     @property
     def description(self) -> str:
@@ -40,10 +43,11 @@ class DocumentCommand(Command):
         self._on_change(self.path)
 
     def merge_with(self, other: Command) -> Command | None:
-        if isinstance(other, DocumentCommand) and other.path == self.path:
+        if (isinstance(other, DocumentCommand) and other.path == self.path
+                and self._merge_token is not None and other._merge_token is self._merge_token):
             merged = self.command.merge_with(other.command)
             if merged is not None:
-                return DocumentCommand(merged, self.path, other.description, self._on_change)
+                return DocumentCommand(merged, self.path, other.description, self._on_change, self._merge_token)
         return None
 
 
@@ -54,7 +58,22 @@ class EditingService:
         self._opened: dict[str, None] = {}
         self._saved: dict[str, dict] = {}
         self._saved_forms: dict[str, FormMemory] = {}
-        self.forms = FormService(session.metadata)
+        self._merge_token = object()
+        self.references = ReferenceService(session.metadata, session.project)
+        self.forms = FormService(session.metadata, self.references)
+
+    def reference_candidates(self, payload: dict) -> dict:
+        path = payload.get("path")
+        if not isinstance(path, str) or path not in self._opened:
+            raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
+        if "expectedRevision" in payload:
+            self.check_revision(payload)
+        content = self._documents[path]
+        try:
+            field = self.forms.field(content, path, payload.get("field"))
+            return self.references.read(field, content.data.get(field["name"]), payload.get("query", ""))
+        except ValueError as exc:
+            raise EditingError("INVALID_REFERENCE", str(exc), path) from exc
 
     def check_revision(self, payload: dict) -> None:
         if type(payload.get("expectedRevision")) is not int or payload["expectedRevision"] != self.revision:
@@ -114,11 +133,13 @@ class EditingService:
             return self.state()
         label = get_field_names_zh().get(field, field)
         self.session.command_stack.execute(DocumentCommand(
-            SetFieldCommand(content.data, field, value), path, f"修改 {path} 的{label}为 {value}", self.changed))
+            SetFieldCommand(content.data, field, value), path, f"修改 {path} 的{label}为 {value}", self.changed,
+            self._merge_token if "text" in payload else None))
         return self.state()
 
     def history(self, action: str, payload: dict) -> dict:
         self.check_revision(payload)
+        self._merge_token = object()
         if action == "undo":
             self.session.undo()
         else:
@@ -145,6 +166,8 @@ class EditingService:
 
     def save(self, payload: dict) -> dict:
         self.check_revision(payload)
+        # A saved state must remain reachable by undo, including partial saves.
+        self._merge_token = object()
         for path in self._opened:
             content = self._documents[path]
             try:

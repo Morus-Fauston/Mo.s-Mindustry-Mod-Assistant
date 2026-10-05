@@ -4,7 +4,9 @@ export interface FormField {
   help: string;
   javaType: string;
   mode: string;
-  control: 'number' | 'string' | 'boolean' | 'color' | 'readonly';
+  control: 'number' | 'string' | 'boolean' | 'color' | 'reference' | 'readonly';
+  refSource?: string | null;
+  categories?: string[];
   fieldType: string;
   nullable: boolean;
   readOnly: boolean;

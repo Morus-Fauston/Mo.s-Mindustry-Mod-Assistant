@@ -13,7 +13,8 @@ function props(fields: FormField[]): BasicFormProps {
     data: {}, fieldNames: {}, fieldDocs: {}, revision: 1, dirty: false,
     form: { groups: [{ id: 'basic', label: '基础', locked: true, defaultExpanded: true, capability: false, enabled: true,
       fields, addableFields: [] }], addableGroups: [] } }, drafts: {}, errors: {}, disabled: false,
-    onDraft: vi.fn(), onReset: vi.fn(), onComposition: vi.fn(), onCommit: vi.fn(async () => {}), onAction: vi.fn(async () => {}) };
+    onDraft: vi.fn(), onReset: vi.fn(), onComposition: vi.fn(), onCommit: vi.fn(async () => {}), onAction: vi.fn(async () => {}),
+    onLoadReference: vi.fn(async () => ({ candidates: [], categories: [], current: { value: null, label: '', known: true } })) };
 }
 
 describe('基础表单公开渲染', () => {

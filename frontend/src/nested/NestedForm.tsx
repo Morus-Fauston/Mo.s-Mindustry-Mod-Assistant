@@ -16,7 +16,7 @@ export interface NestedFormProps extends Omit<BasicFormProps, 'renderField'> {
 interface NodeProps { root: NestedFormProps; plan: NestedFormPlan }
 
 function shellField(field: NestedField): FormField {
-  return field.control === 'object' || field.control === 'array' || field.control === 'resource_list' || field.control === 'resource_slot' || field.control === 'consumes' || field.control === 'weapon_array'
+  return field.control === 'object' || field.control === 'array' || field.control === 'resource_list' || field.control === 'resource_slot' || field.control === 'consumes' || field.control === 'weapon_array' || field.control === 'research' || field.control === 'planet_set'
     ? { ...field, control: 'readonly', readOnly: true } : field;
 }
 

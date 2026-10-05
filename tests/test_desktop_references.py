@@ -202,13 +202,14 @@ def test_project_candidates_and_same_name_categories_use_declared_source(project
     assert result["data"]["candidates"][0]["value"] == "refs-later"
 
 
-def test_specialized_fields_and_ammo_mapping_remain_readonly(project):
+def test_specialized_fields_do_not_use_plain_reference_route(project):
     target = project / "content/blocks/turret.json"
     target.write_text(json.dumps({"type": "ItemTurret", "ammoTypes": {"copper": {"damage": 10}}, "research": "duo"}))
     client = Client(project)
     result = client.call("read_document", path="content/blocks/turret.json")
     assert result["ok"]
     fields = {field["name"]: field for group in result["data"]["form"]["groups"] for field in group["fields"]}
+    assert fields["ammoTypes"]["control"] == "readonly"
+    assert fields["research"]["control"] == "research"
     for field in ("ammoTypes", "research"):
-        assert fields[field]["control"] == "readonly"
         assert not client.call("reference_candidates", path="content/blocks/turret.json", field=field, query="")["ok"]

@@ -1,6 +1,7 @@
 import type { FormField, FormGroup, FormPlan } from '../forms/types';
 import type { ResourceDescriptor } from '../resource_fields/types';
 import type { WeaponArrayField } from '../weapons/types';
+import type { ResearchSpecialField } from '../research/types';
 
 export type ObjectSegment = string | { itemId: string };
 export type ObjectPath = ObjectSegment[];
@@ -23,7 +24,7 @@ export interface NestedArrayField extends Omit<FormField, 'control'> {
   canRemove: boolean;
   canMove: boolean;
 }
-export type NestedField = FormField | NestedObjectField | NestedArrayField | ResourceDescriptor | WeaponArrayField;
+export type NestedField = FormField | NestedObjectField | NestedArrayField | ResourceDescriptor | WeaponArrayField | ResearchSpecialField;
 export interface NestedFormGroup extends Omit<FormGroup, 'fields'> { fields: NestedField[] }
 export interface NestedFormPlan extends Omit<FormPlan, 'groups'> {
   groups: NestedFormGroup[];

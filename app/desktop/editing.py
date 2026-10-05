@@ -17,6 +17,7 @@ from app.desktop.nested_forms import NestedFormService, NestedFormState
 from app.desktop.resource_fields import ResourceFieldsService
 from app.desktop.ability_forms import AbilityFormsService
 from app.desktop.weapon_forms import WeaponFormsService
+from app.desktop.research_fields import ResearchFieldsService
 
 
 class EditingError(Exception):
@@ -69,8 +70,9 @@ class EditingService:
         self.ability_forms = AbilityFormsService(self.nested)
         self.weapon_forms = WeaponFormsService(self.nested, session.project)
         self.resource_fields = ResourceFieldsService(self.nested)
+        self.research_fields = ResearchFieldsService(self.nested)
 
-    def reference_candidates(self, payload: dict, *, resource: bool = False, weapon: bool = False) -> dict:
+    def reference_candidates(self, payload: dict, *, resource: bool = False, weapon: bool = False, research: bool = False) -> dict:
         path = payload.get("path")
         if not isinstance(path, str) or path not in self._opened:
             raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
@@ -78,6 +80,8 @@ class EditingService:
             self.check_revision(payload)
         content = self._documents[path]
         try:
+            if research:
+                return self.research_fields.reference_candidates(content, path, payload)
             if resource:
                 return self.resource_fields.reference_candidates(content, path, payload)
             if weapon:
@@ -172,7 +176,8 @@ class EditingService:
             raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
         try:
             service = (self.resource_fields if action.startswith(("resource_", "consume_")) else
-                       self.weapon_forms if action.startswith("weapon_") else self.nested)
+                       self.weapon_forms if action.startswith("weapon_") else
+                       self.research_fields if action.startswith(("research_", "planet_")) else self.nested)
             command = service.command(action, self._documents[path], path, payload)
         except ValueError as exc:
             raise EditingError("INVALID_FORM_ACTION", str(exc), path) from exc

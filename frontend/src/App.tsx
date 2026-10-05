@@ -12,6 +12,7 @@ import type { ReferenceResult } from './references/types';
 import { SpriteResources, type SpriteTargets } from './resources/SpriteResources';
 import { ResourceField, isResourceField, findResourceField } from './resource_fields/ResourceField';
 import { WeaponArray, isWeaponArrayField, findWeaponField } from './weapons/WeaponArray';
+import { ResearchField, isResearchField, findResearchField } from './research/ResearchField';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -33,7 +34,8 @@ export function App() {
   const [draftStore] = useState(() => createDraftStore(async (path, field, text) => {
     const current = editing.getSnapshot().state?.documents.find(document => document.path === path);
     const resource = current?.form && findResourceField(current.form as NestedFormPlan, field);
-    await editing.run(resource ? 'resource_set' : 'set_field', { path, ...decodeFieldKey(field), text });
+    const research = current?.form && findResearchField(current.form as NestedFormPlan, field);
+    await editing.run(research ? 'research_set' : resource ? 'resource_set' : 'set_field', { path, ...decodeFieldKey(field), text });
   }));
   const draftState = useSyncExternalStore(draftStore.subscribe, draftStore.getSnapshot);
   const drafts = draftState.drafts;
@@ -106,7 +108,7 @@ export function App() {
     try {
       setFailure('');
       const session = projectRef.current?.sessionId;
-      const target = typeof payload.field === 'string' && ['set_field', 'resource_set', 'delete_field'].includes(action)
+      const target = typeof payload.field === 'string' && ['set_field', 'resource_set', 'research_set', 'delete_field'].includes(action)
         ? { path, field: encodeFieldKey((payload.objectPath ?? []) as ObjectPath, payload.field) } : undefined;
       const replacedDraft = target ? draftStore.getSnapshot().drafts[path]?.[target.field] : undefined;
       await draftStore.flush(target);
@@ -328,12 +330,13 @@ export function App() {
           <h1>{document.name}</h1><p className={styles.description}>内容类型：{document.contentType}</p>
           <NestedForm document={document} plan={document.form as NestedFormPlan} drafts={drafts[document.path] ?? {}} errors={draftState.errors[document.path] ?? {}}
             renderSpecialField={(field, objectPath, props, renderForm) => isResourceField(field) ? <ResourceField {...props} field={field} objectPath={objectPath} />
+              : isResearchField(field) ? <ResearchField {...props} field={field} objectPath={objectPath} />
               : isWeaponArrayField(field) ? <WeaponArray {...props} field={field} objectPath={objectPath} renderForm={renderForm} /> : undefined}
             disabled={busy || editor.uncertain || decisionBusy}
             onLoadReference={(field, query) => {
               const plan = document.form as NestedFormPlan;
               const weapon = findWeaponField(plan, field);
-              const action = findResourceField(plan, field) ? 'resource_reference_candidates'
+              const action = findResearchField(plan, field) ? 'research_reference_candidates' : findResourceField(plan, field) ? 'resource_reference_candidates'
                 : weapon && (weapon.control === 'weapon_array' || weapon.control === 'reference' && weapon.name === 'name') ? 'weapon_reference_candidates' : 'reference_candidates';
               return desktop.request<ReferenceResult>(action, { path: document.path, ...decodeFieldKey(field), query }, document.sessionId);
             }}

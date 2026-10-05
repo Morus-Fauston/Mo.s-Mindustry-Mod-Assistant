@@ -1,4 +1,9 @@
 {
+  "research.name": "科技树名称",
+  "research.requirements": "研究需求",
+  "objective.type": "类型",
+  "content": "目标内容",
+  "preset": "目标战区",
   "item": "物品",
   "liquid": "液体",
   "booster": "加速消耗",

@@ -438,7 +438,7 @@ def test_research_route_uses_reference_type_for_missing_string_and_object_values
     assert opened["ok"], opened
     research = fields(opened["data"])["research"]
     assert research["fieldType"] == "ref"
-    assert research["control"] == "readonly"
+    assert research["control"] == "research"
     assert opened["data"]["data"] == data
     assert opened["data"]["dirty"] is False
 

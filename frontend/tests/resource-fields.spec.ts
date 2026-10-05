@@ -1,0 +1,123 @@
+import { test, expect } from './desktop-fixture';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
+test('资源列表与消耗真实编辑重排校验保存及撤销', async ({ desktopHost }, info) => {
+  const { page, projectPath } = desktopHost;
+  const file = join(projectPath, 'content/blocks/twin.json');
+  await writeFile(file, JSON.stringify({ type: 'GenericCrafter', requirements: [{ item: 'copper', amount: 2 }, { item: 'lead', amount: 3 }],
+    outputItem: { item: 'copper', amount: 1 }, consumes: { power: 1.5, liquid: { liquid: 'water', amount: 2 } } }));
+  await page.getByRole('button').filter({ hasText: projectPath }).click();
+  const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+  while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
+  await tree.locator('[data-path="content/blocks/twin.json"]').click();
+  const form = page.getByRole('tabpanel', { name: 'content/blocks/twin.json' });
+  await expect(form.locator('[data-group]')).not.toHaveCount(0);
+  const folds = form.locator('button[aria-label^="展开"]:not(:disabled)');
+  while (await folds.count()) await folds.first().click();
+  const list = form.locator('section[data-field="requirements"]');
+  const rows = list.locator('section[data-item-id]');
+  await expect(rows).toHaveCount(2);
+  const firstId = await rows.first().getAttribute('data-item-id');
+  const first = list.locator(`[data-item-id="${firstId}"]`);
+  const amount = first.locator('[data-field="amount"] input');
+  await amount.fill('0'); await amount.press('Enter');
+  await expect(amount).toHaveAttribute('aria-invalid', 'true');
+  await page.getByRole('button', { name: '保存已打开内容', exact: true }).click();
+  expect(JSON.parse(await readFile(file, 'utf8')).requirements[0].amount).toBe(2);
+  await amount.fill('8'); await amount.press('Enter');
+  await expect(amount).toHaveAttribute('aria-invalid', 'false');
+  await first.getByRole('button', { name: '下移第 1 项', exact: true }).click();
+  await expect(rows.nth(1)).toHaveAttribute('data-item-id', firstId!);
+  await expect(first.locator('[data-item-title]')).toBeFocused();
+  const reference = first.locator('[data-field="item"] [data-reference-selector] > button');
+  await reference.click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('combobox').fill('硅');
+  await dialog.getByRole('option').filter({ hasText: 'silicon' }).click();
+  const consumes = form.locator('section[data-field="consumes"]');
+  const power = consumes.locator('[data-field="power"] input');
+  await power.fill('0'); await power.press('Enter');
+  const output = form.locator('section[data-field="outputItem"]');
+  await output.locator('[data-reference-selector] > button').click();
+  await dialog.getByRole('button', { name: '清除引用值', exact: true }).click();
+  await page.getByRole('button', { name: '保存已打开内容', exact: true }).click();
+  await expect.poll(async () => JSON.parse(await readFile(file, 'utf8'))).toMatchObject({
+    requirements: [{ item: 'lead', amount: 3 }, { item: 'silicon', amount: 8 }], outputItem: null, consumes: { power: 0 } });
+  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  await expect(output.locator('[data-reference-selector] > button')).toContainText('copper');
+  await first.getByRole('button', { name: '删除第 2 项', exact: true }).click();
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first().locator('[data-item-title]')).toBeFocused();
+  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  await expect(rows.nth(1)).toHaveAttribute('data-item-id', firstId!);
+  await consumes.getByRole('button', { name: '移除电力消耗', exact: true }).click();
+  await expect(power).toHaveCount(0);
+  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  await expect(power).toHaveValue('0');
+  const measurements = await page.locator('input,textarea,select').evaluateAll(elements => elements.map(element => {
+    const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+    return { field: element.closest('[data-field]')?.getAttribute('data-field'), type: element.getAttribute('type') ?? element.tagName,
+      width: rect.width, x: rect.x, y: rect.y, textStart: rect.x + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft),
+      inset: parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft) };
+  }));
+  const inputs = measurements.filter(item => item.field && item.type === 'text' && item.width > 0);
+  expect(inputs.length).toBeGreaterThan(5);
+  expect(Math.max(...inputs.map(item => item.inset)) - Math.min(...inputs.map(item => item.inset))).toBeLessThan(.1);
+  await writeFile(info.outputPath('资源全输入文本起点.json'), JSON.stringify(measurements, null, 2));
+  await page.screenshot({ path: info.outputPath('真实资源与消耗.png') });
+  await page.getByRole('button', { name: '保存已打开内容', exact: true }).click();
+  await page.getByRole('button', { name: '关闭全部', exact: true }).click();
+  await tree.locator('[data-path="content/blocks/twin.json"]').click();
+  await expect(form.locator('section[data-field="requirements"] section[data-item-id]')).toHaveCount(2);
+  expect(JSON.parse(await readFile(file, 'utf8')).consumes.power).toBe(0);
+});
+
+test.describe('资源窄栏页面缩放', () => {
+  test.use({ nativeZoom: 2 });
+  test('资源消耗新增加速开关与长候选在真实宿主可操作', async ({ desktopHost }, info) => {
+    const { page, projectPath } = desktopHost;
+    const file = join(projectPath, 'content/blocks/twin.json');
+    const longName = 'local-item-with-a-long-name-for-resource-picker';
+    await mkdir(join(projectPath, 'content/items'), { recursive: true });
+    await writeFile(join(projectPath, 'content/items', `${longName}.json`), '{}');
+    await writeFile(file, JSON.stringify({ type: 'GenericCrafter', consumes: {}, requirements: [] }));
+    await page.getByRole('button').filter({ hasText: projectPath }).click();
+    const tree = page.getByRole('tree'); await expect(tree).toBeVisible();
+    while (await tree.locator('[aria-expanded="false"]').count()) await tree.locator('[aria-expanded="false"]').first().click();
+    await tree.locator('[data-path="content/blocks/twin.json"]').click();
+    const form = page.getByRole('tabpanel', { name: 'content/blocks/twin.json' });
+    await expect(form.locator('[data-group]')).not.toHaveCount(0);
+    const folds = form.locator('button[aria-label^="展开"]:not(:disabled)');
+    while (await folds.count()) await folds.first().click();
+    const consumes = form.locator('section[data-field="consumes"]');
+    await consumes.getByRole('button', { name: /添加.*子项/ }).click();
+    await page.getByRole('menuitem', { name: '物品列表', exact: true }).click();
+    const items = consumes.locator('section[data-field="items"]');
+    const row = items.locator('section[data-item-id]').first();
+    await row.locator('[data-reference-selector] > button').click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('combobox').fill('local-item');
+    await expect(dialog.getByRole('option')).toHaveCount(1);
+    const bounds = await dialog.boundingBox();
+    const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width + 1);
+    await dialog.getByRole('option').click();
+    const booster = row.getByRole('checkbox', { name: '加速消耗', exact: true });
+    await booster.click(); // Checked state is acknowledged by the real Python request.
+    await expect(booster).toBeChecked();
+    await items.getByRole('button', { name: '添加物品列表项', exact: true }).click();
+    await expect(items.locator('section[data-item-id]')).toHaveCount(2);
+    await items.getByRole('button', { name: '删除第 2 项', exact: true }).click();
+    await expect(row.locator('[data-item-title]')).toBeFocused();
+    await row.locator('[data-item-title]').click();
+    await expect(booster).not.toBeVisible();
+    await row.locator('[data-item-title]').click();
+    await expect(booster).toBeChecked();
+    await page.getByRole('button', { name: '保存已打开内容', exact: true }).click();
+    await expect.poll(async () => JSON.parse(await readFile(file, 'utf8')).consumes.items).toEqual([{ item: longName, amount: 1, booster: true }]);
+    await page.screenshot({ path: info.outputPath('消耗新增与页面200.png') });
+    await writeFile(info.outputPath('原生页面边界.json'), JSON.stringify({ bounds, viewport, native: desktopHost.nativeView }, null, 2));
+  });
+});

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { BasicForm, type BasicFormProps } from '../forms/BasicForm';
 import type { FormField } from '../forms/types';
 import { encodeFieldKey, moveBefore, scopedFields } from './address';
@@ -10,12 +10,13 @@ export type { NestedFormPlan, ObjectPath } from './types';
 
 export interface NestedFormProps extends Omit<BasicFormProps, 'renderField'> {
   plan: NestedFormPlan;
+  renderSpecialField?: (field: NestedField, objectPath: ObjectPath, props: Omit<BasicFormProps, 'renderField'>) => ReactNode;
 }
 
 interface NodeProps { root: NestedFormProps; plan: NestedFormPlan }
 
 function shellField(field: NestedField): FormField {
-  return field.control === 'object' || field.control === 'array'
+  return field.control === 'object' || field.control === 'array' || field.control === 'resource_list' || field.control === 'resource_slot' || field.control === 'consumes'
     ? { ...field, control: 'readonly', readOnly: true } : field;
 }
 
@@ -69,6 +70,10 @@ function NodeForm({ root, plan }: NodeProps) {
       onAction={run} onLoadReference={(field, query) => root.onLoadReference(fieldKey(field), query)}
       renderField={field => {
         const nested = allFields.find(candidate => candidate.name === field.name);
+        if (nested) {
+          const special = root.renderSpecialField?.(nested, plan.objectPath, root);
+          if (special !== undefined) return special;
+        }
         if (nested?.control === 'object') return <ObjectControl root={root} plan={plan} field={nested} />;
         if (nested?.control === 'array') return <ArrayControl root={root} plan={plan} field={nested} />;
         return undefined;

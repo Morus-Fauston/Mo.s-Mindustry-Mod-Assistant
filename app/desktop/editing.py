@@ -14,6 +14,7 @@ from app.core.settings import get_settings
 from app.desktop.forms import FormService, json_values_equal
 from app.desktop.references import ReferenceService
 from app.desktop.nested_forms import NestedFormService, NestedFormState
+from app.desktop.resource_fields import ResourceFieldsService
 
 
 class EditingError(Exception):
@@ -63,8 +64,9 @@ class EditingService:
         self.references = ReferenceService(session.metadata, session.project)
         self.forms = FormService(session.metadata, self.references)
         self.nested = NestedFormService(session.metadata, self.forms)
+        self.resource_fields = ResourceFieldsService(self.nested)
 
-    def reference_candidates(self, payload: dict) -> dict:
+    def reference_candidates(self, payload: dict, *, resource: bool = False) -> dict:
         path = payload.get("path")
         if not isinstance(path, str) or path not in self._opened:
             raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
@@ -72,6 +74,8 @@ class EditingService:
             self.check_revision(payload)
         content = self._documents[path]
         try:
+            if resource:
+                return self.resource_fields.reference_candidates(content, path, payload)
             if "objectPath" not in payload or payload["objectPath"] == []:
                 field = self.forms.field(content, path, payload.get("field"))
                 return self.references.read(field, content.data.get(field["name"]), payload.get("query", ""))
@@ -161,7 +165,8 @@ class EditingService:
         if not isinstance(path, str) or path not in self._opened:
             raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
         try:
-            command = self.nested.command(action, self._documents[path], path, payload)
+            service = self.resource_fields if action.startswith(("resource_", "consume_")) else self.nested
+            command = service.command(action, self._documents[path], path, payload)
         except ValueError as exc:
             raise EditingError("INVALID_FORM_ACTION", str(exc), path) from exc
         if command is not None:

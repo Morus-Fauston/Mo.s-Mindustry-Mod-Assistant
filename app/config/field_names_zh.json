@@ -1,4 +1,11 @@
 {
+  "item": "物品",
+  "liquid": "液体",
+  "booster": "加速消耗",
+  "items": "物品列表",
+  "liquids": "液体列表",
+  "power": "电力",
+  "heat": "热量",
   "value": "值",
   "abilities": "能力列表",
   "absorbLasers": "是否可吸收激光",

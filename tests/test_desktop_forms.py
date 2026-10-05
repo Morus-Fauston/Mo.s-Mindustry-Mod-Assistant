@@ -457,6 +457,9 @@ def test_configured_resource_routes_override_inferred_value_types(project):
     assert form["requirements"]["fieldType"] == "arr"
     assert form["consumes"]["fieldType"] == "obj"
     assert form["shownPlanets"]["fieldType"] == "arr"
-    assert all(form[name]["control"] == "readonly" for name in ("outputItem", "outputLiquid", "requirements", "consumes"))
+    assert form["outputItem"]["control"] == "resource_slot"
+    assert form["outputLiquid"]["control"] == "resource_slot" and form["outputLiquid"]["readOnly"]
+    assert form["requirements"]["control"] == "resource_list" and form["requirements"]["rows"][0]["notice"]
+    assert form["consumes"]["control"] == "consumes"
     assert opened["data"]["data"] == data
     assert opened["data"]["dirty"] is False

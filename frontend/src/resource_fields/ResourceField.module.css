@@ -1,0 +1,29 @@
+.resource, .rows { min-width: 0; }
+.container { --resource-line: var(--obj-line); --resource-bar: var(--obj-bar); --resource-bg: var(--obj); min-width: 0; margin: 7px 0; border: 1px solid var(--resource-line); border-left: 4px solid var(--resource-bar); border-radius: 3px; background: var(--resource-bg); }
+.container[data-field-type="arr"] { --resource-line: var(--arr-line); --resource-bar: var(--arr-bar); --resource-bg: var(--arr); }
+.container[data-field-type="ref"] { --resource-line: var(--ref-line); --resource-bar: var(--ref-bar); --resource-bg: var(--ref); }
+.container[aria-invalid="true"] { border-color: var(--error); }
+.heading, .itemHead { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 34px; padding: 3px 7px; }
+.heading > button, .actions > button, .consumeActions > button, .add { min-height: 27px; padding: 3px 7px; border: 1px solid var(--line); background: var(--canvas); font: inherit; }
+.heading > .title, .itemHead > .title { display: flex; align-items: center; gap: 5px; min-width: 0; flex: 1; min-height: 28px; padding: 3px 0; border: 0; background: transparent; text-align: left; font: inherit; overflow-wrap: anywhere; }
+.title svg { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.title svg[data-expanded="true"] { transform: rotate(90deg); }
+.heading button:hover, .itemHead button:hover, .consumeActions button:hover, .add:hover { background: var(--panel2); }
+.heading button:active, .itemHead button:active, .consumeActions button:active, .add:active { background: var(--selected); }
+.body { min-width: 0; padding: 2px 8px 9px; }
+.item { min-width: 0; margin: 5px 0 9px; border: 1px solid var(--line); border-radius: 3px; background: var(--canvas); }
+.itemHead { border-bottom: 1px solid var(--line); background: var(--panel); }
+.itemBody { min-width: 0; padding: 2px 7px 7px; }
+.actions { display: flex; flex-wrap: wrap; gap: 5px; }
+.count { margin-left: 4px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.notice, .error { display: block; margin: 5px 0; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.notice { color: var(--muted); }
+.error { color: var(--error); }
+.consume { min-width: 0; margin: 7px 0; }
+.consumeActions { display: flex; justify-content: flex-end; }
+.add { margin-top: 3px; }
+/* Resource containers provide the headings; keep BasicForm's input shells intact. */
+.leaves > div > section { border: 0; }
+.leaves > div > section > div:first-child, .leaves > div > div:last-child { display: none; }
+.leaves > div > section > div:last-child { padding: 0; }
+@container (max-width: 320px) { .body, .itemBody { padding-left: 4px; padding-right: 4px; } }

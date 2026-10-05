@@ -13,7 +13,7 @@ from weakref import WeakSet
 
 from PIL import Image, UnidentifiedImageError
 
-from app.core.commands import CommandStack
+from app.core.commands import Command, CommandStack
 from app.core.content_store import ContentData
 from app.core.config_loader import get_sprite_layers
 from app.core.metadata import normalize_content_type
@@ -34,7 +34,7 @@ class ResourceService:
         self._root = project.root.resolve()
         self._on_change = on_change
         self._content_resolver = content_resolver
-        self._snapshots: WeakSet[ResourceCommand] = WeakSet()
+        self._snapshots: WeakSet[Command] = WeakSet()
 
     def _content(self, path: str):
         if (not isinstance(path, str) or len(path) > 4096 or not path.startswith("content/")
@@ -113,7 +113,14 @@ class ResourceService:
 
     def _execute(self, target: Path, before: bytes | None, after: bytes | None) -> None:
         command = ResourceCommand(target, before, after, lambda: self._validate_target(target), self._on_change)
-        if sum(item.snapshot_bytes for item in self._snapshots) + command.snapshot_bytes > self.MAX_SNAPSHOT_BYTES:
+        self.execute_resource_command(command)
+
+    def execute_resource_command(self, command: Command) -> None:
+        """Trusted application commands share the import/delete history budget."""
+        size = getattr(command, "snapshot_bytes", None)
+        if not isinstance(command, Command) or type(size) is not int or size < 0:
+            raise ValueError("资源命令快照无效")
+        if sum(item.snapshot_bytes for item in self._snapshots) + size > self.MAX_SNAPSHOT_BYTES:
             raise ValueError("会话贴图撤销快照已达上限，请保存后重新打开工程")
         self._commands.execute(command)
         self._snapshots.add(command)

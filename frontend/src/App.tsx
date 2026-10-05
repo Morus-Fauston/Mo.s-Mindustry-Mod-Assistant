@@ -18,6 +18,7 @@ import type { WeaponAnchor } from './layers/types';
 import { ValidationReportPanel } from './validation/ValidationReportPanel';
 import type { ValidationIssue, ValidationReport } from './validation/types';
 import { resolveIssueField } from './validation/location';
+import { GenerationSection } from './generation/GenerationSection';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -117,6 +118,11 @@ export function App() {
 
   useEffect(() => {
     const completed = editor.result;
+    if (completed?.action === 'confirm_generation') {
+      const result = completed.data as { state: { sessionId: string } };
+      if (result.state.sessionId === projectRef.current?.sessionId) setNotice('贴图已写入工程，可通过撤销恢复。');
+      return;
+    }
     if (!completed || !['validate_project', 'export_project'].includes(completed.action)) return;
     const result = completed.data as { report: ValidationReport; cancelled?: boolean; exported?: boolean; output?: { path: string } };
     if (result.report.sessionId !== projectRef.current?.sessionId) return;
@@ -442,7 +448,7 @@ export function App() {
       {editor.uncertain && <button className={styles.button} disabled={editor.busy} onClick={() => {
         void editing.recover().then(() => {
           setFailure('');
-          if (!['validate_project', 'export_project'].includes(editing.getSnapshot().result?.action ?? '')) setNotice('已取得原操作结果');
+          if (!['validate_project', 'export_project', 'confirm_generation'].includes(editing.getSnapshot().result?.action ?? '')) setNotice('已取得原操作结果');
         }).catch(error => setFailure(message(error)));
       }}>查询操作结果</button>}
       <span title={project?.root}>{project?.name ?? '未打开工程'}</span>
@@ -561,6 +567,10 @@ export function App() {
             if (projectRef.current?.sessionId !== project.sessionId) return;
             await editing.run(action, { ...payload, path: activePath });
           }} />}
+        {activeDocument && activeDocument.validData !== false && <GenerationSection
+          document={activeDocument} resourceRevision={resourceRevision} editing={editing}
+          disabled={busy || editor.busy || editor.uncertain || decisionBusy || Boolean(intent)}
+          hasDrafts={Object.keys(drafts).length > 0} />}
       </aside>
     </main>
     <footer className={styles.status}><span role="status">{notice || status}</span><span>{metadata ? `游戏版本 ${metadata.gameVersion}` : '离线工作台'}</span></footer>

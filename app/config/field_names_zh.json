@@ -828,5 +828,8 @@
   "consumes": "消耗定义",
   "research": "研究前置",
   "sprite": "精灵图名称",
-  "type": "类型"
+  "type": "类型",
+  "spriteGenerationExpandPx": "描边宽度",
+  "spriteGenerationColor": "描边颜色",
+  "spriteGenerationOpacity": "阴影透明度"
 }

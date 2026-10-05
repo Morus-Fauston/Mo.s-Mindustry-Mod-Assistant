@@ -99,6 +99,13 @@ def _temporary_path(target: Path) -> Path:
 
 def _write_canonical_png(path: Path, image: Image.Image) -> None:
     """Encode image bytes without platform-dependent PNG compression choices."""
+    path.write_bytes(canonical_png_bytes(image))
+
+
+def canonical_png_bytes(image: Image.Image) -> bytes:
+    """The existing generated-sprite encoding, available without writing a file."""
+    if not isinstance(image, Image.Image):
+        raise TypeError("image 必须是 PIL.Image.Image")
     rgba = image.convert("RGBA")
     width, height = rgba.size
     if width <= 0 or height <= 0:
@@ -112,13 +119,12 @@ def _write_canonical_png(path: Path, image: Image.Image) -> None:
     )
     compressed = _stored_deflate(rows)
     header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    png = (
+    return (
         b"\x89PNG\r\n\x1a\n"
         + _png_chunk(b"IHDR", header)
         + _png_chunk(b"IDAT", compressed)
         + _png_chunk(b"IEND", b"")
     )
-    path.write_bytes(png)
 
 
 def _stored_deflate(data: bytes) -> bytes:

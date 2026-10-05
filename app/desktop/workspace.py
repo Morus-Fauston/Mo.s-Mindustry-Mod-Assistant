@@ -20,6 +20,7 @@ from app.desktop.preview import PreviewService
 from app.desktop.preview_layers import PreviewLayerService
 from app.desktop.dynamic_preview import DynamicPreviewService
 from app.desktop.resources import ResourceService
+from app.desktop.sprite_generation import SpriteGenerationService
 from app.desktop.resource_watch import ResourceWatch
 from app.desktop.source_editing import RawDocument, SourceEditingService
 from app.desktop.validation_export import ValidationExportService
@@ -43,6 +44,7 @@ class WorkspaceService:
         self._choose_sprite, self._reveal_file = choose_sprite, reveal_file
         self._choose_export = choose_export
         self._resources: ResourceService | None = None
+        self._generation: SpriteGenerationService | None = None
         self._resource_watch: ResourceWatch | None = None
         self._session = ProjectSession(metadata_dir)
         self._session_id: str | None = None
@@ -121,7 +123,7 @@ class WorkspaceService:
                                   "close_documents", "close_window", "preview_scene", "preview_resource",
                                   "add_field", "delete_field", "set_capability", "add_group", "delete_group",
                                   "reference_candidates", "sprite_targets", "resource_state",
-                                  "import_sprite", "delete_sprite", "reveal_sprite", "set_type", "create_object",
+                                  "import_sprite", "delete_sprite", "reveal_sprite", "preview_generation", "confirm_generation", "cancel_generation", "set_type", "create_object",
                                   "array_insert", "array_remove", "array_move", "resource_reference_candidates",
                                   "resource_set", "resource_add", "resource_remove", "resource_move",
                                   "consume_add", "consume_remove", "weapon_reference_candidates", "weapon_add",
@@ -171,6 +173,8 @@ class WorkspaceService:
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
+        if action in ("preview_generation", "confirm_generation", "cancel_generation"):
+            return self._generation_action(action, payload)
         if action in ("validate_project", "export_project"):
             service = ValidationExportService(self._session, self._session_id, self._editing, self._choose_export)
             if action == "export_project":
@@ -240,6 +244,9 @@ class WorkspaceService:
             self._closing = True
             if self._resource_watch is not None:
                 self._resource_watch.close()
+            if self._generation is not None:
+                self._generation.close()
+            self._release_generation_results()
             return {**self._editing.state(), "closeApproved": True}
         if action == "recent_projects":
             recent = self._session.last_project_path()
@@ -291,6 +298,9 @@ class WorkspaceService:
         except (OSError, ValueError) as exc:
             raise WorkspaceError("PROJECT_OPEN_FAILED", "无法打开工程，请检查目录中的 mod.json 和文件访问权限。", str(root)) from exc
         watch = ResourceWatch(candidate.project.root)
+        if self._generation is not None:
+            self._generation.close()
+        self._release_generation_results()
         if self._resource_watch is not None:
             self._resource_watch.close()
         self._session = candidate
@@ -300,12 +310,53 @@ class WorkspaceService:
         self._resource_watch = watch
         self._resources = ResourceService(candidate.project, candidate.command_stack,
             on_change=self._resource_changed, content_resolver=self._content)
+        self._generation = SpriteGenerationService(candidate.project, self._resources, self._session_id,
+            content_resolver=self._content, on_change=self._resource_changed)
         return {"sessionId": self._session_id, "name": project.mod_info.display_name or project.mod_info.name or root.name,
                 "root": str(root), "tree": tree}
 
     def _resource_changed(self) -> None:
         # Notification is in the command, so undo/redo also invalidate revision.
         self._editing.revision += 1
+
+    def _release_generation_results(self, candidate_id: str | None = None) -> None:
+        # Retain small deduplication tombstones, not PNG data after candidate disposal.
+        for request_id, (fingerprint, response) in list(self._results.items()):
+            data = response.get("data", {})
+            candidate = data.get("candidate") if isinstance(data, dict) else None
+            if not isinstance(candidate, dict) or candidate_id is not None and candidate.get("candidateId") != candidate_id:
+                continue
+            expired = self._expired_result(response)
+            size = len(json.dumps(expired, ensure_ascii=True).encode("utf-8"))
+            self._result_bytes += size - self._result_sizes[request_id]
+            self._result_sizes[request_id] = size
+            self._results[request_id] = (fingerprint, expired)
+
+    def _generation_action(self, action: str, payload: dict) -> dict:
+        if self._generation is None:
+            raise WorkspaceError("NO_PROJECT", "请先打开工程。")
+        allowed = {"path", "outputs", "expectedRevision"} if action == "preview_generation" else (
+            {"candidateId", "overwrite", "expectedRevision"} if action == "confirm_generation" else {"candidateId", "expectedRevision"})
+        if set(payload) - allowed:
+            raise WorkspaceError("INVALID_REQUEST", "贴图生成参数无效。")
+        try:
+            if action == "cancel_generation":
+                candidate_id = payload.get("candidateId")
+                self._generation.cancel(candidate_id)
+                self._release_generation_results(candidate_id)
+                return {"state": self._editing.state(), "cancelled": True}
+            self._editing.check_revision(payload)
+            if action == "preview_generation":
+                candidate = self._generation.preview(payload.get("path"), payload.get("outputs"))
+                return {"state": self._editing.state(), "candidate": candidate}
+            candidate_id = payload.get("candidateId")
+            result = self._generation.confirm(candidate_id, overwrite=payload.get("overwrite", False))
+            self._release_generation_results(candidate_id)
+            return {"state": self._editing.state(), "outputs": result["outputs"]}
+        except EditingError:
+            raise
+        except (OSError, ValueError, TypeError) as exc:
+            raise WorkspaceError("GENERATION_FAILED", f"贴图生成未完成：{exc}") from exc
 
     def _resource_state(self) -> dict:
         if self._resource_watch is None or self._session.project is None:

@@ -231,7 +231,7 @@ class NestedFormService:
                     if field_def.mode in ("ARRAY", "INLINE_OBJECT"):
                         descriptor.update(control="readonly", readOnly=True, validationError="嵌套显示已达上限，原值已保留。")
                     continue
-                if field_def.mode == "ARRAY" and field_def.name not in ("abilities", "weapons"):
+                if field_def.mode == "ARRAY" and field_def.name != "weapons":
                     self._array(descriptor, field_def, data.get(field_def.name), [*address, field_def.name],
                                 content, path, state, nodes, budget)
                 if field_def.mode == "INLINE_OBJECT" and field_def.inline_type and field_def.inline_type != "ObjectMap":

@@ -16,6 +16,7 @@ from app.desktop.references import ReferenceService
 from app.desktop.nested_forms import NestedFormService, NestedFormState
 from app.desktop.resource_fields import ResourceFieldsService
 from app.desktop.ability_forms import AbilityFormsService
+from app.desktop.weapon_forms import WeaponFormsService
 
 
 class EditingError(Exception):
@@ -66,9 +67,10 @@ class EditingService:
         self.forms = FormService(session.metadata, self.references)
         self.nested = NestedFormService(session.metadata, self.forms)
         self.ability_forms = AbilityFormsService(self.nested)
+        self.weapon_forms = WeaponFormsService(self.nested, session.project)
         self.resource_fields = ResourceFieldsService(self.nested)
 
-    def reference_candidates(self, payload: dict, *, resource: bool = False) -> dict:
+    def reference_candidates(self, payload: dict, *, resource: bool = False, weapon: bool = False) -> dict:
         path = payload.get("path")
         if not isinstance(path, str) or path not in self._opened:
             raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
@@ -78,6 +80,8 @@ class EditingService:
         try:
             if resource:
                 return self.resource_fields.reference_candidates(content, path, payload)
+            if weapon:
+                return self.weapon_forms.weapon_reference_candidates(content, path, payload)
             if "objectPath" not in payload or payload["objectPath"] == []:
                 field = self.forms.field(content, path, payload.get("field"))
                 return self.references.read(field, content.data.get(field["name"]), payload.get("query", ""))
@@ -167,7 +171,8 @@ class EditingService:
         if not isinstance(path, str) or path not in self._opened:
             raise EditingError("DOCUMENT_NOT_OPEN", "请先打开要编辑的内容。")
         try:
-            service = self.resource_fields if action.startswith(("resource_", "consume_")) else self.nested
+            service = (self.resource_fields if action.startswith(("resource_", "consume_")) else
+                       self.weapon_forms if action.startswith("weapon_") else self.nested)
             command = service.command(action, self._documents[path], path, payload)
         except ValueError as exc:
             raise EditingError("INVALID_FORM_ACTION", str(exc), path) from exc

@@ -42,7 +42,7 @@ export function findResourceField(plan: NestedFormPlan, key: string): FormField 
     for (const field of node.groups.flatMap(group => group.fields)) {
       if (isResourceField(field)) { const found = resource(field); if (found) return found; }
       else if (field.control === 'object' && field.child) { const found = visit(field.child); if (found) return found; }
-      else if (field.control === 'array') for (const item of field.items) {
+      else if (field.control === 'array' || field.control === 'weapon_array') for (const item of field.items) {
         if (item.form) { const found = visit(item.form); if (found) return found; }
       }
     }

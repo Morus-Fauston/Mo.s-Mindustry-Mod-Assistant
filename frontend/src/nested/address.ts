@@ -50,9 +50,9 @@ export function findNestedField(plan: NestedFormPlan, key: string): NestedField 
       if (field.control === 'object' && field.child) {
         const found = visit(field.child); if (found) return found;
       }
-      if (field.control === 'array') for (const item of field.items) {
+      if (field.control === 'array' || field.control === 'weapon_array') for (const item of field.items) {
         if (item.form) { const found = visit(item.form); if (found) return found; }
-        if (item.field && JSON.stringify([...node.objectPath, field.name, { itemId: item.itemId }]) === target && address.field === 'value') return item.field;
+        if ('field' in item && item.field && JSON.stringify([...node.objectPath, field.name, { itemId: item.itemId }]) === target && address.field === 'value') return item.field;
       }
     }
     return undefined;

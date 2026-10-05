@@ -11,6 +11,7 @@ import { createDraftStore } from './editing/drafts';
 import type { ReferenceResult } from './references/types';
 import { SpriteResources, type SpriteTargets } from './resources/SpriteResources';
 import { ResourceField, isResourceField, findResourceField } from './resource_fields/ResourceField';
+import { WeaponArray, isWeaponArrayField, findWeaponField } from './weapons/WeaponArray';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -326,9 +327,16 @@ export function App() {
         {documents.map(document => <section className={styles.document} key={document.path} hidden={activePath !== document.path} role="tabpanel" aria-label={document.path}>
           <h1>{document.name}</h1><p className={styles.description}>内容类型：{document.contentType}</p>
           <NestedForm document={document} plan={document.form as NestedFormPlan} drafts={drafts[document.path] ?? {}} errors={draftState.errors[document.path] ?? {}}
-            renderSpecialField={(field, objectPath, props) => isResourceField(field) ? <ResourceField {...props} field={field} objectPath={objectPath} /> : undefined}
+            renderSpecialField={(field, objectPath, props, renderForm) => isResourceField(field) ? <ResourceField {...props} field={field} objectPath={objectPath} />
+              : isWeaponArrayField(field) ? <WeaponArray {...props} field={field} objectPath={objectPath} renderForm={renderForm} /> : undefined}
             disabled={busy || editor.uncertain || decisionBusy}
-            onLoadReference={(field, query) => desktop.request<ReferenceResult>(findResourceField(document.form as NestedFormPlan, field) ? 'resource_reference_candidates' : 'reference_candidates', { path: document.path, ...decodeFieldKey(field), query }, document.sessionId)}
+            onLoadReference={(field, query) => {
+              const plan = document.form as NestedFormPlan;
+              const weapon = findWeaponField(plan, field);
+              const action = findResourceField(plan, field) ? 'resource_reference_candidates'
+                : weapon && (weapon.control === 'weapon_array' || weapon.control === 'reference' && weapon.name === 'name') ? 'weapon_reference_candidates' : 'reference_candidates';
+              return desktop.request<ReferenceResult>(action, { path: document.path, ...decodeFieldKey(field), query }, document.sessionId);
+            }}
             onDraft={(field, text) => draftStore.set(document.path, field, text)}
             onComposition={(field, active) => draftStore.composition(document.path, field, active)}
             onReset={field => { draftStore.resetField(document.path, field); setFailure(''); }}

@@ -74,7 +74,8 @@ def test_open_returns_authoritative_form_and_does_not_materialize_defaults(proje
     assert form["armor"]["deletable"] is False
     assert form["name"]["readOnly"] is True
     assert form["name"]["displayValue"] == "same"
-    assert form["weapons"]["control"] == "readonly"
+    assert form["weapons"]["control"] == "weapon_array"
+    assert form["weapons"]["items"] == []
     assert groups(document)["basic"]["locked"] is True
     assert groups(document)["mining"]["enabled"] is False
     assert document["data"] == {"type": "flying", "health": 100}

@@ -57,6 +57,8 @@ class ContentStore:
             for f in sorted(cat_dir.glob("*.json")):
                 try:
                     data = json.loads(f.read_text(encoding="utf-8"))
+                    if not isinstance(data, dict):
+                        continue
                     content_type = data.get("type", "Unknown")
                     refs.append(ContentRef(
                         name=f.stem,

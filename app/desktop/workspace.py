@@ -80,7 +80,8 @@ class WorkspaceService:
                                   "import_sprite", "delete_sprite", "reveal_sprite", "set_type", "create_object",
                                   "array_insert", "array_remove", "array_move", "resource_reference_candidates",
                                   "resource_set", "resource_add", "resource_remove", "resource_move",
-                                  "consume_add", "consume_remove") or not isinstance(payload, dict):
+                                  "consume_add", "consume_remove", "weapon_reference_candidates", "weapon_add",
+                                  "weapon_remove", "weapon_move", "weapon_add_override", "weapon_expand") or not isinstance(payload, dict):
                     raise WorkspaceError("INVALID_REQUEST", "不支持此请求。")
                 fingerprint = json.dumps(envelope, sort_keys=True, ensure_ascii=False, allow_nan=False)
                 if len(fingerprint) > 16384:
@@ -107,7 +108,7 @@ class WorkspaceService:
                 response["error"] = {"code": "READ_FAILED", "message": "无法读取工程资料，请检查文件格式和访问权限后重试。"}
             # Preview reads can be repeated explicitly. Keeping their data URLs in
             # the mutation-result cache would retain old scenes after resource cleanup.
-            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource", "reference_candidates", "resource_reference_candidates", "sprite_targets", "resource_state")
+            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource", "reference_candidates", "resource_reference_candidates", "weapon_reference_candidates", "sprite_targets", "resource_state")
             if cacheable and fingerprint is not None and request_id not in self._results:
                 self._results[request_id] = (fingerprint, deepcopy(response))
                 while len(self._results) > 128:
@@ -123,6 +124,8 @@ class WorkspaceService:
             return self._editing.reference_candidates(payload)
         if action == "resource_reference_candidates":
             return self._editing.reference_candidates(payload, resource=True)
+        if action == "weapon_reference_candidates":
+            return self._editing.reference_candidates(payload, weapon=True)
         if action == "preview_scene":
             content = self._content(payload.get("path"))
             if self._preview is None:
@@ -144,7 +147,8 @@ class WorkspaceService:
             return self._editing.set_field(payload)
         if action in ("add_field", "delete_field", "set_capability", "add_group", "delete_group",
                       "set_type", "create_object", "array_insert", "array_remove", "array_move",
-                      "resource_set", "resource_add", "resource_remove", "resource_move", "consume_add", "consume_remove"):
+                      "resource_set", "resource_add", "resource_remove", "resource_move", "consume_add", "consume_remove",
+                      "weapon_add", "weapon_remove", "weapon_move", "weapon_add_override", "weapon_expand"):
             return self._editing.form_action(action, payload)
         if action in ("undo", "redo"):
             return self._editing.history(action, payload)

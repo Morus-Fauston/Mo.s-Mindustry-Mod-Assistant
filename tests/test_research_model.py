@@ -17,7 +17,7 @@ def test_legacy_string_research_remains_a_string_until_the_object_is_changed():
     assert serialize_research(original, research) == "copper-wall"
 
 
-def test_research_object_keeps_the_confirmed_seven_fields_only():
+def test_research_object_preserves_unknown_fields_while_exposing_the_confirmed_fields():
     original = {"parent": "copper-wall", "root": True, "unknown": "ignored"}
 
     research = as_research_object(original)
@@ -25,7 +25,7 @@ def test_research_object_keeps_the_confirmed_seven_fields_only():
     assert tuple(RESEARCH_FIELDS) == (
         "parent", "requirements", "objectives", "planet", "root", "name", "requiresUnlock",
     )
-    assert research == {"parent": "copper-wall", "root": True}
+    assert research == {"parent": "copper-wall", "root": True, "unknown": "ignored"}
     assert serialize_research(original, research) == research
 
 

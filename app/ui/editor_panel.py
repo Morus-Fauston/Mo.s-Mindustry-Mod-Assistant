@@ -544,12 +544,23 @@ class EditorPanel(QWidget):
                 QTimer.singleShot(0, lambda v=scroll_val: vbar.setValue(v))
 
     def _on_notes_changed(self) -> None:
-        """备注写入 data['$notes']。不经过命令栈（编辑器私有笔记，无需撤销）。"""
+        """以可撤销命令写入编辑器私有备注。"""
         text = self._notes_edit.toPlainText()
         if text:
-            self._content.data["$notes"] = text
+            command = SetFieldCommand(
+                self._content.data,
+                "$notes",
+                text,
+                on_change=self._mark_dirty,
+            )
         else:
-            self._content.data.pop("$notes", None)
+            command = DeleteFieldCommand(
+                self._content.data,
+                "$notes",
+                on_change=self._mark_dirty,
+            )
+        self._commands.execute(command)
+        self.data_changed.emit()
 
     def _render_group(self, plan: GroupPlan) -> None:
         """Render a collapsible group from a GroupPlan."""

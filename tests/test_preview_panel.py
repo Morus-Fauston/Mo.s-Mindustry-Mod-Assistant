@@ -409,7 +409,7 @@ class TestLayerTreeBehavior:
         assert panel._layer_visibility.get(key1, True) is True
 
     def test_weapon_spin_change_writes_dict_and_emits_modified(self, qapp):
-        """图层树武器 x/y spin 修改必须写回 dict，并在 editingFinished 发 content_modified。"""
+        """图层树武器坐标修改必须可撤销，并在 editingFinished 发通知。"""
         panel, content, *_ = self._make_panel(qapp, weapons=[{"name": "炮", "x": 1.0, "y": 2.0}])
         spins = self._weapon_spins(panel)
         assert len(spins) == 2
@@ -423,6 +423,11 @@ class TestLayerTreeBehavior:
 
         spins[1].setValue(-3.2)
         qapp.processEvents()
+        assert content.data["weapons"][0]["y"] == -3.2
+
+        panel._commands.undo()
+        assert content.data["weapons"][0]["y"] == 2.0
+        panel._commands.redo()
         assert content.data["weapons"][0]["y"] == -3.2
 
         spins[0].editingFinished.emit()
@@ -553,7 +558,12 @@ class TestDynamicPreview:
         content = ContentData(
             name="tank",
             category="units",
-            data={"type": "tank", "treadFrames": 2, "engineSize": 2.0},
+            data={
+                "type": "tank",
+                "treadFrames": 2,
+                "engineSize": 2.0,
+                "weapons": [{"name": "probe-gun", "x": 0, "y": 4}],
+            },
         )
         panel = PreviewPanel()
         panel._sprite_layers_config = {
@@ -573,8 +583,10 @@ class TestDynamicPreview:
         panel, *_ = self._make_panel(qapp)
         assert not panel._dynamic_controls.isVisible()
         assert panel._dynamic_button.isVisible()
+        assert panel._dynamic_button.text() == "开始预览"
 
         panel._dynamic_button.click()
+        assert panel._direction_box.currentText() == "上"
         panel._fire_once()
         panel._direction_box.setCurrentText("左")
         panel._team_box.setCurrentText("蓝队")
@@ -582,12 +594,50 @@ class TestDynamicPreview:
         qapp.processEvents()
 
         assert panel._dynamic_controls.isVisible()
-        assert panel._play_pause_button.text() == "Ⅱ"
+        assert panel._dynamic_button.text() == "结束预览"
+        assert panel._view.dragMode() == panel._view.DragMode.NoDrag
+        assert panel._play_pause_button.text() == "暂停帧"
         assert panel._scene_items["__heat__"]
         assert panel._scene_items["__muzzle_flash__"]
         assert panel._scene_items["-team"][0].graphicsEffect().color().name() == "#50a9ee"
-        assert panel._scene_items["-cell"][0].graphicsEffect().color().name() == "#0c1924"
-        assert panel._scene_items[""][0].rotation() == 180.0
+        assert panel._scene_items["-cell"][0].graphicsEffect().color().name() != "#50a9ee"
+        assert panel._scene_items[""][0].rotation() == 270.0
+        assert panel._view.scene.itemsBoundingRect().isValid()
+        assert panel._play_pause_button.width() == 82
+        assert panel._fire_button.width() == 82
+        assert panel._direction_box.width() == 82
+        assert panel._speed_box.width() == 82
+        assert panel._moving_box.width() == 82
+        assert panel._health_box.width() == 82
+        engine_outer, engine_inner = panel._scene_items["__engine__"]
+        assert engine_inner.rect().center().y() < engine_outer.rect().center().y()
+
+        panel._play_pause_button.click()
+        assert panel._animation_paused
+        assert panel._play_pause_button.text() == "继续播放"
+        panel._play_pause_button.click()
+        assert not panel._animation_paused
+        panel._dynamic_button.click()
+        assert panel._view.dragMode() == panel._view.DragMode.ScrollHandDrag
+
+    def test_dynamic_refresh_keeps_user_zoom(self, qapp):
+        panel, *_ = self._make_panel(qapp)
+        panel._view.set_zoom(2.5)
+        panel._dynamic_button.click()
+        panel._refresh_preview()
+        assert panel._view._zoom == 2.5
+
+    def test_muzzle_flash_uses_weapon_position(self, qapp):
+        panel, *_ = self._make_panel(qapp)
+        panel._dynamic_button.click()
+        panel._fire_once()
+        flashes = panel._scene_items["__muzzle_flash__"]
+        assert flashes
+        flash = flashes[0]
+        flash_center_y = flash.rect().center().y()
+        main_rect = panel._scene_items[""][0].boundingRect()
+        expected_y = main_rect.height() / 2.0 - 4.0 * 4.0
+        assert flash_center_y == expected_y
 
     def test_moving_tank_switches_existing_generated_tread_frame(self, qapp):
         panel, *_ = self._make_panel(qapp)

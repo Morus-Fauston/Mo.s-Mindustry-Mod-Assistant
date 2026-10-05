@@ -148,6 +148,29 @@ class TestResearchEditor:
         assert data["research"] == {"objectives": [{"type": "OnPlanet", "planet": "serpulo"}]}
         assert stack.can_undo
 
+    def test_editing_a_supported_field_preserves_unknown_research_keys(self, qapp, project):
+        metadata = Metadata(METADATA_DIR)
+        data = {
+            "type": "Wall",
+            "research": {"parent": "copper-wall", "futureField": {"keep": True}},
+        }
+        stack = CommandStack()
+        editor = ResearchEditor(data, "research", stack, metadata, project)
+
+        parent = editor.findChild(ContentRefSelector, "researchParentSelector")
+        assert parent is not None
+        parent.set_value("dagger", emit=True)
+
+        assert data["research"] == {
+            "parent": "dagger",
+            "futureField": {"keep": True},
+        }
+        stack.undo()
+        assert data["research"] == {
+            "parent": "copper-wall",
+            "futureField": {"keep": True},
+        }
+
 
 class TestShownPlanetsEditor:
     def test_planet_set_is_rendered_in_basic_and_uses_the_command_stack(self, qapp, project):
@@ -213,6 +236,24 @@ class TestJsonOutputPreview:
         assert data == {"type": "Wall", "health": 100}
         assert not stack.can_undo
         assert editor.property("error") == "true"
+
+    def test_user_notes_use_command_stack_and_mark_the_project_dirty(self, qapp, project):
+        from PySide6.QtWidgets import QTextEdit
+
+        data = {"type": "Wall"}
+        panel, stack = self._make_panel(qapp, project, data)
+        notes = panel.findChild(QTextEdit)
+        assert notes is not None
+
+        notes.setPlainText("待调整护甲")
+        qapp.processEvents()
+        assert data["$notes"] == "待调整护甲"
+        assert project.is_dirty
+
+        stack.undo()
+        assert "$notes" not in data
+        stack.redo()
+        assert data["$notes"] == "待调整护甲"
 
     def test_save_while_json_draft_is_invalid_keeps_the_last_legal_content(self, qapp, project):
         from PySide6.QtWidgets import QPlainTextEdit

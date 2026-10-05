@@ -42,7 +42,9 @@ def as_research_object(value: Any) -> dict[str, Any]:
         return {"parent": value} if value else {}
     if not isinstance(value, dict):
         return {}
-    return {field: deepcopy(value[field]) for field in RESEARCH_FIELDS if field in value}
+    # The editor renders only RESEARCH_FIELDS, but existing mods may carry
+    # newer or mod-specific keys. Keep those keys through any supported edit.
+    return deepcopy(value)
 
 
 def serialize_research(original: Any, research: dict[str, Any]) -> str | dict[str, Any] | None:

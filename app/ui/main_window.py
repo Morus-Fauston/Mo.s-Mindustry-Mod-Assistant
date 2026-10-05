@@ -34,7 +34,7 @@ from .widgets.reference_panel import ReferencePanel, _ReferencePicker
 from .widgets.sprite_watcher import SpriteWatcher
 
 # 应用版本号（与 pyproject.toml 同步）
-APP_VERSION = "0.2.6"
+APP_VERSION = "0.3.0-alpha.5"
 
 
 class _StatusBar(QStatusBar):
@@ -143,7 +143,7 @@ class MainWindow(QMainWindow):
         self._file_tree.content_renamed.connect(self._on_content_renamed)
 
         # 右侧：预览 + 图层
-        self._preview = PreviewPanel()
+        self._preview = PreviewPanel(self._command_stack)
         # v0.2.4.batch4：预览 SpinBox 改坐标 → 当前活动编辑器标 dirty + 刷新表单
         self._preview.content_modified.connect(self._on_preview_content_modified)
 

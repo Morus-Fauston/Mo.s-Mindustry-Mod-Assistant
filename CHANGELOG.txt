@@ -1,3 +1,12 @@
+v0.3.0 (2026-10-05 20:00)
+  修复: absin 按 Arc 实现对齐（残血初始色 #230707 -> #851a1a）/ 朝向基准改为上=0度 / 枪口闪光按武器坐标而非贴图头部 / Research 未知字段编辑时不再丢失 / $notes 与武器坐标改走命令栈可撤销
+  新增: 动态预览示例 examples/dynamic_preview_demo（中英 README + run.bat）
+  调整: 预览控件改网格布局与纯中文文案（开始预览/结束预览、暂停帧/继续播放）、宽度统一 82px / 刷新保留用户缩放 / 不再自动补射
+  架构: PreviewPanel 依赖注入 CommandStack，写回内容统一走命令栈
+  文档: CONTEXT 增"可解锁内容"与"Research"术语并修正 BulletType 指向 ADR-011；AGENTS 增 Skill 工作流；.gitignore 增 .scratch/ 与 Docs/验证反馈/
+
+====
+
 v0.3.0-alpha.5 (2026-08-23 23:10)
   新增: 五条字段依赖反馈 / 动态预览 Demo（开火、方向、速度、队伍色、血量、履带帧）/ 厨房水槽样本覆盖四类单位、八类方块、五种 Weapon 引用和派生图
   调整: README 与包版本同步为候选状态

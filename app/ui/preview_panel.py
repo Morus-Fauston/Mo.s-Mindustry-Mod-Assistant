@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QGraphicsScene,
     QGraphicsView,
     QGraphicsColorizeEffect,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -44,6 +45,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..core.config_loader import get_sprite_layers
+from ..core.commands import CommandStack, SetFieldCommand
 from ..core.content_store import ContentData
 from ..core.metadata import normalize_content_type
 from ..core.preview_math import (
@@ -130,18 +132,20 @@ class PreviewPanel(QWidget):
     # 坐标缩放比：4 像素 = 1 世界单位（003 调研结论）
     _PPU = 4
 
-    def __init__(self) -> None:
+    def __init__(self, command_stack: CommandStack | None = None) -> None:
         super().__init__()
         self._project: Project | None = None
         self._content: ContentData | None = None
+        self._commands = command_stack or CommandStack()
         self._sprite_layers_config = self._load_sprite_layers()
         # 图层可见性缓存（suffix → bool），跨刷新保持
         self._layer_visibility: dict[str, bool] = {}
         self._animation = PreviewAnimationState()
         self._dynamic_mode = False
+        self._animation_paused = False
         self._moving = False
         self._speed = 1.0
-        self._direction_value = "右"
+        self._direction_value = "上"
         self._team_color = "默认"
         self._health_level = "满血"
         self._last_animation_time: float | None = None
@@ -162,8 +166,8 @@ class PreviewPanel(QWidget):
         header_layout.addWidget(QLabel("预览"))
         header_layout.addStretch()
         self._dynamic_button = QToolButton()
-        self._dynamic_button.setText("▶")
-        self._dynamic_button.setToolTip("开启动态预览")
+        self._dynamic_button.setText("开始预览")
+        self._dynamic_button.setToolTip("开始动态预览")
         self._dynamic_button.clicked.connect(self._toggle_dynamic)
         header_layout.addWidget(self._dynamic_button)
         layout.addWidget(header)
@@ -173,51 +177,59 @@ class PreviewPanel(QWidget):
         controls_layout = QVBoxLayout(controls)
         controls_layout.setContentsMargins(6, 2, 6, 2)
         controls_layout.setSpacing(2)
-        controls_top = QHBoxLayout()
-        controls_top.setSpacing(3)
-        self._play_pause_button = QToolButton()
-        self._play_pause_button.setText("Ⅱ")
-        self._play_pause_button.setToolTip("暂停动态预览")
-        self._play_pause_button.clicked.connect(self._toggle_dynamic)
-        controls_top.addWidget(self._play_pause_button)
-        self._fire_button = QToolButton()
-        self._fire_button.setText("●")
-        self._fire_button.setToolTip("开火一次")
+        controls_grid = QGridLayout()
+        controls_grid.setHorizontalSpacing(4)
+        controls_grid.setVerticalSpacing(3)
+        self._play_pause_button = QPushButton("暂停帧")
+        self._play_pause_button.setFixedWidth(82)
+        self._play_pause_button.setToolTip("暂停或继续当前动态帧")
+        self._play_pause_button.clicked.connect(self._toggle_pause_frame)
+        controls_grid.addWidget(self._play_pause_button, 0, 0)
+        self._fire_button = QPushButton("开火一次")
+        self._fire_button.setFixedWidth(82)
+        self._fire_button.setToolTip("触发一次武器后坐和枪口闪光")
         self._fire_button.clicked.connect(self._fire_once)
-        controls_top.addWidget(self._fire_button)
+        controls_grid.addWidget(self._fire_button, 0, 1)
+        controls_grid.addWidget(QLabel("朝向"), 0, 2)
         self._direction_box = QComboBox()
+        self._direction_box.setFixedWidth(82)
         self._direction_box.setToolTip("预览朝向")
-        self._direction_box.addItems(["右", "上", "左", "下"])
+        self._direction_box.addItems(["上", "右", "下", "左"])
         self._direction_box.currentTextChanged.connect(self._set_direction)
-        controls_top.addWidget(self._direction_box)
+        controls_grid.addWidget(self._direction_box, 0, 3)
+        controls_grid.addWidget(QLabel("速度"), 0, 4)
         self._speed_box = QComboBox()
+        self._speed_box.setFixedWidth(82)
         self._speed_box.setToolTip("动画速度")
         self._speed_box.addItems(["0.5x", "1x", "2x"])
         self._speed_box.setCurrentText("1x")
         self._speed_box.currentTextChanged.connect(self._set_speed)
-        controls_top.addWidget(self._speed_box)
-        controls_top.addStretch()
-        controls_layout.addLayout(controls_top)
-
-        controls_bottom = QHBoxLayout()
-        controls_bottom.setSpacing(3)
+        controls_grid.addWidget(self._speed_box, 0, 5)
+        moving_label = QLabel("移动")
+        moving_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        controls_grid.addWidget(moving_label, 1, 0)
         self._moving_box = QComboBox()
+        self._moving_box.setFixedWidth(82)
         self._moving_box.setToolTip("单位移动状态")
         self._moving_box.addItems(["原地", "移动"])
         self._moving_box.currentTextChanged.connect(self._set_moving)
-        controls_bottom.addWidget(self._moving_box)
+        controls_grid.addWidget(self._moving_box, 1, 1)
+        controls_grid.addWidget(QLabel("队伍色"), 1, 2)
         self._team_box = QComboBox()
+        self._team_box.setFixedWidth(82)
         self._team_box.setToolTip("队伍色")
         self._team_box.addItems(list(TEAM_COLORS))
         self._team_box.currentTextChanged.connect(self._set_team_color)
-        controls_bottom.addWidget(self._team_box)
+        controls_grid.addWidget(self._team_box, 1, 3)
+        controls_grid.addWidget(QLabel("血量"), 1, 4)
         self._health_box = QComboBox()
+        self._health_box.setFixedWidth(82)
         self._health_box.setToolTip("单位血量")
         self._health_box.addItems(list(HEALTH_LEVELS))
         self._health_box.currentTextChanged.connect(self._set_health_level)
-        controls_bottom.addWidget(self._health_box)
-        controls_bottom.addStretch()
-        controls_layout.addLayout(controls_bottom)
+        controls_grid.addWidget(self._health_box, 1, 5)
+        controls_grid.setColumnStretch(6, 1)
+        controls_layout.addLayout(controls_grid)
         controls.setVisible(False)
         self._dynamic_controls = controls
         layout.addWidget(controls)
@@ -294,13 +306,14 @@ class PreviewPanel(QWidget):
         """设置面板缩放倍率，重新渲染当前内容。"""
         self._base_zoom = zoom
         if self._content is not None:
-            self.show_content(self._content, self._project)
+            self._refresh_preview(reset_zoom=True)
+            self._refresh_layer_tree()
 
     def show_content(self, content: ContentData, project: Project | None) -> None:
         self._content = content
         self._project = project
         self._reset_animation()
-        self._refresh_preview()
+        self._refresh_preview(reset_zoom=True)
         self._refresh_layer_tree()
 
     def is_showing(self, category: str, name: str) -> bool:
@@ -324,31 +337,47 @@ class PreviewPanel(QWidget):
 
     def _toggle_dynamic(self) -> None:
         self._dynamic_mode = not self._dynamic_mode
+        self._animation_paused = False
         self._dynamic_controls.setVisible(self._dynamic_mode)
         self._update_dynamic_buttons()
         if self._dynamic_mode:
+            self._view.setDragMode(QGraphicsView.DragMode.NoDrag)
             self._last_animation_time = time.monotonic()
             self._timer.start()
         else:
+            self._view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
             self._timer.stop()
             self._last_animation_time = None
             self._refresh_preview()
 
     def _update_dynamic_buttons(self) -> None:
-        """Keep the persistent entry and in-mode pause control in sync."""
-        text = "Ⅱ" if self._dynamic_mode else "▶"
-        tooltip = "暂停动态预览" if self._dynamic_mode else "开启动态预览"
-        self._dynamic_button.setText(text)
-        self._dynamic_button.setToolTip(tooltip)
-        self._play_pause_button.setText(text)
-        self._play_pause_button.setToolTip(tooltip)
+        """同步动态模式入口和暂停帧按钮的语义。"""
+        if self._dynamic_mode:
+            self._dynamic_button.setText("结束预览")
+            self._dynamic_button.setToolTip("结束动态预览")
+            self._play_pause_button.setText("继续播放" if self._animation_paused else "暂停帧")
+        else:
+            self._dynamic_button.setText("开始预览")
+            self._dynamic_button.setToolTip("开始动态预览")
+            self._play_pause_button.setText("暂停帧")
+
+    def _toggle_pause_frame(self) -> None:
+        if not self._dynamic_mode:
+            return
+        self._animation_paused = not self._animation_paused
+        if self._animation_paused:
+            self._timer.stop()
+        else:
+            self._last_animation_time = time.monotonic()
+            self._timer.start()
+        self._update_dynamic_buttons()
 
     def _fire_once(self) -> None:
         self._animation.fire()
         self._refresh_preview()
 
     def _advance_animation(self) -> None:
-        if self._dynamic_mode:
+        if self._dynamic_mode and not self._animation_paused:
             now = time.monotonic()
             previous = self._last_animation_time or now
             self._last_animation_time = now
@@ -360,8 +389,6 @@ class PreviewPanel(QWidget):
                 cooldown_time=float(data.get("cooldownTime", 20.0)),
                 moving=self._moving,
             )
-            if self._animation.recoil <= 0 and self._animation.heat <= 0:
-                self._animation.fire()
             self._refresh_preview()
 
     def _reset_animation(self) -> None:
@@ -369,9 +396,10 @@ class PreviewPanel(QWidget):
         self._last_animation_time = None
         self._animation = PreviewAnimationState()
         self._dynamic_mode = False
+        self._animation_paused = False
         self._moving = False
         self._speed = 1.0
-        self._direction_value = "右"
+        self._direction_value = "上"
         self._team_color = "默认"
         self._health_level = "满血"
         if hasattr(self, "_dynamic_controls"):
@@ -379,7 +407,7 @@ class PreviewPanel(QWidget):
             self._update_dynamic_buttons()
             self._speed_box.setCurrentText("1x")
             self._moving_box.setCurrentText("原地")
-            self._direction_box.setCurrentText("右")
+            self._direction_box.setCurrentText("上")
             self._team_box.setCurrentText("默认")
             self._health_box.setCurrentText("满血")
 
@@ -434,7 +462,7 @@ class PreviewPanel(QWidget):
 
     # ── 预览渲染 ─────────────────────────────────────────────────────────
 
-    def _refresh_preview(self) -> None:
+    def _refresh_preview(self, reset_zoom: bool = False) -> None:
         """重建预览场景：多层精灵合成 + 武器叠加 + 引擎圆。
 
         每个精灵图层作为独立 QGraphicsPixmapItem 加入场景，
@@ -543,7 +571,8 @@ class PreviewPanel(QWidget):
         self._view.setVisible(True)
         self._empty_overlay.setVisible(False)
         self._import_btn.setVisible(False)
-        self._view.set_zoom(float(self._base_zoom))
+        if reset_zoom:
+            self._view.set_zoom(float(self._base_zoom))
 
     def _apply_all_layer_visibility(self) -> None:
         """根据 _layer_visibility 设置所有场景元素的可见性。"""
@@ -599,22 +628,30 @@ class PreviewPanel(QWidget):
         self._scene_items.setdefault("__heat__", []).append(item)
 
     def _draw_muzzle_flash(self, cx: float, cy: float, base_rect) -> None:
-        """Draw a deliberately simple three-tick muzzle flash for the demo."""
+        """Draw a simple flash at weapon positions, never at the body head."""
         if not self._dynamic_mode or self._animation.muzzle_flash_opacity() <= 0:
             return
+        weapons = self._content.data.get("weapons") if self._content else None
+        if not isinstance(weapons, list) or not weapons:
+            return
         radius = max(3.0, min(base_rect.width(), base_rect.height()) / 8.0)
-        flash = self._view.scene.addEllipse(
-            cx - radius,
-            cy - base_rect.height() * 0.42 - radius,
-            radius * 2,
-            radius * 2,
-            QPen(Qt.PenStyle.NoPen),
-            QBrush(QColor("#fff3a1")),
-        )
-        flash.setZValue(20)
-        flash.setOpacity(self._animation.muzzle_flash_opacity())
-        flash.setToolTip("枪口闪光")
-        self._scene_items.setdefault("__muzzle_flash__", []).append(flash)
+        for weapon in weapons:
+            if not isinstance(weapon, dict):
+                continue
+            name = str(weapon.get("name", ""))
+            wx, wy = self._resolve_weapon_xy(weapon, name)
+            flash = self._view.scene.addEllipse(
+                cx + wx * self._PPU - radius,
+                cy - wy * self._PPU - radius,
+                radius * 2,
+                radius * 2,
+                QPen(Qt.PenStyle.NoPen),
+                QBrush(QColor("#fff3a1")),
+            )
+            flash.setZValue(20)
+            flash.setOpacity(self._animation.muzzle_flash_opacity())
+            flash.setToolTip("枪口闪光")
+            self._scene_items.setdefault("__muzzle_flash__", []).append(flash)
 
     def _apply_dynamic_appearance(self, cx: float, cy: float) -> None:
         """Translate pure dynamic state to Qt-only transforms and color effects."""
@@ -745,7 +782,7 @@ class PreviewPanel(QWidget):
         ey = cy + engine_offset * ppu
         radius = engine_size * ppu
         if self._dynamic_mode:
-            radius *= 1.0 + self._animation.pulse() * 0.25
+            radius += self._animation.pulse() * engine_size * self._PPU / 4.0
 
         # 外圈颜色：engineColor 未设置 → 亮黄/橙占位（= 默认队伍色）
         outer_hex = data.get("engineColor")
@@ -781,7 +818,7 @@ class PreviewPanel(QWidget):
         rot_rad = math.radians(rotation_deg)
         inner_offset = radius / 4.0
         ix = ex - math.cos(rot_rad) * inner_offset
-        iy = ey - math.sin(rot_rad) * inner_offset
+        iy = ey + math.sin(rot_rad) * inner_offset
 
         pen_inner = QPen(Qt.PenStyle.NoPen)
         brush_inner = QBrush(inner_color)
@@ -982,7 +1019,7 @@ class PreviewPanel(QWidget):
     # ── 武器 SpinBox 交互（D7）─────────────────────────────────────────
 
     def _on_weapon_spin_changed(self, value: float) -> None:
-        """D7: valueChanged → 直接改 dict + 实时预览（不入 CommandStack）。"""
+        """武器坐标修改通过可合并命令实时更新预览。"""
         spin = self.sender()
         if spin is None or self._content is None:
             return
@@ -991,15 +1028,38 @@ class PreviewPanel(QWidget):
         weapons = self._content.data.get("weapons")
         if not isinstance(weapons, list) or idx >= len(weapons):
             return
-        w = weapons[idx]
-        if not isinstance(w, dict):
+        if not isinstance(weapons[idx], dict):
             return
-        w[coord] = value
-        self._refresh_preview()
+        self._commands.execute(SetFieldCommand(
+            self._content.data,
+            f"weapons.{idx}.{coord}",
+            value,
+            on_change=self._refresh_weapon_coordinates,
+        ))
 
     def _on_weapon_spin_finished(self) -> None:
-        """D7: editingFinished → 标记 dirty + 通知编辑器。"""
+        """通知编辑器同步脏状态与表单。"""
         self.content_modified.emit()
+
+    def _refresh_weapon_coordinates(self) -> None:
+        """重绘画布，并在撤销/重做后回填现存坐标输入框。"""
+        self._refresh_preview()
+        if self._content is None:
+            return
+        weapons = self._content.data.get("weapons")
+        if not isinstance(weapons, list):
+            return
+        for spin in self._layer_tree.findChildren(NumDoubleSpinBox):
+            index = spin.property("weapon_idx")
+            coordinate = spin.property("coord")
+            if not isinstance(index, int) or not isinstance(coordinate, str):
+                continue
+            if not (0 <= index < len(weapons)) or not isinstance(weapons[index], dict):
+                continue
+            value = weapons[index].get(coordinate, 0.0)
+            spin.blockSignals(True)
+            spin.setValue(float(value))
+            spin.blockSignals(False)
 
     def _on_layer_check_changed(self, item: QTreeWidgetItem, column: int) -> None:
         """图层 checkbox 切换 → 更新场景可见性。"""

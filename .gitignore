@@ -1,3 +1,5 @@
+# 本地 Agent 开发票据与临时规格，不提交
+.scratch/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -198,11 +200,15 @@ cython_debug/
 # Visual Studio Code
 #   Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
 #   that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+.vscode/settings.json
 #   and can be added to the global gitignore or merged into this file. However, if you prefer, 
 #   you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
+
+# Local validation reports and manual analysis notes
+Docs/验证反馈/
 
 # Ruff stuff:
 .ruff_cache/
@@ -225,8 +231,8 @@ __marimo__/
 # Personal docs (not part of the distributed project)
 Docs/
 
-# Reference mods (for learning, not distributed)
-蓝钢-欢迎您/
+# Auxiliary projects (validator, MIT, reference mods — local only)
+辅助项目/
 
 # Icon asset pack (local design resource, not distributed)
 Nieobie icons/
@@ -239,6 +245,9 @@ sample-mod-output/
 
 # Sample mod generation script (one-off verification tool, not distributed)
 tools/make_sample_mod.py
+
+# UI mockup SVG generator (local doc tool, Docs/ not distributed)
+tools/draw_ui_mockups.py
 
 # Extractor build artifacts
 extractor/.gradle/

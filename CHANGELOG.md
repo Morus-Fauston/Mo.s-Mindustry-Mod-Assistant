@@ -1,5 +1,60 @@
 # Changelog
 
+## v0.3.0 (2026-10-05 20:00) — 批次 5：候选版验收收尾与动态预览精修
+
+### 修复
+
+- **原版字段语义对齐**：`Mathf.absin` 此前按正弦周期近似，导致 cell 脉动相位与真实引擎不符（残血红队初始色偏暗）。现按 Arc 的实现 `(sin(t/(2·scl))·mag + mag)/2` 计算，残血初始色由 `#230707` 修正为 `#851a1a`。
+- **朝向角度基准**：四向角度以"右=0°"为基准，与 Mindustry 中 0° 指向上方不一致，渲染出的朝向整体偏转 90°。现改为"上=0°、右=90°、下=180°、左=270°"，并把默认朝向与下拉顺序统一为"上"开头。
+- **枪口闪光落点**：闪光画在贴图顶部（头部）而非武器挂点，且没有武器时也会出现。现仅在有 `weapons` 时绘制，并按武器坐标逐个定位。
+- **Research 未知字段丢失**：`as_research_object` 只保留七个已知字段，编辑 `parent` 等已支持字段时会静默丢弃模型未识别的键。现整体深拷贝原对象，只在 UI 层限制可编辑面；未知字段在撤销/重做中同样保留。
+- **用户备注不入命令栈**：`$notes` 直接写 `data` 且不标记 dirty，无法撤销、保存状态不同步。现改为通过 `SetFieldCommand` / `DeleteFieldCommand` 写入并发出 `data_changed`。
+- **武器坐标修改不可撤销**：图层树武器 x/y 直接改 dict，绕过命令栈。现由预览面板统一经命令栈写入，撤销/重做可回退到原值。
+
+### 调整
+
+- **动态预览控件改版**：入口由 `▶` / `Ⅱ` 符号改为"开始预览 / 结束预览"，新增独立"暂停帧 / 继续播放"，去掉 emoji 式图标并统一为纯中文。
+- **控件排版与热区**：动态预览控件由两行横向布局改为网格布局并加中文标签，所有下拉与按钮固定宽度 82px；动态模式禁用视图拖拽，退出时恢复。
+- **预览缩放不再被刷新重置**：`_refresh_preview(reset_zoom=False)` 默认保留用户当前缩放，仅在切换内容时重置。
+- **停止自动开火**：动态预览不再在后坐和热量归零时自动补射，开火只由"开火一次"显式触发。
+
+### 新增
+
+- **动态预览示例**：`examples/dynamic_preview_demo/` 提供不依赖测试夹具的示范工程（中英双语 README、`run.bat`、`run_demo.py`），扫描本地参考模组并使用真实 `Project`/`ContentData`/`PreviewPanel` API 演示动态预览。
+
+### 架构改进
+
+- **预览面板依赖注入命令栈**：`PreviewPanel(command_stack=None)` 接收 `CommandStack`，未传入时自建；所有写回内容的操作统一走命令栈。
+
+### 文档
+
+- **CONTEXT.md**：新增"可解锁内容"和"Research（研究配置）"术语，明确 parent / Research / Produce 与 SectorComplete / OnSector / OnPlanet 的引用范围；修正 BulletType 说明，指向 ADR-011（v8 无独立 bullet content 解析器，必须内联）。
+- **AGENTS.md**：新增 Skill 工作流与 Agent skills 章节（票据存 `.scratch/`、领域文档布局），提交范围由 `蓝钢-欢迎您/` 改为 `辅助项目/`。
+
+### 技术
+
+- **本地资料不入库**：`.gitignore` 增加 `.scratch/`、`Docs/验证反馈/`、`.vscode/settings.json`、`tools/draw_ui_mockups.py`，参考模组目录更名为 `辅助项目/`。
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `app/core/preview_math.py` | 新增 `arc_absin`；朝向基准改为上=0°；cell 脉动按 Arc `absin` 计算 |
+| `app/core/research_model.py` | `as_research_object` 保留未识别的 Research 键 |
+| `app/ui/preview_panel.py` | 命令栈注入；控件网格布局与中文文案；暂停帧；保留缩放；枪口闪光定位 |
+| `app/ui/editor_panel.py` | `$notes` 改为可撤销命令写入 |
+| `app/ui/main_window.py` | `APP_VERSION` 同步为 `0.3.0-alpha.5`；向预览面板传入命令栈 |
+| `examples/dynamic_preview_demo/` | **新增** — 动态预览示范工程 |
+| `CONTEXT.md` | +2 术语；BulletType 说明指向 ADR-011 |
+| `AGENTS.md` | +Skill 工作流、Agent skills；提交范围更新 |
+| `.gitignore` | +`.scratch/`、`Docs/验证反馈/`、`.vscode/settings.json` |
+| `tests/test_preview_math.py` | +`arc_absin` 与朝向断言 |
+| `tests/test_preview_panel.py` | +暂停帧、控件宽度、武器坐标撤销、闪光定位 |
+| `tests/test_editor_panel.py` | +Research 未知字段与 `$notes` 命令栈 |
+| `tests/test_research_model.py` | 断言改为保留未知字段 |
+
+---
+
 ## v0.3.0-alpha.5 (2026-08-23 23:10) - 批次 4：字段依赖、动态预览与候选验收
 
 ### 新增
@@ -638,7 +693,7 @@
 
 ## v0.2.4 (2026-07-31 18:59) — 上半：UI 体验问题全量修复
 
-> 用户反馈的 7 项 UI 问题全量修复（根因报告：`Docs/辅助文档/v024-UI体验问题根因报告.md`）。
+> 用户反馈的 7 项 UI 问题全量修复（根因报告：`Docs/历史规格/v024-UI体验问题根因报告.md`）。
 
 ### 修复
 
@@ -938,7 +993,7 @@
 - PRD 更新至 v1.1：P1 拆为 v0.2.0 / v0.2.1 / v0.2.2 三段（F-31~F-54）
 - 设计规格文档更新至 v1.1：新增子类型过滤、默认值、字段删除规则、多态编辑器、视觉规范、验收标准 53 项
 - CONTEXT.md 新增 7 个术语（Ability、保留字段、子类型、多态编辑器、资源列表、资源槽、字段类型着色、锁定组）
-- 新增 `Docs/v021-UI设计需求书.md`：B 阶段 UI 设计完整需求
+- 新增 `Docs/历史规格/v021-UI设计需求书.md`：B 阶段 UI 设计完整需求
 
 ### 文件变更表
 
@@ -958,7 +1013,7 @@
 | `app/ui/widgets/reference_panel.py` | 去循环导入，委托 config_loader |
 | `app/config/field_groups.json` | +5 种 BulletType 子类分组 |
 | `Docs/ADR/006-多态编辑器统一抽象.md` | **新增** |
-| `Docs/v021-UI设计需求书.md` | **新增** |
+| `Docs/历史规格/v021-UI设计需求书.md` | **新增** |
 | `Docs/PRD.md` | v1.1 更新 |
 | `Docs/设计规格文档.md` | v1.1 更新 |
 | `CONTEXT.md` | +7 术语 |

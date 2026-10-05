@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import math
 
+import pytest
+
 from app.core.preview_math import (
     PPU,
     CircleSpec,
@@ -20,6 +22,7 @@ from app.core.preview_math import (
     compute_engine_circles,
     compute_weapon_layers,
     cell_color_hex,
+    arc_absin,
     direction_degrees,
     health_fraction,
     team_color_hex,
@@ -171,8 +174,14 @@ class TestPreviewAnimationState:
         state = PreviewAnimationState(time_tick=1.0, tread_time=2.0)
         state.advance(2.0, moving=True)
 
-        assert 0.0 < state.pulse(period=4.0) <= 1.0
+        assert 0.0 <= state.pulse(scl=4.0) <= 1.0
         assert state.tread_frame(3) == 1
+
+    def test_arc_absin_uses_scale_not_period(self):
+        assert arc_absin(0.0, 2.0, 1.0) == pytest.approx(0.5)
+        assert arc_absin(2.0 * math.pi, 2.0, 1.0) == pytest.approx(1.0)
+        assert arc_absin(6.0 * math.pi, 2.0, 1.0) == pytest.approx(0.0)
+        assert arc_absin(8.0 * math.pi, 2.0, 1.0) == pytest.approx(0.5)
 
     def test_recoil_and_flash_have_visual_outputs(self):
         state = PreviewAnimationState()
@@ -187,15 +196,15 @@ class TestPreviewAnimationState:
 
 class TestDynamicPreviewMappings:
     def test_direction_and_team_are_stable_discrete_values(self):
-        assert direction_degrees("右") == 0.0
-        assert direction_degrees("上") == -90.0
-        assert direction_degrees("左") == 180.0
-        assert direction_degrees("下") == 90.0
+        assert direction_degrees("上") == 0.0
+        assert direction_degrees("右") == 90.0
+        assert direction_degrees("左") == 270.0
+        assert direction_degrees("下") == 180.0
         assert team_color_hex("蓝队") == "#50a9ee"
 
     def test_cell_color_uses_health_and_time_pulse(self):
         assert health_fraction("满血") == 1.0
         assert health_fraction("半血") == 0.5
         assert cell_color_hex("红队", "满血", 3.0) == "#e82d2d"
-        assert cell_color_hex("红队", "残血", 0.0) == "#230707"
+        assert cell_color_hex("红队", "残血", 0.0) == "#851a1a"
         assert cell_color_hex("红队", "残血", 0.5) != "#230707"

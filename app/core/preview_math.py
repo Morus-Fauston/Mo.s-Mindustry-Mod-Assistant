@@ -46,10 +46,10 @@ HEALTH_LEVELS = {
 }
 
 _DIRECTION_DEGREES = {
-    "右": 0.0,
-    "上": -90.0,
-    "左": 180.0,
-    "下": 90.0,
+    "上": 0.0,
+    "右": 90.0,
+    "下": 180.0,
+    "左": 270.0,
 }
 
 
@@ -119,8 +119,9 @@ class PreviewAnimationState:
         if moving:
             self.tread_time += delta
 
-    def pulse(self, period: float = 2.0) -> float:
-        return abs(math.sin(math.pi * self.time_tick / max(period, 0.001)))
+    def pulse(self, scl: float = 2.0) -> float:
+        """Return Arc Mathf.absin(time, scl, 1) as a normalized value."""
+        return arc_absin(self.time_tick, scl, 1.0)
 
     def tread_frame(self, frames: int) -> int:
         return int(self.tread_time) % max(int(frames), 1)
@@ -149,11 +150,18 @@ def direction_degrees(direction: str) -> float:
     return _DIRECTION_DEGREES.get(direction, _DIRECTION_DEGREES["右"])
 
 
+def arc_absin(time_tick: float, scl: float, magnitude: float) -> float:
+    """Match Arc Mathf.absin(in, scl, mag) for tick-based preview time."""
+    scale = max(float(scl), 0.001)
+    magnitude = float(magnitude)
+    return (math.sin(float(time_tick) / (2.0 * scale)) * magnitude + magnitude) / 2.0
+
+
 def cell_color_hex(team: str, health: str, time_tick: float) -> str:
-    """Approximate UnitType.cellColor with health-scaled absin pulsing."""
+    """Match UnitType.cellColor with Arc's health-scaled absin pulse."""
     fraction = max(0.0, min(health_fraction(health), 1.0))
-    period = max(fraction * 5.0, 1.0)
-    pulse = abs(math.sin(math.pi * float(time_tick) / period)) * (1.0 - fraction)
+    scl = max(fraction * 5.0, 1.0)
+    pulse = arc_absin(time_tick, scl, 1.0 - fraction)
     amount = max(0.0, min(fraction + pulse, 1.0))
     color = team_color_hex(team).lstrip("#")
     red, green, blue = (int(color[offset:offset + 2], 16) for offset in (0, 2, 4))

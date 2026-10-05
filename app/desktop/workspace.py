@@ -14,6 +14,7 @@ from app.core.config_loader import get_block_categories
 from app.core.project import Project
 from app.core.session import ProjectSession
 from app.desktop.editing import EditingError, EditingService
+from app.desktop.preview import PreviewService
 
 
 class WorkspaceError(EditingError):
@@ -30,6 +31,7 @@ class WorkspaceService:
         self._session_id: str | None = None
         self._editing = EditingService(self._session, None)
         self._closing = False
+        self._preview: PreviewService | None = None
         self._lock = RLock()
         self._results: OrderedDict[str, tuple[str, dict]] = OrderedDict()
 
@@ -65,7 +67,7 @@ class WorkspaceService:
                 action, payload = envelope.get("action"), envelope.get("payload", {})
                 if action not in ("recent_projects", "open_project", "choose_project", "read_document",
                                   "editing_state", "set_field", "undo", "redo", "save_opened",
-                                  "close_documents", "close_window") or not isinstance(payload, dict):
+                                  "close_documents", "close_window", "preview_scene", "preview_resource") or not isinstance(payload, dict):
                     raise WorkspaceError("INVALID_REQUEST", "不支持此请求。")
                 fingerprint = json.dumps(envelope, sort_keys=True, ensure_ascii=False, allow_nan=False)
                 if len(fingerprint) > 16384:
@@ -90,13 +92,31 @@ class WorkspaceService:
                     response["error"]["path"] = exc.path
             except (OSError, ValueError, TypeError, RecursionError):
                 response["error"] = {"code": "READ_FAILED", "message": "无法读取工程资料，请检查文件格式和访问权限后重试。"}
-            if fingerprint is not None and request_id not in self._results:
+            # Preview reads can be repeated explicitly. Keeping their data URLs in
+            # the mutation-result cache would retain old scenes after resource cleanup.
+            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource")
+            if cacheable and fingerprint is not None and request_id not in self._results:
                 self._results[request_id] = (fingerprint, deepcopy(response))
                 while len(self._results) > 128:
                     self._results.popitem(last=False)
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
+        if action == "preview_scene":
+            content = self._content(payload.get("path"))
+            if self._preview is None:
+                raise WorkspaceError("NO_PROJECT", "请先打开工程。")
+            try:
+                return self._preview.scene(content)
+            except (ValueError, OSError) as exc:
+                raise WorkspaceError("PREVIEW_FAILED", "预览组装失败，请检查内容与素材后刷新预览。") from exc
+        if action == "preview_resource":
+            if self._preview is None:
+                raise WorkspaceError("NO_PROJECT", "请先打开工程。")
+            try:
+                return self._preview.resource(payload.get("resourceId"))
+            except ValueError as exc:
+                raise WorkspaceError("PREVIEW_RESOURCE_UNAVAILABLE", str(exc)) from exc
         if action == "editing_state":
             return self._editing.state()
         if action == "set_field":
@@ -168,10 +188,14 @@ class WorkspaceService:
         self._session = candidate
         self._session_id = uuid4().hex
         self._editing = EditingService(candidate, self._session_id, self._editing.revision + 1)
+        self._preview = PreviewService(candidate.project, self._session_id)
         return {"sessionId": self._session_id, "name": project.mod_info.display_name or project.mod_info.name or root.name,
                 "root": str(root), "tree": tree}
 
     def _read(self, path: object) -> dict:
+        return self._editing.opened(path, self._content(path))
+
+    def _content(self, path: object):
         if self._session.project is None:
             raise WorkspaceError("NO_PROJECT", "请先打开工程。")
         if not isinstance(path, str) or len(path) > 4096 or not path.startswith("content/"):
@@ -186,7 +210,7 @@ class WorkspaceService:
             content = self._session.read_content(path[8:])
         except (OSError, ValueError) as exc:
             raise WorkspaceError("DOCUMENT_READ_FAILED", "无法读取此内容，请检查 JSON 格式、路径和文件访问权限。", path) from exc
-        return self._editing.opened(path, content)
+        return content
 
     @staticmethod
     def _group(identifier: str, label: str, children: list[dict]) -> dict:

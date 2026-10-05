@@ -82,7 +82,7 @@ test('原生目录选择支持取消与中文空格路径', async ({ desktopHost
     await testInfo.attach('原生窗口枚举', { body: String((error as { stdout?: string }).stdout ?? ''), contentType: 'text/plain' });
     throw error;
   }
-  await expect(page.getByRole('status')).toContainText('已取消打开工程');
+  await expect(page.locator('footer').getByRole('status')).toContainText('已取消打开工程');
   await expect(page.getByRole('tree')).toHaveCount(0);
   await page.getByRole('button', { name: '打开工程', exact: true }).click();
   let opened: string;
@@ -92,7 +92,7 @@ test('原生目录选择支持取消与中文空格路径', async ({ desktopHost
     throw error;
   }
   await expect(page.getByRole('tree')).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('已打开 真实验收工程');
+  await expect(page.locator('footer').getByRole('status')).toContainText('已打开 真实验收工程');
   await testInfo.attach('原生目录选择', { body: cancelled + opened, contentType: 'text/plain' });
   await page.screenshot({ path: testInfo.outputPath('原生选择后.png') });
 });

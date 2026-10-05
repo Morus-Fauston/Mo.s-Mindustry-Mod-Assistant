@@ -31,7 +31,7 @@ test('生命值编辑撤销保存重开与同名文件隔离', async ({ desktopH
   // The save scope is all opened documents, including the same-named block.
   await writeFile(join(projectPath, 'content/blocks/twin.json'), JSON.stringify({ type: 'Wall', health: 999 }));
   await input.press('Control+s');
-  await expect(page.getByRole('status')).toContainText('已保存所有打开的内容');
+  await expect(page.locator('footer').getByRole('status')).toContainText('已保存所有打开的内容');
   expect(JSON.parse(await readFile(join(projectPath, 'content/units/twin.json'), 'utf8')).health).toBe(250);
   expect(JSON.parse(await readFile(join(projectPath, 'content/blocks/twin.json'), 'utf8')).health).toBe(823);
   const measurements = await page.locator('input,textarea,select').evaluateAll(elements => elements.map(element => {
@@ -100,7 +100,7 @@ test('真实保存失败保留修改及关闭裁决', async ({ desktopHost }, te
   await expect(page.getByRole('tab')).toHaveCount(1);
   await rmdir(file); await rename(`${file}.backup`, file);
   await page.getByRole('button', { name: '保存已打开内容' }).click();
-  await expect(page.getByRole('status')).toContainText('已保存所有打开的内容');
+  await expect(page.locator('footer').getByRole('status')).toContainText('已保存所有打开的内容');
   expect(JSON.parse(await readFile(file, 'utf8')).health).toBe(333);
 });
 
@@ -148,7 +148,7 @@ test('编辑响应超时查询原结果，放弃关闭可从会话历史恢复',
   });
   await input.fill('777'); await input.press('Enter');
   await page.getByRole('button', { name: '查询操作结果' }).click({ timeout: 22_000 });
-  await expect(page.getByRole('status')).toContainText('已取得原操作结果');
+  await expect(page.locator('footer').getByRole('status')).toContainText('已取得原操作结果');
   expect(await page.evaluate(() => (window as any).editCount)).toBe(1);
   await page.evaluate(() => (window as any).releaseEdit());
   await page.getByRole('button', { name: '关闭 content/units/twin.json', exact: true }).click();
@@ -158,7 +158,7 @@ test('编辑响应超时查询原结果，放弃关闭可从会话历史恢复',
   await page.getByRole('button', { name: '撤销', exact: true }).click();
   await expect(input).toHaveValue('777');
   await page.getByRole('button', { name: '保存已打开内容' }).click();
-  await expect(page.getByRole('status')).toContainText('已保存所有打开的内容');
+  await expect(page.locator('footer').getByRole('status')).toContainText('已保存所有打开的内容');
   expect(JSON.parse(await readFile(join(projectPath, 'content/units/twin.json'), 'utf8')).health).toBe(777);
 });
 
@@ -175,7 +175,7 @@ test('脏工程切换先裁决，取消原生选择保留当前修改', async ({
   execFileSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
     resolve(import.meta.dirname, 'folder-dialog.ps1'), '-TestProcessId', String(pid), '-Action', 'cancel', '-ProjectPath', projectPath],
     { windowsHide: true, timeout: 20_000 });
-  await expect(page.getByRole('status')).toContainText('已取消打开工程');
+  await expect(page.locator('footer').getByRole('status')).toContainText('已取消打开工程');
   await expect(input).toHaveValue('666');
   await expect(page.getByRole('tab').getByLabel('未保存')).toBeVisible();
 });

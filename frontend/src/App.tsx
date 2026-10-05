@@ -5,6 +5,7 @@ import type { DocumentSnapshot, ProjectSnapshot, RecentProject, TreeNode } from 
 import styles from './App.module.css';
 import { createEditingClient } from './editing/client';
 import { CloseDecision, type CloseChoice } from './editing/CloseDecision';
+import { PreviewPanel } from './preview/PreviewPanel';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -327,8 +328,7 @@ export function App() {
         </div>}
       </section>
       <aside className={styles.right} aria-label="预览与图层">
-        <h2 className={styles.panelHead}>预览</h2>
-        <div className={styles.preview}>选择内容后显示贴图</div>
+        <PreviewPanel document={documents.find(document => document.path === activePath)} />
         <h2 className={styles.panelHead}>图层</h2>
         <p className={styles.emptySide}>暂无图层</p>
       </aside>

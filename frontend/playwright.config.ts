@@ -1,0 +1,13 @@
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  timeout: 60_000,
+  workers: 1,
+  fullyParallel: false,
+  reporter: [['list'], ['json', { outputFile: 'test-results/host-results.json' }]],
+  projects: [
+    { name: 'host', testMatch: 'startup.spec.ts' },
+    { name: 'package', testMatch: 'package.spec.ts' },
+  ],
+});

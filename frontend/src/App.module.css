@@ -1,0 +1,30 @@
+.app { height: 100%; display: grid; grid-template-rows: 35px 41px minmax(0, 1fr) 25px; }
+.menu { display: flex; align-items: center; gap: 22px; padding: 0 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.brand { font-weight: 650; letter-spacing: .02em; }
+.mark { color: var(--accent); margin-right: 5px; }
+.caption { color: var(--muted); font-size: 12px; }
+.toolbar { display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--line); gap: 10px; background: var(--panel); }
+.workbench { min-height: 0; display: grid; grid-template-columns: var(--left) minmax(380px, 1fr) var(--right); }
+.sidebar, .right { background: var(--panel); min-width: 0; display: flex; flex-direction: column; overflow: auto; }
+.sidebar { border-right: 1px solid var(--line); }
+.right { border-left: 1px solid var(--line); }
+.panelHead { font-size: 13px; font-weight: 600; height: 37px; min-height: 37px; margin: 0; display: flex; align-items: center; padding: 0 12px; border-bottom: 1px solid var(--line); }
+.emptySide { color: var(--muted); margin: 16px 12px; line-height: 1.8; font-size: 12px; }
+.editor { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.tabBar { height: 37px; flex-shrink: 0; background: var(--panel); border-bottom: 1px solid var(--line); }
+.tab { height: 37px; width: 94px; padding: 9px 16px; background: var(--canvas); border-top: 2px solid var(--accent); border-right: 1px solid var(--line); }
+.welcome { padding: 42px 36px; overflow: auto; max-width: 720px; }
+.welcome h1 { font-weight: 550; font-size: 24px; margin: 0 0 12px; }
+.description { color: var(--muted); line-height: 1.8; margin: 0 0 30px; }
+.sectionTitle { font-size: 13px; font-weight: 600; margin: 0 0 12px; }
+.catalogue { display: grid; grid-template-columns: minmax(120px, 1fr) auto; max-width: 330px; font-size: 13px; margin: 0; }
+.catalogue dt, .catalogue dd { border-bottom: 1px solid var(--line); margin: 0; padding: 9px 0; }
+.catalogue dt { color: var(--muted); }
+.catalogue dd { text-align: right; font-variant-numeric: tabular-nums; }
+.error { color: var(--error); line-height: 1.8; max-width: 480px; }
+.button { background: var(--canvas); border: 1px solid var(--line); padding: 5px 12px; min-height: 29px; }
+.button:hover { background: var(--panel2); }
+.button:active { background: var(--selected); }
+.preview { height: 46%; min-height: 150px; display: grid; place-items: center; background: var(--preview); color: var(--preview-muted); font-size: 12px; }
+.status { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px; background: var(--panel); border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+@media (max-width: 1200px) { .workbench { grid-template-columns: 190px minmax(350px, 1fr) 290px; } .welcome { padding: 30px 24px; } }

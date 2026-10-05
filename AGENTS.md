@@ -13,6 +13,8 @@
 - 字段类型着色走 QSS 属性选择器 `*[fieldType="num"]`，不在代码里硬编码颜色。
 - 验证错误标记用 `[error="true"]` 属性，由 QSS 统一渲染红色。
 
+以上 QSS / setStyleSheet 约束适用于旧 Qt 界面。新 Web 界面使用集中 CSS 变量与 CSS Modules；字段类型走 `data-field-type`，验证错误走 `aria-invalid`，禁止散落硬编码类型颜色。保留已确认的马卡龙饰条。
+
 ## 界面
 
 - 纯中文界面，禁 emoji。
@@ -36,6 +38,8 @@
 - 改 padding/尺寸/对齐后，必须用 probe 脚本量所有输入控件的文本起点（不能只量一个）。
 - 涉及点击热区、折叠交互、坐标变换的 UI 改动，offscreen 验不出，必须在 `windows11` 真机样式下 probe 验证。
 - probe 脚本用完即删，不入库。
+
+新 Web 界面的点击热区、折叠、坐标与 DPI 改动须在 Windows WebView2 实际宿主验证；Qt 的 windows11 要求仍适用于旧界面。所有输入文本起点的测量要求不变，浏览器无头测试不能代替宿主验收。前端变更另跑 typecheck、一次运行的测试和构建。
 
 ## 提交
 

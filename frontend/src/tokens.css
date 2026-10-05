@@ -1,0 +1,67 @@
+:root {
+  color-scheme: light;
+  --canvas: #fff;
+  --panel: #f5f6f7;
+  --panel2: #eceef0;
+  --ink: #2b2e33;
+  --muted: #6b7280;
+  --line: #e3e6ea;
+  --accent: #c4702a;
+  --focus: #e08a3c;
+  --selected: #e4e6f1;
+  --preview: #171827;
+  --preview-muted: #a0a4ad;
+  --num: #f4fafe;
+  --num-line: #bfdff5;
+  --num-bar: #a6d3f2;
+  --bool: #f4fbf4;
+  --bool-line: #c0e6c4;
+  --bool-bar: #a8dcad;
+  --str: #fffbf2;
+  --str-line: #f8dfb0;
+  --str-bar: #f6d396;
+  --arr: #f1fbfd;
+  --arr-line: #b5e5ed;
+  --arr-bar: #97dbe6;
+  --error: #c13e3e;
+  --left: 218px;
+  --right: 370px;
+  font-family: "MiSans", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #1e1f22;
+  --panel: #26272b;
+  --panel2: #2d2f34;
+  --ink: #d6d7da;
+  --muted: #a0a4ad;
+  --line: #3a3c42;
+  --accent: #ba7b43;
+  --focus: #e8a05c;
+  --selected: #343c49;
+  --preview: #10111a;
+  --num: #1a2d3c;
+  --num-line: #3a5f80;
+  --num-bar: #5b8fb8;
+  --bool: #1a2e21;
+  --bool-line: #3d6b4c;
+  --bool-bar: #63a877;
+  --str: #33291a;
+  --str-line: #7a6038;
+  --str-bar: #b8935e;
+  --arr: #163035;
+  --arr-line: #3a6a74;
+  --arr-bar: #5ca3b0;
+  --error: #ec9090;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--canvas); color: var(--ink); }
+button, input, select, textarea { color: inherit; font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .5; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button, input, select, textarea { border-radius: 3px; }

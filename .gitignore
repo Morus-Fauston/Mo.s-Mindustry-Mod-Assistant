@@ -34,6 +34,7 @@ MANIFEST
 *.manifest
 *.spec
 !moma.spec
+!moma-web.spec
 
 # Installer logs
 pip-log.txt
@@ -257,3 +258,10 @@ extractor/libs/
 # User runtime state (never committed)
 app/config/editor_state.json
 app/config/settings.json
+
+# Web desktop development and generated outputs
+.venv-web/
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/

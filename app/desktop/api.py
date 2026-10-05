@@ -17,6 +17,7 @@ class DesktopApi:
                  on_close: Callable[[], None] | None = None, on_close_ready: Callable[[], None] | None = None,
                  *, choose_sprite: Callable[[], str | None] | None = None,
                  choose_export: Callable[[str], str | None] | None = None,
+                 choose_reference_zip: Callable[[], str | None] | None = None,
                  reveal_file: Callable[[Path], None] | None = None) -> None:
         self._metadata_dir = Path(metadata_dir)
         self._lock = RLock()
@@ -24,6 +25,7 @@ class DesktopApi:
         self._choose_directory = choose_directory
         self._choose_sprite, self._reveal_file = choose_sprite, reveal_file
         self._choose_export = choose_export
+        self._choose_reference_zip = choose_reference_zip
         self._workspace = None
         self._admission = BoundedSemaphore(32)
         self._on_close = on_close
@@ -53,7 +55,8 @@ class DesktopApi:
                 if self._workspace is None:
                     from app.desktop.workspace import WorkspaceService
                     self._workspace = WorkspaceService(self._metadata_dir, self._choose_directory,
-                        choose_sprite=self._choose_sprite, choose_export=self._choose_export, reveal_file=self._reveal_file)
+                        choose_sprite=self._choose_sprite, choose_export=self._choose_export, reveal_file=self._reveal_file,
+                        choose_reference_zip=self._choose_reference_zip)
             result = self._workspace.request(envelope)
             if (isinstance(envelope, dict) and envelope.get('action') == 'close_window'
                     and result.get('ok') and result.get('data', {}).get('closeApproved')

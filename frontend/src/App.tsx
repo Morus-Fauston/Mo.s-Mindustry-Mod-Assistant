@@ -19,6 +19,7 @@ import { ValidationReportPanel } from './validation/ValidationReportPanel';
 import type { ValidationIssue, ValidationReport } from './validation/types';
 import { resolveIssueField } from './validation/location';
 import { GenerationSection } from './generation/GenerationSection';
+import { ComparisonSection } from './comparison/ComparisonSection';
 import { ContentTools, type ContentAction, type ContentCatalogue } from './content/ContentTools';
 import { affectedContentPaths, reconcileContentViews, type ContentResult } from './content/integration';
 
@@ -650,6 +651,9 @@ export function App() {
           document={activeDocument} resourceRevision={resourceRevision} editing={editing}
           disabled={busy || editor.busy || editor.uncertain || decisionBusy || Boolean(intent)}
           hasDrafts={Object.keys(drafts).length > 0} />}
+        {activeDocument && <ComparisonSection document={activeDocument} editing={editing}
+          disabled={busy || editor.busy || editor.uncertain || decisionBusy || Boolean(intent)}
+          hasDrafts={Object.keys(drafts[activeDocument.path] ?? {}).length > 0} />}
       </aside>
     </main>
     <footer className={styles.status}><span role="status">{notice || status}</span><span>{metadata ? `游戏版本 ${metadata.gameVersion}` : '离线工作台'}</span></footer>

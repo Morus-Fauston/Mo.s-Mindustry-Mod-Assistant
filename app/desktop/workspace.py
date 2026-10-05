@@ -20,6 +20,7 @@ from app.desktop.editing import EditingError, EditingService
 from app.desktop.content_actions import ContentActions, create_project
 from app.desktop.content_identity import ContentIdentityAdapter
 from app.desktop.preview import PreviewService
+from app.desktop.reference_projects import ReferenceProjectsService
 from app.desktop.preview_layers import PreviewLayerService
 from app.desktop.dynamic_preview import DynamicPreviewService
 from app.desktop.resources import ResourceService
@@ -41,11 +42,14 @@ class WorkspaceService:
     def __init__(self, metadata_dir: Path | str, choose_directory: Callable[[], str | None] | None = None,
                  *, choose_sprite: Callable[[], str | None] | None = None,
                  choose_export: Callable[[str], str | None] | None = None,
+                 choose_reference_zip: Callable[[], str | None] | None = None,
                  reveal_file: Callable[[Path], None] | None = None):
         self._metadata_dir = Path(metadata_dir)
         self._choose_directory = choose_directory
         self._choose_sprite, self._reveal_file = choose_sprite, reveal_file
         self._choose_export = choose_export
+        self._choose_reference_zip = choose_reference_zip
+        self._reference_projects: ReferenceProjectsService | None = None
         self._resources: ResourceService | None = None
         self._generation: SpriteGenerationService | None = None
         self._resource_watch: ResourceWatch | None = None
@@ -131,6 +135,7 @@ class WorkspaceService:
                                   "close_documents", "close_window", "preview_scene", "preview_resource",
                                   "add_field", "delete_field", "set_capability", "add_group", "delete_group",
                                   "reference_candidates", "sprite_targets", "resource_state",
+                                  "reference_sources", "open_reference", "reference_candidates_for_compare", "compare_reference", "release_reference",
                                   "import_sprite", "delete_sprite", "reveal_sprite", "preview_generation", "confirm_generation", "cancel_generation", "set_type", "create_object",
                                   "array_insert", "array_remove", "array_move", "resource_reference_candidates",
                                   "resource_set", "resource_add", "resource_remove", "resource_move",
@@ -175,12 +180,14 @@ class WorkspaceService:
                 response["error"] = {"code": "READ_FAILED", "message": "无法读取工程资料，请检查文件格式和访问权限后重试。"}
             # Preview reads can be repeated explicitly. Keeping their data URLs in
             # the mutation-result cache would retain old scenes after resource cleanup.
-            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource", "reference_candidates", "resource_reference_candidates", "weapon_reference_candidates", "research_reference_candidates", "sprite_targets", "resource_state", "format_source")
+            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource", "reference_candidates", "resource_reference_candidates", "weapon_reference_candidates", "research_reference_candidates", "sprite_targets", "resource_state", "format_source", "reference_sources", "reference_candidates_for_compare", "compare_reference")
             if cacheable and fingerprint is not None and request_id not in self._results:
                 self._cache_result(request_id, fingerprint, response)
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
+        if action in ("reference_sources", "open_reference", "reference_candidates_for_compare", "compare_reference", "release_reference"):
+            return self._reference_action(action, payload)
         if action == "content_catalogue":
             if payload:
                 raise WorkspaceError("INVALID_REQUEST", "模板目录不接受额外参数。")
@@ -279,6 +286,9 @@ class WorkspaceService:
             if self._generation is not None:
                 self._generation.close()
             self._release_generation_results()
+            if self._reference_projects is not None:
+                self._reference_projects.close()
+            self._release_reference_results()
             return {**self._editing.state(), "closeApproved": True}
         if action == "recent_projects":
             recent = self._session.last_project_path()
@@ -353,14 +363,19 @@ class WorkspaceService:
         generation = SpriteGenerationService(project, resources, sid,
             content_resolver=self._content, on_change=self._resource_changed) if project else None
         watch = ResourceWatch(project.root) if project else None
+        references = ReferenceProjectsService(candidate.metadata, sid) if project else None
         snapshot = {"sessionId": sid,
                     "name": project.mod_info.display_name or project.mod_info.name or project.root.name,
                     "root": str(project.root), "tree": tree} if project else None
         return {"session": candidate, "sid": sid, "revision": self._editing.revision + 1,
                 "editing": editing, "identity": identity, "actions": actions, "preview": preview,
-                "resources": resources, "generation": generation, "watch": watch, "tree": tree, "project": snapshot}
+                "resources": resources, "generation": generation, "watch": watch, "references": references,
+                "tree": tree, "project": snapshot}
 
     def _adopt_services(self, services: dict) -> None:
+        if self._reference_projects is not None:
+            self._reference_projects.close()
+        self._release_reference_results()
         if self._generation is not None:
             self._generation.close()
         self._release_generation_results()
@@ -373,6 +388,7 @@ class WorkspaceService:
         self._last_tree, self._preview = services["tree"], services["preview"]
         self._resource_watch, self._resources = services["watch"], services["resources"]
         self._generation = services["generation"]
+        self._reference_projects = services["references"]
 
     def _create_project(self, payload: dict) -> dict:
         if set(payload) - {"mod_id", "displayName", "author", "expectedRevision", "decision"}:
@@ -438,6 +454,8 @@ class WorkspaceService:
                         services["generation"].close()
                     if services["watch"] is not None:
                         services["watch"].close()
+                    if services["references"] is not None:
+                        services["references"].close()
                     self._pending_project_services = None
                 raise
             services["revision"] = self._editing.revision + 1
@@ -552,6 +570,76 @@ class WorkspaceService:
             self._result_bytes += size - self._result_sizes[request_id]
             self._result_sizes[request_id] = size
             self._results[request_id] = (fingerprint, expired)
+
+    def _release_reference_results(self, source_id: str | None = None) -> None:
+        # Released sources must not be revived by recovery of an earlier open.
+        for request_id, (fingerprint, response) in list(self._results.items()):
+            data = response.get("data", {})
+            source = data.get("source") if isinstance(data, dict) else None
+            if not isinstance(source, dict) or source_id is not None and source.get("sourceId") != source_id:
+                continue
+            expired = self._expired_result(response)
+            size = len(json.dumps(expired, ensure_ascii=True).encode("utf-8"))
+            self._result_bytes += size - self._result_sizes[request_id]
+            self._result_sizes[request_id] = size
+            self._results[request_id] = (fingerprint, expired)
+
+    def _reference_action(self, action: str, payload: dict) -> dict:
+        service = self._reference_projects
+        if service is None:
+            raise WorkspaceError("NO_PROJECT", "请先打开工程。")
+        allowed = {
+            "reference_sources": set(),
+            "open_reference": {"kind", "expectedRevision"},
+            "reference_candidates_for_compare": {"sourceId", "category", "query", "offset"},
+            "compare_reference": {"sourceId", "category", "name", "path", "expectedRevision"},
+            "release_reference": {"sourceId"},
+        }[action]
+        if set(payload) - allowed:
+            raise WorkspaceError("INVALID_REQUEST", "参考请求参数无效，来源必须通过系统选择。")
+        if action == "open_reference":
+            if payload.get("kind") not in ("folder", "zip"):
+                raise WorkspaceError("INVALID_REQUEST", "请选择目录或 ZIP 参考。")
+        elif action != "reference_sources":
+            required = ["sourceId"]
+            if action != "release_reference":
+                required.append("category")
+            if action == "compare_reference":
+                required.extend(("name", "path"))
+            if any(not isinstance(payload.get(key), str) or not payload[key] for key in required):
+                raise WorkspaceError("INVALID_REQUEST", "参考来源、类别或内容标识无效。")
+        if action == "reference_candidates_for_compare":
+            query, offset = payload.get("query", ""), payload.get("offset", 0)
+            if not isinstance(query, str) or len(query) > 256 or type(offset) is not int or offset < 0:
+                raise WorkspaceError("INVALID_REQUEST", "参考搜索或分页参数无效。")
+        if action in ("open_reference", "compare_reference"):
+            self._editing.check_revision(payload)
+        try:
+            if action == "reference_sources":
+                return {"sources": service.sources()}
+            if action == "open_reference":
+                chooser = self._choose_directory if payload["kind"] == "folder" else self._choose_reference_zip
+                if chooser is None:
+                    raise WorkspaceError("DIALOG_UNAVAILABLE", "参考选择器尚未就绪，请稍后重试。")
+                state = self._editing.state()
+                selected = chooser()
+                if selected is None:
+                    return {"state": state, "source": None}
+                source = service.open_folder(Path(selected)) if payload["kind"] == "folder" else service.open_zip(Path(selected))
+                return {"state": state, "source": source}
+            if action == "reference_candidates_for_compare":
+                return service.candidates(payload["sourceId"], payload["category"], query, offset)
+            if action == "compare_reference":
+                content = self._editing.require_content(payload["path"])
+                return service.compare(payload["sourceId"], payload["category"], payload["name"],
+                                       content.data, payload["path"], self._editing.revision)
+            service.release(payload["sourceId"])
+            self._release_reference_results(payload["sourceId"])
+            return {"released": True}
+        except EditingError:
+            raise
+        except (OSError, ValueError, TypeError, RuntimeError) as exc:
+            raise WorkspaceError("REFERENCE_FAILED", f"参考操作未完成：{exc}") from exc
 
     def _generation_action(self, action: str, payload: dict) -> dict:
         if self._generation is None:

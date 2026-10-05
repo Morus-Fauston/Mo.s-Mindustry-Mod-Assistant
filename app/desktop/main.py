@@ -54,6 +54,11 @@ def main() -> None:
             # Keep the switch outside Windows' quoting of paths containing spaces.
             subprocess.Popen(['explorer.exe', '/select,', str(path)], creationflags=subprocess.CREATE_NO_WINDOW)
 
+        def choose_reference_zip():
+            selected = window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=False,
+                                                 file_types=('ZIP 压缩包 (*.zip)',))
+            return selected[0] if selected else None
+
         def choose_export(default_filename):
             selected = window.create_file_dialog(webview.FileDialog.SAVE, save_filename=default_filename,
                                                  file_types=('ZIP 压缩包 (*.zip)',))
@@ -61,7 +66,8 @@ def main() -> None:
 
         api = DesktopApi(metadata_dir(), choose_directory,
                          on_close=lambda: guard.approve(), on_close_ready=lambda: guard.ready(),
-                         choose_sprite=choose_sprite, choose_export=choose_export, reveal_file=reveal_file)
+                         choose_sprite=choose_sprite, choose_export=choose_export, reveal_file=reveal_file,
+                         choose_reference_zip=choose_reference_zip)
         webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
         window = webview.create_window(
             "MoMA 模组助手", str(page), js_api=api,

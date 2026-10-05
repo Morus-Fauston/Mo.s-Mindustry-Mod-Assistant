@@ -53,6 +53,7 @@ class ProjectSession:
         self._template_engine = TemplateEngine(self._metadata)
         self._validator = Validator(self._metadata)
         self._project: Project | None = None
+        self._open_contents: dict[str, ContentData] = {}
 
     # ── read-only accessors (for UI wiring / EditorPanel construction) ──
 
@@ -79,6 +80,7 @@ class ProjectSession:
         project = Project.open(path)
         self._project = project
         self._remember_project(project)
+        self._open_contents.clear()
         return project
 
     def create_project(
@@ -88,11 +90,21 @@ class ProjectSession:
         project = Project.create(path, mod_id, display_name, author)
         self._project = project
         self._remember_project(project)
+        self._open_contents.clear()
         return project
 
     def close_project(self) -> None:
         """Detach the current project (does not touch disk)."""
         self._project = None
+        self._open_contents.clear()
+
+    def read_content(self, relative_path: str) -> ContentData:
+        """Keep one core-owned document per explicit category/file path."""
+        if self._project is None:
+            raise RuntimeError("No project open")
+        if relative_path not in self._open_contents:
+            self._open_contents[relative_path] = self._project.contents.get_by_path(relative_path)
+        return self._open_contents[relative_path]
 
     # ── content creation ────────────────────────────────────────────────
 

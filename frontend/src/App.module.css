@@ -11,7 +11,7 @@
 .panelHead { font-size: 13px; font-weight: 600; height: 37px; min-height: 37px; margin: 0; display: flex; align-items: center; padding: 0 12px; border-bottom: 1px solid var(--line); }
 .emptySide { color: var(--muted); margin: 16px 12px; line-height: 1.8; font-size: 12px; }
 .editor { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-.tabBar { height: 37px; flex-shrink: 0; background: var(--panel); border-bottom: 1px solid var(--line); }
+.tabBar { display: flex; height: 37px; flex-shrink: 0; overflow-x: auto; background: var(--panel); border-bottom: 1px solid var(--line); }
 .tab { height: 37px; width: 94px; padding: 9px 16px; background: var(--canvas); border-top: 2px solid var(--accent); border-right: 1px solid var(--line); }
 .welcome { padding: 42px 36px; overflow: auto; max-width: 720px; }
 .welcome h1 { font-weight: 550; font-size: 24px; margin: 0 0 12px; }
@@ -28,3 +28,25 @@
 .preview { height: 46%; min-height: 150px; display: grid; place-items: center; background: var(--preview); color: var(--preview-muted); font-size: 12px; }
 .status { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px; background: var(--panel); border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 @media (max-width: 1200px) { .workbench { grid-template-columns: 190px minmax(350px, 1fr) 290px; } .welcome { padding: 30px 24px; } }
+.documentTab { display: flex; flex-shrink: 0; max-width: 230px; border-right: 1px solid var(--line); border-top: 2px solid transparent; }
+.documentTab[data-active="true"] { background: var(--canvas); border-top-color: var(--accent); }
+.documentTab button { border: 0; background: transparent; padding: 0 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.documentTab .closeTab { flex-shrink: 0; padding: 0; width: 26px; color: var(--muted); }
+.documentTab button:hover { background: var(--panel2); }
+.documentTab button:active { background: var(--selected); }
+.documentTools { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--line); }
+.documentTools span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
+.documentTools button { flex-shrink: 0; }
+.document { overflow: auto; padding: 22px 24px; }
+.document[hidden] { display: none; }
+.document h1 { margin: 0 0 8px; font-size: 19px; font-weight: 550; }
+.fields { display: grid; grid-template-columns: minmax(90px, 140px) minmax(0, 1fr); font-size: 13px; }
+.fields dt, .fields dd { margin: 0; padding: 9px 10px; border-bottom: 1px solid var(--line); line-height: 1.7; }
+.fields dt { color: var(--muted); }
+.fields dd { white-space: pre-wrap; overflow-wrap: anywhere; font-family: Consolas, "Microsoft YaHei UI", monospace; }
+.problem { display: flex; justify-content: space-between; gap: 10px; padding: 10px 12px; color: var(--error); border-bottom: 1px solid var(--line); }
+.problem button { background: transparent; border: 0; }
+.recent { margin: 22px 0; }
+.recentProject { display: flex; flex-direction: column; gap: 5px; max-width: 100%; background: transparent; border: 0; text-align: left; padding: 8px 0; color: var(--accent); }
+.recentProject span { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.recentProject:hover { text-decoration: underline; }

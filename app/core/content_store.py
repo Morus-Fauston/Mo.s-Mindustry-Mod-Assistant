@@ -13,7 +13,7 @@ import json
 import shutil
 import tempfile
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 
@@ -76,6 +76,23 @@ class ContentStore:
                 data = json.loads(path.read_text(encoding="utf-8"))
                 return ContentData(name=name, category=cat, data=data, path=path)
         raise FileNotFoundError(f"Content not found: {name}")
+
+    def get_by_path(self, relative_path: str) -> ContentData:
+        """Read an explicit category/file identity without changing legacy get()."""
+        if not isinstance(relative_path, str) or any(c in relative_path for c in ("\\", ":", "\x00")):
+            raise ValueError("内容路径无效")
+        relative = PurePosixPath(relative_path)
+        if (relative.is_absolute() or len(relative.parts) != 2
+                or relative.as_posix() != relative_path or ".." in relative.parts
+                or relative.suffix != ".json"):
+            raise ValueError("内容路径必须为分类内的 JSON 文件")
+        path = (self._dir / relative_path).resolve()
+        if not path.is_relative_to(self._dir.resolve()):
+            raise ValueError("内容路径超出工程范围")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("内容必须为 JSON 对象")
+        return ContentData(name=relative.stem, category=relative.parts[0], data=data, path=path)
 
     def save(self, name: str, data: dict[str, Any], category: str) -> Path:
         """Atomically write content data to disk. Returns the file path."""

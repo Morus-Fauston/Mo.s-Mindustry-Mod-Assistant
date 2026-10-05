@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from threading import RLock
-from typing import Any
+from threading import RLock, BoundedSemaphore
+from typing import Any, Callable
 
 from app.core.metadata import Metadata
 
@@ -13,10 +13,35 @@ PROTOCOL_VERSION = 1
 
 
 class DesktopApi:
-    def __init__(self, metadata_dir: Path | str) -> None:
+    def __init__(self, metadata_dir: Path | str, choose_directory: Callable[[], str | None] | None = None) -> None:
         self._metadata_dir = Path(metadata_dir)
         self._lock = RLock()
         self._bootstrap: dict[str, Any] | None = None
+        self._choose_directory = choose_directory
+        self._workspace = None
+        self._admission = BoundedSemaphore(32)
+
+    def request_result(self, request_id: str) -> dict[str, Any]:
+        """Query a timed-out operation without executing it again."""
+        if self._workspace is None:
+            return {"state": "unknown"}
+        return self._workspace.request_result(request_id)
+
+    def request(self, envelope: dict[str, Any]) -> dict[str, Any]:
+        """Bound waiting callers before entering the serialized workspace."""
+        if not self._admission.acquire(blocking=False):
+            return {"ok": False, "protocolVersion": PROTOCOL_VERSION,
+                    "requestId": envelope.get("requestId") if isinstance(envelope, dict) else None,
+                    "sessionId": None,
+                    "error": {"code": "BUSY", "message": "操作较多，请等待当前任务结束后重试。"}}
+        try:
+            with self._lock:
+                if self._workspace is None:
+                    from app.desktop.workspace import WorkspaceService
+                    self._workspace = WorkspaceService(self._metadata_dir, self._choose_directory)
+            return self._workspace.request(envelope)
+        finally:
+            self._admission.release()
 
     def bootstrap(self, protocol_version: int) -> dict[str, Any]:
         """Read the offline catalogue once; retries cannot create sessions."""

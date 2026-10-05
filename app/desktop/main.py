@@ -39,7 +39,11 @@ def main() -> None:
         import webview
 
         _require_webview2()
-        api = DesktopApi(metadata_dir())
+        def choose_directory():
+            selected = window.create_file_dialog(webview.FileDialog.FOLDER)
+            return selected[0] if selected else None
+
+        api = DesktopApi(metadata_dir(), choose_directory)
         webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
         window = webview.create_window(
             "MoMA 模组助手", str(page), js_api=api,

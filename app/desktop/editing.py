@@ -15,6 +15,7 @@ from app.desktop.forms import FormService, json_values_equal
 from app.desktop.references import ReferenceService
 from app.desktop.nested_forms import NestedFormService, NestedFormState
 from app.desktop.resource_fields import ResourceFieldsService
+from app.desktop.ability_forms import AbilityFormsService
 
 
 class EditingError(Exception):
@@ -64,6 +65,7 @@ class EditingService:
         self.references = ReferenceService(session.metadata, session.project)
         self.forms = FormService(session.metadata, self.references)
         self.nested = NestedFormService(session.metadata, self.forms)
+        self.ability_forms = AbilityFormsService(self.nested)
         self.resource_fields = ResourceFieldsService(self.nested)
 
     def reference_candidates(self, payload: dict, *, resource: bool = False) -> dict:

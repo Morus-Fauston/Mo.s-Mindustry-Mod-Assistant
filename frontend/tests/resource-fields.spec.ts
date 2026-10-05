@@ -68,7 +68,10 @@ test('资源列表与消耗真实编辑重排校验保存及撤销', async ({ de
   await page.screenshot({ path: info.outputPath('真实资源与消耗.png') });
   await page.getByRole('button', { name: '保存已打开内容', exact: true }).click();
   await page.getByRole('button', { name: '关闭全部', exact: true }).click();
+  await expect(form).toHaveCount(0);
   await tree.locator('[data-path="content/blocks/twin.json"]').click();
+  await expect(form.locator('[data-group]')).not.toHaveCount(0);
+  while (await folds.count()) await folds.first().click();
   await expect(form.locator('section[data-field="requirements"] section[data-item-id]')).toHaveCount(2);
   expect(JSON.parse(await readFile(file, 'utf8')).consumes.power).toBe(0);
 });

@@ -68,6 +68,32 @@ class NestedFormService:
         self.metadata, self.forms = metadata, forms
         self._states: dict[str, NestedFormState] = {}
         self._plan_extensions = []
+        self._families = {}
+
+    def register_family(self, base_type: str, *, choices: tuple[dict[str, str], ...],
+                        default_type: str, create_default, project_definition=None) -> None:
+        """Register a specialized object family on this session's form routes.
+
+        Defaults apply only on explicit insertion. Existing objects with absent
+        or unsupported types remain unknown until the user selects a type.
+        """
+        if (not isinstance(base_type, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", base_type)
+                or base_type in self._families or not callable(create_default)
+                or project_definition is not None and not callable(project_definition)):
+            raise ValueError("表单类型族注册无效或重复。")
+        if (not isinstance(choices, tuple) or not choices
+                or any(not isinstance(item, dict) or set(item) != {"value", "label"}
+                       or not isinstance(item["value"], str)
+                       or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", item["value"])
+                       or not isinstance(item["label"], str) or not item["label"] for item in choices)):
+            raise ValueError("表单类型选项无效。")
+        values = tuple(item["value"] for item in choices)
+        if len(set(values)) != len(values) or default_type not in values:
+            raise ValueError("表单默认类型或选项重复。")
+        self._families[base_type] = {
+            "choices": deepcopy(choices), "values": values, "default_type": default_type,
+            "create_default": create_default, "project_definition": project_definition,
+        }
 
     def register_plan_extension(self, callback) -> None:
         """Attach a session-owned specialized route before sidecar pruning.
@@ -120,16 +146,19 @@ class NestedFormService:
         return address
 
     def _definition(self, data, base):
+        family = self._families.get(base)
         kind = data.get("type", "BasicBulletType" if base == "BulletType" else base)
-        choices = BULLET_TYPES if base == "BulletType" else UNIT_TYPES if base == "UnitType" else ()
+        choices = (family["values"] if family else
+                   BULLET_TYPES if base == "BulletType" else UNIT_TYPES if base == "UnitType" else ())
         if (not isinstance(kind, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", kind)
+                or family and ("type" not in data or kind not in choices)
                 or choices and kind not in (*choices, base)):
             return str(kind), ClassDef("Unknown", "Unknown", None), False, choices
         try:
             definition = self.metadata.get_class(kind)
         except KeyError:
             return kind, ClassDef(kind, kind, None), False, choices
-        if not choices and kind != base:
+        if (not choices or family) and kind != base:
             ancestor, seen = definition, set()
             while ancestor.name != base and ancestor.parent and ancestor.name not in seen:
                 seen.add(ancestor.name)
@@ -139,6 +168,8 @@ class NestedFormService:
                     break
             if ancestor.name != base:
                 return kind, ClassDef("Unknown", "Unknown", None), False, choices
+        if family and family["project_definition"]:
+            definition = family["project_definition"](kind, definition)
         return kind, definition, True, choices
 
     @staticmethod
@@ -177,8 +208,10 @@ class NestedFormService:
         plan = forms.plan(document, key)
         plan.update(objectPath=deepcopy(address), contentType=kind, knownType=known)
         if choices:
+            labels = ({item["value"]: item["label"] for item in self._families[base]["choices"]}
+                      if base in self._families else TYPE_LABELS)
             plan["typeSelector"] = {"value": data.get("type"), "choices": [
-                {"value": value, "label": TYPE_LABELS.get(value, value)} for value in choices
+                {"value": value, "label": labels.get(value, value)} for value in choices
                 if normalize_content_type(value) in self.metadata.available_classes]}
         if not known:
             plan["notice"] = "未识别此类型，原始数据已保留；可显式选择受支持类型。"
@@ -217,7 +250,7 @@ class NestedFormService:
 
     def _array(self, descriptor, definition, values, address, content, path, state, nodes, budget):
         kind = definition.element_type
-        if not isinstance(kind, str) or kind in ("Ability", "Weapon"):
+        if not isinstance(kind, str) or kind in ("Ability", "Weapon") and kind not in self._families:
             return
         if kind not in self._SCALAR_TYPES:
             try:
@@ -337,6 +370,14 @@ class NestedFormService:
                 kind = definition.element_type
                 value = ({"String": "", "boolean": False, "Color": "ffffffff"}.get(kind, 0)
                          if kind in self._SCALAR_TYPES else {})
+                if kind in self._families:
+                    family = self._families[kind]
+                    selected = payload.get("type", family["default_type"])
+                    if selected not in family["values"]:
+                        raise ValueError("请选择此数组支持的类型。")
+                    value = deepcopy(family["create_default"](selected))
+                    if not isinstance(value, dict) or value.get("type") != selected:
+                        raise ValueError("新增对象的默认值无效。")
                 if data.get(name) is None:
                     data[name] = []
                 ArrayInsertCommand(data, name, index, value).execute()

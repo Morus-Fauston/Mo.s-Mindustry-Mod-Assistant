@@ -1,4 +1,4 @@
-import { DesktopError } from '../bridge/desktop';
+import { DesktopError, workspaceTransitionSession } from '../bridge/desktop';
 import type { EditingState } from '../workspace/types';
 
 export interface EditingTransport {
@@ -33,23 +33,36 @@ export function createEditingClient(transport: EditingTransport) {
   async function refresh() {
     const current = generation;
     const state = await transport.request<EditingState>('editing_state', {}, sessionId);
+    if (current !== generation) throw new DesktopError('STALE_SESSION', '工程已切换。');
+    if (!state || state.sessionId !== sessionId || !Number.isSafeInteger(state.revision) || state.revision < 0 || !Array.isArray(state.documents)) {
+      throw new DesktopError('INVALID_RESPONSE', '编辑资料无效，请重新读取。');
+    }
     accept(state, current);
     return state;
   }
   async function execute(operation: Operation, recovering: boolean) {
-    const current = generation;
+    let current = generation;
     publish({ busy: true });
     try {
       const call = recovering ? transport.recoverRequest : transport.request;
       const data = await call<EditingState | { state: EditingState }>(operation.action, operation.payload, operation.sessionId, operation.requestId);
       if (current !== generation) throw new DesktopError('STALE_SESSION', '工程已切换。');
-      const state = 'state' in data ? data.state : data;
-      if (state.sessionId !== sessionId || !Number.isInteger(state.revision) || !Array.isArray(state.documents)) {
+      const transition = workspaceTransitionSession(operation.action, data);
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
         throw new DesktopError('INVALID_RESPONSE', '操作返回资料无效，请查询原操作结果。');
       }
-      accept(state, current);
+      const state = 'state' in data ? data.state : data;
+      if (!state || state.sessionId !== sessionId && (transition === undefined || transition !== state.sessionId)
+          || !Number.isSafeInteger(state.revision) || state.revision < 0 || !Array.isArray(state.documents)) {
+        throw new DesktopError('INVALID_RESPONSE', '操作返回资料无效，请查询原操作结果。');
+      }
+      if (state.sessionId !== sessionId) {
+        sessionId = state.sessionId;
+        current = ++generation;
+      }
       unresolved = null;
-      publish({ uncertain: false, result: { action: operation.action, requestId: operation.requestId, data } });
+      publish({ ...(snapshot.state?.sessionId !== state.sessionId || !snapshot.state || state.revision >= snapshot.state.revision ? { state } : {}),
+        uncertain: false, result: { action: operation.action, requestId: operation.requestId, data } });
       return state;
     } catch (error) {
       if (current === generation) {
@@ -59,8 +72,8 @@ export function createEditingClient(transport: EditingTransport) {
         } else {
           unresolved = null;
           // A partial save may have succeeded for some documents. Read actual state.
-          try { await refresh(); publish({ uncertain: false }); }
-          catch { publish({ uncertain: true }); }
+          try { await refresh(); if (current === generation) publish({ uncertain: false }); }
+          catch { if (current === generation) publish({ uncertain: true }); }
         }
       }
       throw error;
@@ -86,8 +99,8 @@ export function createEditingClient(transport: EditingTransport) {
     async recover() {
       if (snapshot.busy) throw new DesktopError('BUSY', '请等待当前操作完成。');
       if (unresolved) return execute(unresolved, true);
-      const state = await refresh();
-      publish({ uncertain: false });
+      const current = generation, state = await refresh();
+      if (current === generation) publish({ uncertain: false });
       return state;
     },
   };

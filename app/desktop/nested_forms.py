@@ -56,6 +56,10 @@ class _NestedCommand(Command):
         self._replace.undo()
         self._service.restore(self._path, self._before)
 
+    def rekey_document(self, old: str, new: str) -> None:
+        if self._path == old:
+            self._path = new
+
 
 class NestedFormService:
     MAX_DEPTH = 12
@@ -117,6 +121,15 @@ class NestedFormService:
             raise ValueError("嵌套表单状态无效。")
         self._states[path] = deepcopy(state)
         self.forms.restore(path, state.root)
+
+    def drop_state(self, path: str) -> None:
+        self._states.pop(path, None)
+        self.forms.drop_state(path)
+
+    def move_state(self, old: str, new: str) -> None:
+        state = self.snapshot(old)
+        self.restore(new, state)
+        self.drop_state(old)
 
     def replace(self, content: ContentData, path: str, data: dict,
                 state: NestedFormState) -> Command | None:

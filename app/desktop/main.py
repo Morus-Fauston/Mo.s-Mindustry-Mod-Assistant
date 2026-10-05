@@ -51,7 +51,8 @@ def main() -> None:
             return selected[0] if selected else None
 
         def reveal_file(path):
-            subprocess.Popen(['explorer.exe', f'/select,{path}'], creationflags=subprocess.CREATE_NO_WINDOW)
+            # Keep the switch outside Windows' quoting of paths containing spaces.
+            subprocess.Popen(['explorer.exe', '/select,', str(path)], creationflags=subprocess.CREATE_NO_WINDOW)
 
         def choose_export(default_filename):
             selected = window.create_file_dialog(webview.FileDialog.SAVE, save_filename=default_filename,

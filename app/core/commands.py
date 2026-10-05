@@ -31,6 +31,9 @@ class Command(ABC):
         """Try to merge with a subsequent command. Return merged or None."""
         return None
 
+    def rekey_document(self, old: str, new: str) -> None:
+        """Move desktop document addresses; file-command snapshots stay fixed."""
+
 
 class SetFieldCommand(Command):
     """Set a single field value in a content dict."""
@@ -78,6 +81,7 @@ class SetFieldCommand(Command):
             merged._old = self._old
             return merged
         return None
+
 
 
 class ReplaceDataCommand(Command):
@@ -339,6 +343,18 @@ class CommandStack:
     def clear(self) -> None:
         self._history.clear()
         self._redo_stack.clear()
+
+    def rekey_document(self, old: str, new: str) -> None:
+        """Rebind both reachable directions without adding an undo entry."""
+        completed = []
+        try:
+            for command in [*self._history, *self._redo_stack]:
+                command.rekey_document(old, new)
+                completed.append(command)
+        except Exception:
+            for command in reversed(completed):
+                command.rekey_document(new, old)
+            raise
 
     def _notify(self) -> None:
         if self._on_change:

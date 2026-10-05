@@ -98,6 +98,29 @@ class ProjectSession:
         self._project = None
         self._open_contents.clear()
 
+    def attach_project(self, project: Project | None) -> None:
+        """Attach a command-owned project while retaining this session's stack."""
+        if project is not None and not isinstance(project, Project):
+            raise TypeError("工程身份无效")
+        self._project = project
+        self._open_contents.clear()
+
+    def rekey_content(self, old: str, new: str, expected: ContentData) -> None:
+        """Move one registered object without replacing its shared dictionary."""
+        if self._open_contents.get(old) is not expected or new in self._open_contents:
+            raise ValueError("内容身份已变化或目标已打开")
+        previous = expected.name, expected.category, expected.path
+        relative = PurePosixPath(new)
+        self.detach_content(old, expected)
+        try:
+            expected.name, expected.category = relative.stem, relative.parts[0]
+            expected.path = (self._project.root / 'content' / new).resolve()
+            self.attach_content(new, expected)
+        except Exception:
+            expected.name, expected.category, expected.path = previous
+            self._open_contents[old] = expected
+            raise
+
     def read_content(self, relative_path: str) -> ContentData:
         """Keep one core-owned document per explicit category/file path."""
         if self._project is None:

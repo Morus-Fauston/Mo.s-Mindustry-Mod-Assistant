@@ -34,6 +34,29 @@ export class DesktopError extends Error {
   }
 }
 
+/** Only these command results may adopt another session without resetting its history. */
+export function workspaceTransitionSession(action: string, data: unknown): string | undefined {
+  if (!['create_project', 'undo', 'redo'].includes(action)) return undefined;
+  const invalid = () => new DesktopError('INVALID_RESPONSE', '工程转换资料无效，请查询原操作结果。');
+  if (!record(data)) throw invalid();
+  if (!Object.hasOwn(data, 'project')) {
+    if (action === 'create_project' && data.cancelled !== true) throw invalid();
+    return undefined;
+  }
+  const state = action === 'create_project' ? data.state : data;
+  if (!record(state) || typeof state.sessionId !== 'string' || !state.sessionId || !count(state.revision)
+      || !Array.isArray(state.documents) || !record(state.history) || !count(state.autoSaveInterval)
+      || typeof state.history.canUndo !== 'boolean' || typeof state.history.canRedo !== 'boolean'
+      || typeof state.history.undoDescription !== 'string' || typeof state.history.redoDescription !== 'string'
+      || state.documents.some(document => !record(document) || document.sessionId !== state.sessionId)) throw invalid();
+  if (data.project === null) {
+    if (action === 'create_project' || data.cancelled === true) throw invalid();
+  } else if (!record(data.project) || data.project.sessionId !== state.sessionId
+      || typeof data.project.name !== 'string' || typeof data.project.root !== 'string' || !data.project.root
+      || !Array.isArray(data.project.tree) || data.cancelled === true) throw invalid();
+  return state.sessionId;
+}
+
 function readRequest(api: DesktopApi, envelope: RequestEnvelope, recover: boolean): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new DesktopError(
@@ -64,16 +87,19 @@ function parseRequest(response: unknown, envelope: RequestEnvelope): { data: unk
       typeof response.error.path === 'string' ? response.error.path : undefined);
   }
   if (response.ok !== true || !record(response.data)) throw invalid();
+  const transition = workspaceTransitionSession(envelope.action, response.data);
+  if (transition !== undefined && transition !== response.sessionId) throw invalid();
   const opening = envelope.action === 'open_project' || envelope.action === 'choose_project';
   const opened = opening && response.data.cancelled !== true;
   if (opened) {
     if (typeof response.sessionId !== 'string' || !response.sessionId ||
         response.data.sessionId !== response.sessionId) throw invalid();
-  } else if (envelope.action !== 'recent_projects' && response.sessionId !== envelope.sessionId) {
+  } else if (transition === undefined && envelope.action !== 'recent_projects' && response.sessionId !== envelope.sessionId) {
     throw new DesktopError('STALE_SESSION', '工程已切换，请重新打开所需内容。');
   }
   if ('sessionId' in response.data && response.data.sessionId !== response.sessionId) throw invalid();
-  return { data: response.data, opened };
+  if ('state' in response.data && (!record(response.data.state) || response.data.state.sessionId !== response.sessionId)) throw invalid();
+  return { data: response.data, opened: opened || transition !== undefined && transition !== envelope.sessionId };
 }
 
 function readBootstrap(api: DesktopApi): Promise<unknown> {

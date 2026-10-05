@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from pathlib import PurePosixPath
 from typing import Callable
 
 from app.core.commands import Command, SetFieldCommand
@@ -49,6 +50,20 @@ class _DocumentStateCommand(Command):
     def undo(self) -> None:
         self.editing._restore(self.path, self.before)
 
+    def rekey_document(self, old: str, new: str) -> None:
+        if self.path != old:
+            return
+        self.path = new
+        relative = PurePosixPath(new)
+        for state in (self.before, self.after):
+            entry = state.entry
+            values = {'name': relative.stem, 'category': relative.parts[1],
+                      'path': self.editing.session.project.root / new}
+            if isinstance(entry, RawDocument):
+                state.entry = replace(entry, **values)
+            else:
+                entry.name, entry.category, entry.path = values.values()
+
 
 class DocumentCommand(Command):
     """Retain document identity when session-wide history reopens a closed tab."""
@@ -71,6 +86,11 @@ class DocumentCommand(Command):
         self.command.undo()
         self._on_change(self.path)
 
+    def rekey_document(self, old: str, new: str) -> None:
+        self.command.rekey_document(old, new)
+        if self.path == old:
+            self.path = new
+
     def merge_with(self, other: Command) -> Command | None:
         if (isinstance(other, DocumentCommand) and other.path == self.path
                 and self._merge_token is not None and other._merge_token is self._merge_token):
@@ -81,8 +101,10 @@ class DocumentCommand(Command):
 
 
 class EditingService:
-    def __init__(self, session: ProjectSession, session_id: str | None, revision: int = 0):
+    def __init__(self, session: ProjectSession, session_id: str | None, revision: int = 0,
+                 *, on_saved: Callable[[str], None] | None = None):
         self.session, self.session_id, self.revision = session, session_id, revision
+        self._on_saved = on_saved
         self._documents: dict[str, ContentData] = {}
         self._raw_documents: dict[str, RawDocument] = {}
         self._opened: dict[str, None] = {}
@@ -322,14 +344,20 @@ class EditingService:
 
     def save(self, payload: dict) -> dict:
         self.check_revision(payload)
-        for path in self._opened:
+        return self.save_paths(list(self._opened))
+
+    def save_paths(self, paths: list[str]) -> dict:
+        """Save exactly these identities, acknowledging each successful write."""
+        for path in paths:
             self.require_content(path)
         # A saved state must remain reachable by undo, including partial saves.
         self._merge_token = object()
-        for path in self._opened:
+        for path in paths:
             content = self._documents[path]
             try:
                 self.session.save_content(content)
+                if self._on_saved is not None:
+                    self._on_saved(path)
             except (OSError, ValueError, TypeError) as exc:
                 raise EditingError("SAVE_FAILED", "保存失败，修改仍保留，请检查文件占用和访问权限后重试。", path) from exc
             self._saved[path] = deepcopy(content.data)

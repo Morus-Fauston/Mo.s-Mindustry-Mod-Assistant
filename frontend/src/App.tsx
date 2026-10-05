@@ -19,10 +19,13 @@ import { ValidationReportPanel } from './validation/ValidationReportPanel';
 import type { ValidationIssue, ValidationReport } from './validation/types';
 import { resolveIssueField } from './validation/location';
 import { GenerationSection } from './generation/GenerationSection';
+import { ContentTools, type ContentAction, type ContentCatalogue } from './content/ContentTools';
+import { affectedContentPaths, reconcileContentViews, type ContentResult } from './content/integration';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
-type CloseIntent = { kind: 'documents'; paths: string[] } | { kind: 'project'; path?: string } | { kind: 'window' };
+type CloseIntent = { kind: 'documents'; paths: string[] } | { kind: 'project'; path?: string } | { kind: 'window' }
+  | { kind: 'content'; paths: string[]; resolve: (choice: CloseChoice) => void };
 
 const categoryLabels: Record<string, string> = {
   Units: '单位', UnitTypes: '单位', Blocks: '方块', Weapons: '武器', Bullets: '子弹',
@@ -73,6 +76,9 @@ export function App() {
   const pendingReads = useRef(new Set<string>());
   const generation = useRef(0);
   const selection = useRef(0);
+  const contentRunning = useRef(false);
+  const [contentBusy, setContentBusy] = useState(false);
+  const [contentCompletion, setContentCompletion] = useState('');
   const load = useCallback(() => {
     setStartup({ phase: 'loading' });
     void desktop.bootstrap().then(data => setStartup({ phase: 'ready', data }))
@@ -118,6 +124,39 @@ export function App() {
 
   useEffect(() => {
     const completed = editor.result;
+    if (completed && ['create_content', 'rename_content', 'delete_content', 'reveal_content', 'create_project', 'undo', 'redo'].includes(completed.action)) {
+      const result = completed.data as ContentResult;
+      const state = editing.getSnapshot().state;
+      if (!state) return;
+      if ('project' in result) {
+        generation.current += 1; selection.current += 1;
+        projectRef.current = result.project ?? null; setProject(result.project ?? null);
+        draftStore.reset(); setSourceViews({}); setActivePath(null); setSelectedPath(null);
+        setResourceRevision(0);
+        if (result.project) setRecent([{ path: result.project.root, name: result.project.name }]);
+      } else if (result.tree && projectRef.current?.sessionId === state.sessionId) {
+        const next = { ...projectRef.current, tree: result.tree }; projectRef.current = next; setProject(next);
+      }
+      const candidateChange = result.change ?? result.contentChange ?? null;
+      const change = candidateChange?.action === 'rename' && candidateChange.beforePath === candidateChange.afterPath ? null : candidateChange;
+      if (change || 'project' in result) {
+        generation.current += 1; selection.current += 1;
+        const paths = state.documents.map(document => document.path);
+        setSourceViews(previous => reconcileContentViews(previous, change, paths,
+          state.documents.filter(document => document.validData === false).map(document => document.path)));
+        // Only paths touched by this disk command lose their input buffers.
+        if (change) draftStore.removePaths([change.beforePath, change.afterPath].filter((path): path is string => Boolean(path)));
+        setFormFocus(undefined); setLayerFocus(undefined); setSourceFocus(undefined);
+        setValidation(null); setValidationError(''); setReportVisible(false);
+        if ('activePath' in result) { setActivePath(result.activePath ?? null); setSelectedPath(result.activePath ?? null); }
+      }
+      if (!['undo', 'redo'].includes(completed.action)) {
+        setContentCompletion(completed.requestId);
+        setNotice(result.cancelled ? '已取消新建工程' : completed.action === 'create_project' ? '已创建工程'
+          : completed.action === 'reveal_content' ? '已定位文件' : '内容操作已完成，可通过撤销恢复。');
+      }
+      return;
+    }
     if (completed?.action === 'confirm_generation') {
       const result = completed.data as { state: { sessionId: string } };
       if (result.state.sessionId === projectRef.current?.sessionId) setNotice('贴图已写入工程，可通过撤销恢复。');
@@ -130,7 +169,45 @@ export function App() {
     setNotice(completed.action === 'export_project' ? result.cancelled ? '已保存，已取消导出'
       : result.exported && result.output ? `已导出：${result.output.path}` : '未生成导出文件'
       : `校验完成：错误 ${result.report.errors} 项，警告 ${result.report.warnings} 项`);
-  }, [editor.result]);
+  }, [editor.result, editing, draftStore]);
+
+  async function contentAction(action: ContentAction, payload: Record<string, unknown>) {
+    if (contentRunning.current || busy || intentRef.current || editor.uncertain) throw new DesktopError('BUSY', '请先完成当前操作。');
+    if (draftStore.getSnapshot().composing) throw new DesktopError('COMPOSING', '请结束中文输入后再操作内容。');
+    if (action === 'rename_content' && typeof payload.path === 'string' &&
+        payload.path.split('/').at(-1) === `${payload.newName}.json`) {
+      setNotice('名称未改变，当前输入保留。'); return;
+    }
+    contentRunning.current = true; setContentBusy(true); setFailure('');
+    const owner = editing.getSnapshot().state?.sessionId;
+    try {
+      await draftStore.settled();
+      const state = await editing.refresh();
+      if (owner !== state.sessionId) throw new DesktopError('STALE_SESSION', '工程已切换。');
+      const paths = affectedContentPaths(action, payload, state.documents.map(document => document.path));
+      const dirty = state.documents.some(document => paths.includes(document.path) &&
+        (document.dirty || document.path in draftStore.getSnapshot().drafts));
+      let decision: CloseChoice = 'discard';
+      if (dirty) decision = await new Promise<CloseChoice>(resolve => {
+        const target: CloseIntent = { kind: 'content', paths, resolve };
+        intentRef.current = target; setIntent(target); setDecisionError('');
+      });
+      if (decision === 'cancel') throw new DesktopError('CANCELLED', '已取消操作，修改保留。');
+      if (decision === 'save') { await flushDrafts(); await editing.run('save_opened'); }
+      if (owner !== editing.getSnapshot().state?.sessionId) throw new DesktopError('STALE_SESSION', '工程已切换。');
+      await editing.run(action, { ...payload, ...(action === 'reveal_content' ? {} : { decision }) });
+      const result = editing.getSnapshot().result?.data as ContentResult;
+      if (!result?.cancelled) draftStore.removePaths(paths);
+    } finally { contentRunning.current = false; setContentBusy(false); }
+  }
+
+  async function recoverOperation() {
+    try {
+      await editing.recover(); setFailure('');
+      if (!['validate_project', 'export_project', 'confirm_generation', 'create_project', 'create_content',
+        'rename_content', 'delete_content', 'reveal_content'].includes(editing.getSnapshot().result?.action ?? '')) setNotice('已取得原操作结果');
+    } catch (error) { setFailure(message(error)); throw error; }
+  }
 
   async function validateOrExport(action: 'validate_project' | 'export_project') {
     if (validating.current || busy || editor.busy || editor.uncertain || intentRef.current || !projectRef.current) return;
@@ -255,7 +332,7 @@ export function App() {
   }
 
   async function editAction(action: 'save_opened' | 'undo' | 'redo') {
-    if (busy || intentRef.current || editor.uncertain) return;
+    if (busy || contentRunning.current || intentRef.current || editor.uncertain) return;
     try {
       setFailure('');
       await flushDrafts();
@@ -267,6 +344,7 @@ export function App() {
   function clearIntent() { intentRef.current = null; setIntent(null); setDecisionError(''); }
 
   async function executeIntent(target: CloseIntent, choice: CloseChoice) {
+    if (target.kind === 'content') { clearIntent(); target.resolve(choice); return; }
     if (choice === 'cancel') { clearIntent(); return; }
     setDecisionBusy(true);
     try {
@@ -309,7 +387,7 @@ export function App() {
   useEffect(() => {
     const close = () => { void handlers.current.requestIntent({ kind: 'window' }); };
     const keys = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.isComposing || intentRef.current) return;
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.isComposing || intentRef.current || document.querySelector('dialog[open]')) return;
       const key = event.key.toLowerCase();
       if (key === 's' || key === 'z' || key === 'y') {
         event.preventDefault();
@@ -357,7 +435,7 @@ export function App() {
     const operation: Opening = unresolvedOpen.current ?? {
       action: path ? 'open_project' : 'choose_project', payload: { ...(path ? { path } : {}),
         expectedRevision: editing.getSnapshot().state?.revision ?? 0, discard },
-      sessionId: projectRef.current?.sessionId ?? null, requestId: crypto.randomUUID(),
+      sessionId: editing.getSnapshot().state?.sessionId ?? null, requestId: crypto.randomUUID(),
     };
     unresolvedOpen.current = operation;
     try {
@@ -445,17 +523,18 @@ export function App() {
         title={editor.state?.history.undoDescription || '没有可撤销的操作'} onClick={() => void editAction('undo')}>撤销</button>
       <button className={styles.button} disabled={!editor.state?.history.canRedo || busy || editor.busy || editor.uncertain}
         title={editor.state?.history.redoDescription || '没有可重做的操作'} onClick={() => void editAction('redo')}>重做</button>
-      {editor.uncertain && <button className={styles.button} disabled={editor.busy} onClick={() => {
-        void editing.recover().then(() => {
-          setFailure('');
-          if (!['validate_project', 'export_project', 'confirm_generation'].includes(editing.getSnapshot().result?.action ?? '')) setNotice('已取得原操作结果');
-        }).catch(error => setFailure(message(error)));
-      }}>查询操作结果</button>}
+      {editor.uncertain && <button className={styles.button} disabled={editor.busy}
+        onClick={() => { void recoverOperation().catch(() => {}); }}>查询操作结果</button>}
       <span title={project?.root}>{project?.name ?? '未打开工程'}</span>
     </div>
     <main className={styles.workbench}>
       <aside className={styles.sidebar} aria-label="文件">
         <h2 className={styles.panelHead}>文件</h2>
+        <ContentTools sessionId={project?.sessionId ?? null} activePath={activePath}
+          disabled={!metadata || !editor.state || busy || contentBusy || editor.busy || editor.uncertain || needsRecovery || Boolean(intent)}
+          completionId={contentCompletion} recovery={editor.uncertain} recoveryBusy={editor.busy}
+          onRecover={recoverOperation} onAction={contentAction}
+          loadCatalogue={() => desktop.request<ContentCatalogue>('content_catalogue', {}, editing.getSnapshot().state?.sessionId ?? null)} />
         {project ? <ProjectTree key={project.sessionId} nodes={project.tree} selectedPath={selectedPath} onOpen={node => void openNode(node)} /> : <p className={styles.emptySide}>尚未打开工程</p>}
       </aside>
       <section className={styles.editor} aria-label="编辑区">
@@ -574,9 +653,9 @@ export function App() {
       </aside>
     </main>
     <footer className={styles.status}><span role="status">{notice || status}</span><span>{metadata ? `游戏版本 ${metadata.gameVersion}` : '离线工作台'}</span></footer>
-    {intent && <CloseDecision title={intent.kind === 'window' ? '关闭工作台' : intent.kind === 'project' ? '切换工程' : '关闭内容'}
+    {intent && <CloseDecision title={intent.kind === 'window' ? '关闭工作台' : intent.kind === 'project' ? '切换工程' : intent.kind === 'content' ? '继续内容操作' : '关闭内容'}
       paths={documents.filter(document => (document.dirty || document.path in drafts) &&
-        (intent.kind !== 'documents' || intent.paths.includes(document.path))).map(document => document.path)}
+        (!('paths' in intent) || intent.paths.includes(document.path))).map(document => document.path)}
       busy={decisionBusy || editor.busy} error={decisionError} onChoose={choice => void executeIntent(intent, choice)} />}
   </div>;
 }

@@ -6,6 +6,75 @@ const summary = {
   data: { metadata: { gameVersion: '159', classCount: 2, categories: [] } },
 };
 
+describe('受控工程创建与历史转换', () => {
+  afterEach(() => vi.useRealTimers());
+  const state = (sessionId = 'new') => ({ sessionId, revision: 3, documents: [], autoSaveInterval: 0,
+    history: { canUndo: true, canRedo: false, undoDescription: '新建工程', redoDescription: '' } });
+  const project = { sessionId: 'new', name: '新工程', root: 'D:/new-mod', tree: [] };
+  const response = (envelope: any, data: unknown, sessionId = 'new') => ({ ok: true, protocolVersion: 1,
+    requestId: envelope.requestId, sessionId, data });
+  function setup(request: (envelope: any) => Promise<unknown>) {
+    const host = new EventTarget() as DesktopHost;
+    host.pywebview = { api: { bootstrap: async () => summary, request } };
+    return { host, client: createDesktopClient(host) };
+  }
+  it.each(['create_project', 'undo', 'redo'])('%s仅接收身份一致的工程转换', async action => {
+    const data = action === 'create_project' ? { state: state(), project } : { ...state(), project: action === 'undo' ? null : project };
+    const { client } = setup(async envelope => response(envelope, data));
+    expect(await client.request(action, { expectedRevision: 2 }, 'old')).toEqual(data);
+  });
+  it.each([
+    ['create_project', { state: state('wrong'), project }],
+    ['create_project', { state: state(), project: { ...project, sessionId: 'wrong' } }],
+    ['create_project', { state: state(), project: null }],
+    ['create_project', { state: state() }],
+    ['undo', { ...state(), project: { sessionId: 'new' } }],
+    ['undo', { ...state(), documents: [{ sessionId: 'old' }], project: null }],
+    ['redo', { ...state(), revision: -1, project }],
+  ])('%s拒绝不完整或互相矛盾的转换资料', async (action, data) => {
+    const { client } = setup(async envelope => response(envelope, data));
+    await expect(client.request(action as string, {}, 'old')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
+  it('其他动作不能用project字段越过旧session保护', async () => {
+    const { client } = setup(async envelope => response(envelope, { state: state(), project }));
+    await expect(client.request('set_field', {}, 'old')).rejects.toMatchObject({ code: 'STALE_SESSION' });
+  });
+  it('创建目录取消保持原session且不会使同期读取过期', async () => {
+    let finish!: () => void;
+    const { client } = setup(envelope => envelope.action === 'read_document'
+      ? new Promise(resolve => { finish = () => resolve(response(envelope, { sessionId: 'old' }, 'old')); })
+      : Promise.resolve(response(envelope, { cancelled: true, state: state('old') }, 'old')));
+    const read = client.request('read_document', {}, 'old');
+    expect(await client.request('create_project', {}, 'old')).toMatchObject({ cancelled: true });
+    finish(); expect(await read).toEqual({ sessionId: 'old' });
+  });
+  it.each(['create_project', 'undo', 'redo'])('%s转换使旧会话迟到读取失效', async action => {
+    let finish!: () => void;
+    const data = action === 'create_project' ? { state: state(), project } : { ...state(), project: null };
+    const { client } = setup(envelope => envelope.action === 'read_document'
+      ? new Promise(resolve => { finish = () => resolve(response(envelope, {}, 'old')); })
+      : Promise.resolve(response(envelope, data)));
+    const read = client.request('read_document', {}, 'old');
+    const rejected = expect(read).rejects.toMatchObject({ code: 'STALE_SESSION' });
+    await client.request(action, {}, 'old'); finish(); await rejected;
+  });
+  it('创建超时查询原ID可恢复转换且不重开对话框，原响应迟到不再转换', async () => {
+    vi.useFakeTimers(); let envelope: any, finish!: (value: unknown) => void;
+    const request = vi.fn(e => { envelope = e; return new Promise(resolve => { finish = resolve; }); });
+    const { host, client } = setup(request);
+    const timedOut = expect(client.request('create_project', { mod_id: 'demo' }, 'old', 'create-id'))
+      .rejects.toMatchObject({ code: 'BRIDGE_TIMEOUT' });
+    await vi.advanceTimersByTimeAsync(15_000); await timedOut;
+    host.pywebview!.api!.request_result = vi.fn(async () => ({ state: 'completed', response: response(envelope, { state: state(), project }) }));
+    expect(await client.recoverRequest('create_project', { mod_id: 'demo' }, 'old', 'create-id')).toEqual({ state: state(), project });
+    finish(response(envelope, { state: state('late'), project: { ...project, sessionId: 'late' } }, 'late'));
+    await Promise.resolve();
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(host.pywebview!.api!.request_result).toHaveBeenCalledWith('create-id');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
 describe('桌面启动桥接', () => {
   afterEach(() => vi.useRealTimers());
 

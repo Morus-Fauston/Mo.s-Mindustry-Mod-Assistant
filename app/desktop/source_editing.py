@@ -49,6 +49,10 @@ class _SourceCommand(Command):
     def undo(self) -> None:
         self._apply(self._replace.undo, self._before)
 
+    def rekey_document(self, old: str, new: str) -> None:
+        if self._path == old:
+            self._path = new
+
     def _apply(self, replace: Callable[[], None], state: NestedFormState) -> None:
         previous_data = deepcopy(self._data)
         previous_state = self._nested.snapshot(self._path)

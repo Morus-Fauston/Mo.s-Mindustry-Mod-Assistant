@@ -6,6 +6,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from hashlib import sha256
 import json
+import logging
 from pathlib import Path
 from threading import RLock
 from typing import Callable
@@ -16,6 +17,8 @@ from app.core.content_store import ContentData
 from app.core.project import Project
 from app.core.session import ProjectSession
 from app.desktop.editing import EditingError, EditingService
+from app.desktop.content_actions import ContentActions, create_project
+from app.desktop.content_identity import ContentIdentityAdapter
 from app.desktop.preview import PreviewService
 from app.desktop.preview_layers import PreviewLayerService
 from app.desktop.dynamic_preview import DynamicPreviewService
@@ -49,6 +52,10 @@ class WorkspaceService:
         self._session = ProjectSession(metadata_dir)
         self._session_id: str | None = None
         self._editing = EditingService(self._session, None)
+        self._content_actions: ContentActions | None = None
+        self._content_identity = ContentIdentityAdapter(self._editing)
+        self._last_tree: list[dict] = []
+        self._pending_project_services: dict | None = None
         self._closing = False
         self._preview: PreviewService | None = None
         self._lock = RLock()
@@ -119,6 +126,7 @@ class WorkspaceService:
                     raise WorkspaceError("INVALID_REQUEST", "会话标识无效。")
                 action, payload = envelope.get("action"), envelope.get("payload", {})
                 if action not in ("recent_projects", "open_project", "choose_project", "read_document",
+                                  "content_catalogue", "create_content", "rename_content", "delete_content", "reveal_content", "create_project",
                                   "editing_state", "validate_project", "export_project", "set_field", "set_source", "format_source", "undo", "redo", "save_opened",
                                   "close_documents", "close_window", "preview_scene", "preview_resource",
                                   "add_field", "delete_field", "set_capability", "add_group", "delete_group",
@@ -173,6 +181,14 @@ class WorkspaceService:
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
+        if action == "content_catalogue":
+            if payload:
+                raise WorkspaceError("INVALID_REQUEST", "模板目录不接受额外参数。")
+            return ContentActions(None, self._session.command_stack, metadata=self._session.metadata).catalogue()
+        if action in ("create_content", "rename_content", "delete_content", "reveal_content"):
+            return self._content_action(action, payload)
+        if action == "create_project":
+            return self._create_project(payload)
         if action in ("preview_generation", "confirm_generation", "cancel_generation"):
             return self._generation_action(action, payload)
         if action in ("validate_project", "export_project"):
@@ -229,7 +245,23 @@ class WorkspaceService:
                       "planet_add", "planet_remove", "planet_set"):
             return self._editing.form_action(action, payload)
         if action in ("undo", "redo"):
-            return self._editing.history(action, payload)
+            try:
+                result = self._editing.history(action, payload)
+                if self._pending_project_services is not None:
+                    services, self._pending_project_services = self._pending_project_services, None
+                    self._adopt_services(services)
+                    return {**self._editing.state(), "project": services["project"]}
+                change = self._content_identity.consume_change()
+                if change:
+                    result.update(tree=self._current_tree(), contentChange=change,
+                                  activePath=self._active_content_path(change))
+                return result
+            except EditingError:
+                raise
+            except ExceptionGroup as exc:
+                raise WorkspaceError("CONTENT_ROLLBACK_FAILED", str(exc)) from exc
+            except (OSError, ValueError, TypeError, RuntimeError) as exc:
+                raise WorkspaceError("HISTORY_FAILED", f"撤销或重做未完成：{exc}") from exc
         if action == "save_opened":
             return self._editing.save(payload)
         if action == "close_documents":
@@ -292,28 +324,217 @@ class WorkspaceService:
             project = Project.open(root)
             if not isinstance(project.mod_info.name, str) or not isinstance(project.mod_info.display_name, str):
                 raise ValueError("Invalid mod name")
-            tree = self._tree(project)
             candidate = ProjectSession(self._metadata_dir)
             candidate.open_project(root)
+            services = self._prepare_services(candidate)
         except (OSError, ValueError) as exc:
             raise WorkspaceError("PROJECT_OPEN_FAILED", "无法打开工程，请检查目录中的 mod.json 和文件访问权限。", str(root)) from exc
-        watch = ResourceWatch(candidate.project.root)
+        self._adopt_services(services)
+        return services["project"]
+
+    def _prepare_services(self, candidate: ProjectSession, retained: dict | None = None) -> dict:
+        """Build all fallible services before releasing the visible workbench."""
+        sid = uuid4().hex
+        project = candidate.project
+        tree = self._tree(project) if project else []
+        if retained is None:
+            editing = EditingService(candidate, sid, self._editing.revision + 1,
+                                     on_saved=lambda path: actions.saved(path) if actions else None)
+            identity = ContentIdentityAdapter(editing)
+            actions = ContentActions(project, candidate.command_stack, metadata=candidate.metadata,
+                                     on_change=identity.handler) if project else None
+            # Capture the actual action owner; old history must never acknowledge
+            # a later project's files as saves belonging to this project.
+        else:
+            editing, identity, actions = retained["editing"], retained["identity"], retained["actions"]
+        preview = PreviewService(project, sid) if project else None
+        resources = ResourceService(project, candidate.command_stack,
+            on_change=self._resource_changed, content_resolver=self._content) if project else None
+        generation = SpriteGenerationService(project, resources, sid,
+            content_resolver=self._content, on_change=self._resource_changed) if project else None
+        watch = ResourceWatch(project.root) if project else None
+        snapshot = {"sessionId": sid,
+                    "name": project.mod_info.display_name or project.mod_info.name or project.root.name,
+                    "root": str(project.root), "tree": tree} if project else None
+        return {"session": candidate, "sid": sid, "revision": self._editing.revision + 1,
+                "editing": editing, "identity": identity, "actions": actions, "preview": preview,
+                "resources": resources, "generation": generation, "watch": watch, "tree": tree, "project": snapshot}
+
+    def _adopt_services(self, services: dict) -> None:
         if self._generation is not None:
             self._generation.close()
         self._release_generation_results()
         if self._resource_watch is not None:
             self._resource_watch.close()
-        self._session = candidate
-        self._session_id = uuid4().hex
-        self._editing = EditingService(candidate, self._session_id, self._editing.revision + 1)
-        self._preview = PreviewService(candidate.project, self._session_id)
-        self._resource_watch = watch
-        self._resources = ResourceService(candidate.project, candidate.command_stack,
-            on_change=self._resource_changed, content_resolver=self._content)
-        self._generation = SpriteGenerationService(candidate.project, self._resources, self._session_id,
-            content_resolver=self._content, on_change=self._resource_changed)
-        return {"sessionId": self._session_id, "name": project.mod_info.display_name or project.mod_info.name or root.name,
-                "root": str(root), "tree": tree}
+        self._session, self._session_id = services["session"], services["sid"]
+        self._editing, self._content_identity = services["editing"], services["identity"]
+        self._editing.session_id, self._editing.revision = self._session_id, services["revision"]
+        self._content_actions = services["actions"]
+        self._last_tree, self._preview = services["tree"], services["preview"]
+        self._resource_watch, self._resources = services["watch"], services["resources"]
+        self._generation = services["generation"]
+
+    def _create_project(self, payload: dict) -> dict:
+        if set(payload) - {"mod_id", "displayName", "author", "expectedRevision", "decision"}:
+            raise WorkspaceError("INVALID_REQUEST", "新建工程参数无效，目录必须通过系统选择。")
+        self._editing.check_revision(payload)
+        try:
+            ContentActions._name(payload.get("mod_id"))
+            if not isinstance(payload.get("displayName"), str) or not isinstance(payload.get("author", ""), str):
+                raise ValueError("显示名称和作者必须为文本。")
+            if payload.get("decision") not in (None, "save", "discard"):
+                raise ValueError("请选择保存、放弃或取消新建工程。")
+            if self._editing.has_dirty() and payload.get("decision") is None:
+                raise WorkspaceError("UNSAVED_CHANGES", "当前工程有未保存修改，请选择保存或放弃。")
+            if self._choose_directory is None:
+                raise WorkspaceError("DIALOG_UNAVAILABLE", "目录选择器尚未就绪，请稍后重试。")
+            parent = self._choose_directory()
+            if parent is None:
+                return {"cancelled": True, "state": self._editing.state()}
+            if not isinstance(parent, str) or not Path(parent).is_absolute():
+                raise ValueError("请选择工程父目录的完整路径。")
+            candidate = ProjectSession(self._metadata_dir)
+            holder = {"retained": None, "attached": False, "ignore": None}
+
+            def changed(project: Project, undo: bool) -> None:
+                # The command can send an inverse callback after rolling files
+                # back. If publication never happened, that callback is a no-op.
+                if holder["ignore"] == undo:
+                    holder["ignore"] = None
+                    return
+                attached = not undo
+                if holder["attached"] == attached:
+                    return
+                previous = candidate.project
+                try:
+                    candidate.attach_project(None if undo else project)
+                    services = self._prepare_services(candidate, holder["retained"])
+                except Exception:
+                    candidate.attach_project(previous)
+                    holder["ignore"] = not undo
+                    raise
+                holder["attached"] = attached
+                if holder["retained"] is None:
+                    # History needs document identity, not the old session's PNG
+                    # cache, resource watcher or generation service.
+                    holder["retained"] = {key: services[key] for key in ("editing", "identity", "actions")}
+                self._pending_project_services = services
+
+            create_project(parent, payload["mod_id"], payload["displayName"], candidate.command_stack,
+                           author=payload.get("author", ""), on_change=changed)
+            # Only resolve old drafts once the new project and all its services
+            # are ready. A name collision or initialization failure must not
+            # discard an otherwise healthy current workbench.
+            services = self._pending_project_services
+            try:
+                self._content_identity.prepare(list(self._editing.document_entries()), payload.get("decision"))
+            except Exception as failure:
+                try:
+                    candidate.undo()
+                except Exception as recovery:
+                    raise ExceptionGroup("新建工程取消失败，请保留当前工程并检查新目录。", [failure, recovery]) from failure
+                finally:
+                    if services["generation"] is not None:
+                        services["generation"].close()
+                    if services["watch"] is not None:
+                        services["watch"].close()
+                    self._pending_project_services = None
+                raise
+            services["revision"] = self._editing.revision + 1
+            services, self._pending_project_services = self._pending_project_services, None
+            self._adopt_services(services)
+            return {"project": services["project"], "state": self._editing.state()}
+        except EditingError:
+            raise
+        except FileExistsError as exc:
+            raise WorkspaceError("FILE_EXISTS", str(exc)) from exc
+        except ExceptionGroup as exc:
+            raise WorkspaceError("PROJECT_ROLLBACK_FAILED", str(exc)) from exc
+        except (OSError, ValueError, TypeError, RuntimeError) as exc:
+            raise WorkspaceError("PROJECT_CREATE_FAILED", f"新建工程未完成：{exc}") from exc
+
+    def _current_tree(self) -> list[dict]:
+        # Tree refresh is observational; a failure after a committed command must
+        # not turn its response into a false mutation failure and invite replay.
+        if self._session.project is None:
+            return []
+        try:
+            self._last_tree = self._tree(self._session.project)
+        except (OSError, ValueError):
+            logging.getLogger(__name__).exception("内容已更新，工程树刷新失败；请刷新资源")
+        return deepcopy(self._last_tree)
+
+    @staticmethod
+    def _active_content_path(change: dict) -> str | None:
+        return change["beforePath"] if change["undo"] else change["afterPath"]
+
+    def _content_action(self, action: str, payload: dict) -> dict:
+        if self._content_actions is None or self._session.project is None:
+            raise WorkspaceError("NO_PROJECT", "请先打开工程。")
+        allowed = {
+            "create_content": {"kind", "name", "category", "overwrite", "expectedRevision", "decision"},
+            "rename_content": {"path", "newName", "expectedRevision", "decision"},
+            "delete_content": {"path", "confirmed", "expectedRevision", "decision"},
+            "reveal_content": {"path", "expectedRevision"},
+        }[action]
+        if set(payload) - allowed:
+            raise WorkspaceError("INVALID_REQUEST", "内容操作参数无效。")
+        if payload.get("decision") not in (None, "save", "discard"):
+            raise WorkspaceError("INVALID_REQUEST", "请选择保存、放弃或取消内容操作。")
+        self._editing.check_revision(payload)
+        service = self._content_actions
+        try:
+            if action == "create_content":
+                name, category, kind = payload.get("name"), payload.get("category"), payload.get("kind")
+                service._name(name)
+                if type(payload.get("overwrite", False)) is not bool:
+                    raise ValueError("覆盖确认必须为布尔值。")
+                choices = {row["id"]: {item["kind"] for item in row["templates"]} for row in service.catalogue()["categories"]}
+                if not isinstance(category, str) or category not in choices or not isinstance(kind, str) or kind not in choices[category]:
+                    raise ValueError("模板与内容类别不匹配。")
+                path = f"content/{category}/{name}.json"
+                target = service._content_path(path)
+                if target.exists() and not payload.get("overwrite", False):
+                    raise FileExistsError("内容已存在，请确认覆盖所选类别内的文件。")
+                paths = [path]
+            else:
+                path = payload.get("path")
+                target = service.reveal_path(path)
+                paths = [path]
+                if action == "reveal_content":
+                    if self._reveal_file is None:
+                        raise ValueError("系统文件定位尚未就绪。")
+                    self._reveal_file(target)
+                    return {"state": self._editing.state(), "revealed": True}
+                if action == "delete_content" and payload.get("confirmed") is not True:
+                    raise ValueError("请明确确认删除内容。")
+                if action == "rename_content":
+                    service._name(payload.get("newName"))
+                    new_path = str(Path(path).with_name(payload["newName"] + ".json")).replace("\\", "/")
+                    if new_path != path and service._content_path(new_path).exists():
+                        raise FileExistsError("目标内容已存在，不能重命名。")
+                    if new_path == path:
+                        change = {"action": "rename", "beforePath": path, "afterPath": path, "undo": False}
+                        return {"state": self._editing.state(), "tree": self._current_tree(), "change": change, "activePath": path}
+                    paths.append(new_path)
+            self._content_identity.prepare(paths, payload.get("decision"))
+            if action == "create_content":
+                service.create(kind, name, category, payload.get("overwrite", False))
+            elif action == "rename_content":
+                service.rename(path, payload["newName"])
+            else:
+                service.delete(path)
+            change = self._content_identity.consume_change()
+            return {"state": self._editing.state(), "tree": self._current_tree(), "change": change,
+                    "activePath": self._active_content_path(change)}
+        except EditingError:
+            raise
+        except FileExistsError as exc:
+            raise WorkspaceError("FILE_EXISTS", str(exc), payload.get("path")) from exc
+        except ExceptionGroup as exc:
+            raise WorkspaceError("CONTENT_ROLLBACK_FAILED", str(exc), payload.get("path")) from exc
+        except (OSError, ValueError, TypeError, RuntimeError) as exc:
+            raise WorkspaceError("CONTENT_FAILED", f"内容操作未完成：{exc}", payload.get("path")) from exc
 
     def _resource_changed(self) -> None:
         # Notification is in the command, so undo/redo also invalidate revision.

@@ -1,0 +1,23 @@
+.tools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; padding: 8px; border-bottom: 1px solid var(--line); }
+.button { min-height: 29px; padding: 5px 10px; border: 1px solid var(--line); background: var(--canvas); white-space: nowrap; }
+.button:hover { background: var(--panel2); }
+.button:active { background: var(--selected); }
+.dialog { width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 22px; border: 1px solid var(--line); border-radius: 4px; background: var(--canvas); color: var(--ink); }
+.dialog::backdrop { background: color-mix(in srgb, var(--ink) 25%, transparent); }
+.dialog h2 { margin: 0 0 16px; font-size: 16px; font-weight: 600; }
+.dialog p { line-height: 1.6; overflow-wrap: anywhere; }
+.field { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; align-items: start; margin: 10px 0; }
+.field label { padding-top: 5px; line-height: 20px; }
+.field input, .field select { width: 100%; min-width: 0; min-height: 30px; padding: 4px 10px; line-height: 20px; border: 1px solid var(--line); background: var(--panel); }
+.field [data-field-type="str"] { border-color: var(--str-line); background: var(--str); box-shadow: inset 3px 0 var(--str-bar); }
+.field [data-field-type="ref"] { border-color: var(--ref-line); background: var(--ref); box-shadow: inset 3px 0 var(--ref-bar); }
+.field input:focus-visible, .field select:focus-visible { outline-offset: -1px; }
+.field input[aria-invalid="true"] { border-color: var(--error); }
+.hint { color: var(--muted); font-size: 12px; }
+.path { margin: 0 0 14px; color: var(--muted); }
+.error { color: var(--error); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.confirmation { padding-top: 8px; border-top: 1px solid var(--line); }
+.confirmation p { margin-top: 0; }
+.destructive { color: var(--error); }
+.actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+@media (max-width: 420px) { .dialog { padding: 16px; } .field { grid-template-columns: minmax(0, 1fr); gap: 3px; } .field label { padding-top: 0; } }

@@ -107,6 +107,10 @@ class FormCommand(Command):
         self._replace.undo()
         self._service.restore(self._path, self._before)
 
+    def rekey_document(self, old: str, new: str) -> None:
+        if self._path == old:
+            self._path = new
+
 
 class _DraftCommands:
     """Apply shared group rules only to a private draft; no second user history.
@@ -130,6 +134,9 @@ class FormService:
 
     def restore(self, path: str, memory: FormMemory) -> None:
         self._memories[path] = deepcopy(memory)
+
+    def drop_state(self, path: str) -> None:
+        self._memories.pop(path, None)
 
     def context(self, content: ContentData) -> tuple[dict, ClassDef, dict]:
         # Missing type is interpreted for display only, never written into JSON.

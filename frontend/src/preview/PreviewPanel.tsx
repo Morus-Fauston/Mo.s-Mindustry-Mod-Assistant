@@ -5,12 +5,12 @@ import { PreviewCanvas } from './PreviewCanvas';
 import type { PreviewResource, PreviewScene } from './types';
 import styles from './PreviewPanel.module.css';
 
-export function PreviewPanel({ document }: { document: DocumentSnapshot | undefined }) {
+export function PreviewPanel({ document, resourceRevision = 0 }: { document: DocumentSnapshot | undefined; resourceRevision?: number }) {
   const session = document?.sessionId ?? null;
   const path = document?.path ?? null;
   // Unrelated saves and tab bookkeeping must not reset the user's viewport.
   const dataIdentity = JSON.stringify(document?.data ?? null);
-  const identity = `${session}:${path}:${dataIdentity}`;
+  const identity = `${session}:${path}:${dataIdentity}:${resourceRevision}`;
   const [result, setResult] = useState<{ identity: string; scene: PreviewScene } | null>(null);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);

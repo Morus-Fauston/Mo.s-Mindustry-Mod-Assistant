@@ -321,16 +321,18 @@ class CommandStack:
     def undo(self) -> None:
         if not self._history:
             return
-        cmd = self._history.pop()
+        cmd = self._history[-1]
         cmd.undo()
+        self._history.pop()
         self._redo_stack.append(cmd)
         self._notify()
 
     def redo(self) -> None:
         if not self._redo_stack:
             return
-        cmd = self._redo_stack.pop()
+        cmd = self._redo_stack[-1]
         cmd.execute()
+        self._redo_stack.pop()
         self._history.append(cmd)
         self._notify()
 

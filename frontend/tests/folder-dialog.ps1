@@ -1,7 +1,8 @@
 ﻿param(
     [Parameter(Mandatory=$true)][int]$TestProcessId,
     [ValidateSet('inspect','select','cancel')][string]$Action = 'inspect',
-    [string]$ProjectPath = ''
+    [string]$ProjectPath = '',
+    [string]$DialogName = '选择文件夹'
 )
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
@@ -31,7 +32,7 @@ while (-not $dialog -and [DateTime]::UtcNow -lt $deadline) {
     foreach ($window in $windows) {
         $dialogCondition = [System.Windows.Automation.AndCondition]::new(
             [System.Windows.Automation.PropertyCondition]::new($element::ClassNameProperty, '#32770'),
-            [System.Windows.Automation.PropertyCondition]::new($element::NameProperty, '选择文件夹'))
+            [System.Windows.Automation.PropertyCondition]::new($element::NameProperty, $DialogName))
         $dialog = $window.FindFirst($scope::Subtree, $dialogCondition)
         if ($dialog) { break }
     }
@@ -69,7 +70,8 @@ if ($Action -eq 'cancel') {
     exit 0
 }
 $children | ConvertTo-Json -Depth 3
-$target = $children | Where-Object { $_.Class -eq 'Edit' -and $_.Id -eq 1152 } | Select-Object -First 1
+$inputId = if ($DialogName -eq '打开') { 1148 } else { 1152 }
+$target = $children | Where-Object { $_.Class -eq 'Edit' -and $_.Id -eq $inputId } | Select-Object -First 1
 if (-not $target) { throw '未找到目录输入框' }
 [void][NativeDialog]::SendMessage($target.Handle, 0x0C, [IntPtr]::Zero, $ProjectPath)
 $button = $children | Where-Object { $_.Id -eq 1 -and $_.Class -eq 'Button' } | Select-Object -First 1

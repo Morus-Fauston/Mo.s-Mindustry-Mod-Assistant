@@ -105,7 +105,7 @@ test('引用弹层关闭、迟到检索隔离与全部输入文本起点', async
   await page.screenshot({ path: info.outputPath('引用弹层.png') });
   await search.press('Tab'); await expect(popup.getByRole('button', { name: '清空搜索', exact: true })).toBeFocused();
   await page.keyboard.press('Escape'); await expect(popup).toHaveCount(0); await expect(trigger).toBeFocused();
-  await trigger.click(); await page.locator('header').click(); await expect(popup).toHaveCount(0);
+  await trigger.click(); await page.getByRole('banner').click(); await expect(popup).toHaveCount(0);
   await expect(page.getByRole('tab').getByLabel('未保存')).toHaveCount(0);
 });
 

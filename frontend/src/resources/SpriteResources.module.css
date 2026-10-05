@@ -1,0 +1,23 @@
+.resources { min-width: 0; border-top: 1px solid var(--line); background: var(--canvas); color: var(--ink); }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 37px; padding: 0 12px; border-bottom: 1px solid var(--line); }
+.heading h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.heading button { min-height: 24px; padding: 2px 6px; font-size: 12px; border: 1px solid transparent; background: transparent; color: var(--muted); }
+.heading button:hover { color: var(--ink); background: var(--panel2); }
+.heading button:active { background: var(--selected); }
+.list { margin: 0; padding: 0; list-style: none; max-height: 260px; overflow: auto; overscroll-behavior: contain; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 7px 12px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.description { flex: 1 1 100px; min-width: 0; display: flex; flex-direction: column; gap: 2px; line-height: 1.5; }
+.label { font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.filename { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.missing { font-size: 12px; color: var(--muted); }
+.actions { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.actions button, .confirmActions button { min-height: 26px; padding: 3px 6px; border: 1px solid var(--line); background: var(--panel); font-size: 12px; line-height: 18px; }
+.actions button:hover, .confirmActions button:hover { background: var(--panel2); }
+.actions button:active, .confirmActions button:active { background: var(--selected); }
+.confirmation { width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); }
+.confirmation p { margin: 0 0 7px; line-height: 1.6; font-size: 12px; overflow-wrap: anywhere; }
+.confirmActions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+.status, .error { margin: 0; padding: 7px 12px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.status { color: var(--muted); }
+.error { color: var(--error); }

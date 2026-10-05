@@ -15,6 +15,8 @@ from app.core.project import Project
 from app.core.session import ProjectSession
 from app.desktop.editing import EditingError, EditingService
 from app.desktop.preview import PreviewService
+from app.desktop.resources import ResourceService
+from app.desktop.resource_watch import ResourceWatch
 
 
 class WorkspaceError(EditingError):
@@ -24,9 +26,14 @@ class WorkspaceError(EditingError):
 class WorkspaceService:
     """One window owns one core session; requests never accept arbitrary actions."""
 
-    def __init__(self, metadata_dir: Path | str, choose_directory: Callable[[], str | None] | None = None):
+    def __init__(self, metadata_dir: Path | str, choose_directory: Callable[[], str | None] | None = None,
+                 *, choose_sprite: Callable[[], str | None] | None = None,
+                 reveal_file: Callable[[Path], None] | None = None):
         self._metadata_dir = Path(metadata_dir)
         self._choose_directory = choose_directory
+        self._choose_sprite, self._reveal_file = choose_sprite, reveal_file
+        self._resources: ResourceService | None = None
+        self._resource_watch: ResourceWatch | None = None
         self._session = ProjectSession(metadata_dir)
         self._session_id: str | None = None
         self._editing = EditingService(self._session, None)
@@ -69,7 +76,8 @@ class WorkspaceService:
                                   "editing_state", "set_field", "undo", "redo", "save_opened",
                                   "close_documents", "close_window", "preview_scene", "preview_resource",
                                   "add_field", "delete_field", "set_capability", "add_group", "delete_group",
-                                  "reference_candidates") or not isinstance(payload, dict):
+                                  "reference_candidates", "sprite_targets", "resource_state",
+                                  "import_sprite", "delete_sprite", "reveal_sprite") or not isinstance(payload, dict):
                     raise WorkspaceError("INVALID_REQUEST", "不支持此请求。")
                 fingerprint = json.dumps(envelope, sort_keys=True, ensure_ascii=False, allow_nan=False)
                 if len(fingerprint) > 16384:
@@ -96,7 +104,7 @@ class WorkspaceService:
                 response["error"] = {"code": "READ_FAILED", "message": "无法读取工程资料，请检查文件格式和访问权限后重试。"}
             # Preview reads can be repeated explicitly. Keeping their data URLs in
             # the mutation-result cache would retain old scenes after resource cleanup.
-            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource", "reference_candidates")
+            cacheable = isinstance(envelope, dict) and envelope.get("action") not in ("preview_scene", "preview_resource", "reference_candidates", "sprite_targets", "resource_state")
             if cacheable and fingerprint is not None and request_id not in self._results:
                 self._results[request_id] = (fingerprint, deepcopy(response))
                 while len(self._results) > 128:
@@ -104,6 +112,10 @@ class WorkspaceService:
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
+        if action == "resource_state":
+            return self._resource_state()
+        if action in ("sprite_targets", "import_sprite", "delete_sprite", "reveal_sprite"):
+            return self._sprite_action(action, payload)
         if action == "reference_candidates":
             return self._editing.reference_candidates(payload)
         if action == "preview_scene":
@@ -141,6 +153,8 @@ class WorkspaceService:
             if decision == "save":
                 self._editing.save(payload)
             self._closing = True
+            if self._resource_watch is not None:
+                self._resource_watch.close()
             return {**self._editing.state(), "closeApproved": True}
         if action == "recent_projects":
             recent = self._session.last_project_path()
@@ -191,12 +205,71 @@ class WorkspaceService:
             candidate.open_project(root)
         except (OSError, ValueError) as exc:
             raise WorkspaceError("PROJECT_OPEN_FAILED", "无法打开工程，请检查目录中的 mod.json 和文件访问权限。", str(root)) from exc
+        watch = ResourceWatch(candidate.project.root)
+        if self._resource_watch is not None:
+            self._resource_watch.close()
         self._session = candidate
         self._session_id = uuid4().hex
         self._editing = EditingService(candidate, self._session_id, self._editing.revision + 1)
         self._preview = PreviewService(candidate.project, self._session_id)
+        self._resource_watch = watch
+        self._resources = ResourceService(candidate.project, candidate.command_stack,
+            on_change=self._resource_changed, content_resolver=self._content)
         return {"sessionId": self._session_id, "name": project.mod_info.display_name or project.mod_info.name or root.name,
                 "root": str(root), "tree": tree}
+
+    def _resource_changed(self) -> None:
+        # Notification is in the command, so undo/redo also invalidate revision.
+        self._editing.revision += 1
+
+    def _resource_state(self) -> dict:
+        if self._resource_watch is None or self._session.project is None:
+            raise WorkspaceError("NO_PROJECT", "请先打开工程。")
+        try:
+            self._resource_watch.scan()
+            return {"sessionId": self._session_id, "resourceRevision": self._resource_watch.revision,
+                    "tree": self._tree(self._session.project)}
+        except (OSError, ValueError) as exc:
+            raise WorkspaceError("RESOURCE_FAILED", f"资源刷新失败：{exc}") from exc
+
+    def _sprite_action(self, action: str, payload: dict) -> dict:
+        if self._resources is None:
+            raise WorkspaceError("NO_PROJECT", "请先打开工程。")
+        allowed = {"path", "suffix", "expectedRevision", "overwrite", "confirmed"}
+        if set(payload) - allowed:
+            raise WorkspaceError("INVALID_REQUEST", "贴图操作不接受外部文件路径。")
+        path, suffix = payload.get("path"), payload.get("suffix", "")
+        if not isinstance(suffix, str):
+            raise WorkspaceError("INVALID_REQUEST", "贴图后缀无效。")
+        try:
+            targets = self._resources.targets(path)
+            if action == "sprite_targets":
+                return {"targets": targets}
+            self._editing.check_revision(payload)
+            target = next((item for item in targets if item["suffix"] == suffix), None)
+            if target is None:
+                raise ValueError("不支持此贴图类型")
+            if action == "import_sprite":
+                overwrite = payload.get("overwrite", False)
+                if type(overwrite) is not bool:
+                    raise ValueError("覆盖确认无效")
+                if target["exists"] and not overwrite:
+                    raise FileExistsError("贴图已存在，请先确认替换")
+                if self._choose_sprite is None:
+                    raise ValueError("文件选择器尚未就绪")
+                source = self._choose_sprite()
+                if source is None:
+                    return {**self._editing.state(), "cancelled": True}
+                self._resources.import_sprite(path, source, suffix, overwrite=overwrite)
+            elif action == "delete_sprite":
+                self._resources.delete_sprite(path, suffix, confirmed=payload.get("confirmed", False))
+            else:
+                if not target["exists"] or self._reveal_file is None:
+                    raise ValueError("贴图不存在或系统定位尚未就绪")
+                self._reveal_file(self._session.project.root / target["path"])
+            return self._editing.state()
+        except (OSError, ValueError) as exc:
+            raise WorkspaceError("RESOURCE_FAILED", f"贴图操作失败：{exc}") from exc
 
     def _read(self, path: object) -> dict:
         return self._editing.opened(path, self._content(path))

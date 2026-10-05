@@ -9,6 +9,7 @@ import { PreviewPanel } from './preview/PreviewPanel';
 import { BasicForm } from './forms/BasicForm';
 import { createDraftStore } from './editing/drafts';
 import type { ReferenceResult } from './references/types';
+import { SpriteResources, type SpriteTargets } from './resources/SpriteResources';
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
@@ -45,6 +46,7 @@ export function App() {
   const [needsRecovery, setNeedsRecovery] = useState(false);
   const [notice, setNotice] = useState('');
   const [failure, setFailure] = useState('');
+  const [resourceRevision, setResourceRevision] = useState(0);
   const pendingReads = useRef(new Set<string>());
   const generation = useRef(0);
   const selection = useRef(0);
@@ -66,6 +68,28 @@ export function App() {
   useEffect(() => {
     if (startup.phase === 'ready') void editing.refresh().catch(error => setFailure(message(error)));
   }, [startup.phase, editing]);
+
+  useEffect(() => {
+    const session = project?.sessionId;
+    if (!session) { setResourceRevision(0); return; }
+    let alive = true, pending = false;
+    async function refreshResources() {
+      if (pending || editing.getSnapshot().busy || openingProject.current || intentRef.current) return;
+      pending = true;
+      try {
+        const result = await desktop.request<{ sessionId: string; resourceRevision: number; tree: TreeNode[] }>(
+          'resource_state', {}, session!);
+        if (alive && projectRef.current?.sessionId === result.sessionId) {
+          setResourceRevision(result.resourceRevision);
+          setProject(current => current?.sessionId === result.sessionId ? { ...current, tree: result.tree } : current);
+        }
+      } catch (error) { if (alive) setFailure(message(error)); }
+      finally { pending = false; }
+    }
+    void refreshResources();
+    const timer = setInterval(() => void refreshResources(), 2000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [project?.sessionId, editor.state?.revision, editing]);
 
   const flushDrafts = draftStore.flush;
 
@@ -327,9 +351,17 @@ export function App() {
         </div>}
       </section>
       <aside className={styles.right} aria-label="预览与图层">
-        <PreviewPanel document={documents.find(document => document.path === activePath)} />
+        <PreviewPanel document={documents.find(document => document.path === activePath)} resourceRevision={resourceRevision} />
         <h2 className={styles.panelHead}>图层</h2>
         <p className={styles.emptySide}>暂无图层</p>
+        {project && activePath && <SpriteResources key={`${project.sessionId}:${activePath}`}
+          sessionId={project.sessionId} path={activePath} revision={(editor.state?.revision ?? 0) + resourceRevision}
+          load={() => desktop.request<SpriteTargets>('sprite_targets', { path: activePath }, project.sessionId)}
+          onAction={async (action, payload) => {
+            await flushDrafts();
+            if (projectRef.current?.sessionId !== project.sessionId) return;
+            await editing.run(action, { ...payload, path: activePath });
+          }} />}
       </aside>
     </main>
     <footer className={styles.status}><span role="status">{notice || status}</span><span>{metadata ? `游戏版本 ${metadata.gameVersion}` : '离线工作台'}</span></footer>

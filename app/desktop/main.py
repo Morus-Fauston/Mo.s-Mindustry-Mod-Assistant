@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import ctypes
 import logging
+import subprocess
 from threading import Event
 
 from app.core.paths import data_dir, metadata_dir, ensure_user_config_dir
@@ -44,8 +45,17 @@ def main() -> None:
             selected = window.create_file_dialog(webview.FileDialog.FOLDER)
             return selected[0] if selected else None
 
+        def choose_sprite():
+            selected = window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=False,
+                                                 file_types=('PNG 图片 (*.png)',))
+            return selected[0] if selected else None
+
+        def reveal_file(path):
+            subprocess.Popen(['explorer.exe', f'/select,{path}'], creationflags=subprocess.CREATE_NO_WINDOW)
+
         api = DesktopApi(metadata_dir(), choose_directory,
-                         on_close=lambda: guard.approve(), on_close_ready=lambda: guard.ready())
+                         on_close=lambda: guard.approve(), on_close_ready=lambda: guard.ready(),
+                         choose_sprite=choose_sprite, reveal_file=reveal_file)
         webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
         window = webview.create_window(
             "MoMA 模组助手", str(page), js_api=api,

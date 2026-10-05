@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { desktop, DesktopError, type BootstrapData } from './bridge/desktop';
 import { ProjectTree } from './workspace/ProjectTree';
 import type { DocumentSnapshot, ProjectSnapshot, RecentProject, TreeNode } from './workspace/types';
@@ -20,6 +20,10 @@ import type { ValidationIssue, ValidationReport } from './validation/types';
 import { resolveIssueField } from './validation/location';
 import { GenerationSection } from './generation/GenerationSection';
 import { ComparisonSection } from './comparison/ComparisonSection';
+import { createPreferencesController } from './preferences/controller';
+import { PreferencesPanel } from './preferences/PreferencesPanel';
+import type { PreferencesPatch, WorkbenchLayout as LayoutState } from './preferences/types';
+import { WorkbenchLayout } from './layout';
 import { ContentTools, type ContentAction, type ContentCatalogue } from './content/ContentTools';
 import { affectedContentPaths, reconcileContentViews, type ContentResult } from './content/integration';
 
@@ -40,6 +44,10 @@ export function App() {
   const projectRef = useRef<ProjectSnapshot | null>(null);
   const [editing] = useState(() => createEditingClient(desktop));
   const editor = useSyncExternalStore(editing.subscribe, editing.getSnapshot);
+  const [preferences] = useState(() => createPreferencesController(desktop, editing));
+  const settings = useSyncExternalStore(preferences.subscribe, preferences.getSnapshot);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const layout = settings.layout ?? { leftWidth: null, rightWidth: null, previewRatio: null, filesVisible: true, previewVisible: true };
   const documents = editor.state?.documents ?? [];
   const [draftStore] = useState(() => createDraftStore(async (path, field, text) => {
     if (field === SOURCE_DRAFT_FIELD) { await editing.run('set_source', { path, text }); return; }
@@ -67,7 +75,10 @@ export function App() {
   const focusSequence = useRef(0);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentProject[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [workspaceBusy, setBusy] = useState(false);
+  const intentPreparing = useRef(false);
+  const [preparingIntent, setPreparingIntent] = useState(false);
+  const busy = workspaceBusy || preparingIntent || settings.busy || settings.uncertain;
   const openingProject = useRef(false);
   const unresolvedOpen = useRef<Opening | null>(null);
   const [needsRecovery, setNeedsRecovery] = useState(false);
@@ -86,11 +97,21 @@ export function App() {
       .catch((error: unknown) => setStartup({ phase: 'error', message: error instanceof Error ? error.message : '程序连接失败，请重试。' }));
   }, []);
   useEffect(load, [load]);
+  useLayoutEffect(() => {
+    preferences.setActive(true);
+    return () => preferences.setActive(false);
+  }, [preferences]);
+  useEffect(() => {
+    if (startup.phase === 'ready') void preferences.load().catch(error => setFailure(message(error)));
+  }, [startup.phase, preferences]);
+  useEffect(() => {
+    if (settings.state) document.documentElement.dataset.theme = settings.state.values.theme;
+  }, [settings.state?.values.theme]);
   useEffect(() => {
     if (startup.phase !== 'ready') return;
     let alive = true;
-    void desktop.request<{ recentProjects: RecentProject[] }>('recent_projects', {}, null)
-      .then(data => { if (alive) setRecent(data.recentProjects); })
+    void desktop.request<{ recentProjects: RecentProject[]; warnings?: string[] }>('recent_projects', {}, null)
+      .then(data => { if (alive) { setRecent(data.recentProjects); if (data.warnings?.length) setFailure(data.warnings.join('；')); } })
       .catch(() => { if (alive) setFailure('最近工程读取失败，仍可通过选择目录打开工程。'); });
     return () => { alive = false; };
   }, [startup.phase]);
@@ -135,6 +156,7 @@ export function App() {
         draftStore.reset(); setSourceViews({}); setActivePath(null); setSelectedPath(null);
         setResourceRevision(0);
         if (result.project) setRecent([{ path: result.project.root, name: result.project.name }]);
+        if (result.project?.warnings?.length) setFailure(result.project.warnings.join('；'));
       } else if (result.tree && projectRef.current?.sessionId === state.sessionId) {
         const next = { ...projectRef.current, tree: result.tree }; projectRef.current = next; setProject(next);
       }
@@ -371,7 +393,10 @@ export function App() {
   }
 
   async function requestIntent(target: CloseIntent) {
-    if (intentRef.current || openingProject.current || unresolvedOpen.current || editing.getSnapshot().uncertain) return;
+    if (intentPreparing.current || intentRef.current || openingProject.current || unresolvedOpen.current || editing.getSnapshot().uncertain) return;
+    intentPreparing.current = true; setPreparingIntent(true);
+    try {
+    await preferences.flush();
     await draftStore.settled();
     if (editing.getSnapshot().busy) return;
     // Reconcile completed reads before closing, including responses still in flight.
@@ -381,15 +406,37 @@ export function App() {
       .filter(document => target.kind !== 'documents' || target.paths.includes(document.path));
     if (dirty.length) { intentRef.current = target; setIntent(target); setDecisionError(''); }
     else await executeIntent(target, 'discard');
+    } catch (error) { setFailure(message(error)); }
+    finally { intentPreparing.current = false; setPreparingIntent(false); }
   }
 
-  const handlers = useRef({ requestIntent, editAction });
-  handlers.current = { requestIntent, editAction };
+  function changeLayout(next: LayoutState) {
+    if (intentPreparing.current || openingProject.current || unresolvedOpen.current || workspaceBusy || editor.busy || editor.uncertain || settings.uncertain || !settings.state || intentRef.current) return;
+    try { preferences.updateLayout(next); }
+    catch (error) { setFailure(message(error)); }
+  }
+  function togglePanel(panel: 'filesVisible' | 'previewVisible') {
+    const current = preferences.getSnapshot().layout;
+    if (current) changeLayout({ ...current, [panel]: !current[panel] });
+  }
+  async function applySettings(patch: PreferencesPatch) {
+    await draftStore.settled();
+    if (intentPreparing.current || openingProject.current || unresolvedOpen.current || editing.getSnapshot().busy || editing.getSnapshot().uncertain || workspaceBusy || intentRef.current) {
+      throw new Error('请先完成当前编辑操作，再应用设置。');
+    }
+    await preferences.updateSettings(patch);
+  }
+  const handlers = useRef({ requestIntent, editAction, togglePanel });
+  handlers.current = { requestIntent, editAction, togglePanel };
   useEffect(() => {
     const close = () => { void handlers.current.requestIntent({ kind: 'window' }); };
     const keys = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.isComposing || intentRef.current || document.querySelector('dialog[open]')) return;
+      if (!(event.ctrlKey || event.metaKey) || event.isComposing || intentRef.current || document.querySelector('dialog[open]')) return;
       const key = event.key.toLowerCase();
+      if (key === 'b' && !event.altKey || key === 'p' && event.altKey) {
+        event.preventDefault(); handlers.current.togglePanel(key === 'b' ? 'filesVisible' : 'previewVisible'); return;
+      }
+      if (event.altKey) return;
       if (key === 's' || key === 'z' || key === 'y') {
         event.preventDefault();
         void handlers.current.editAction(key === 's' ? 'save_opened' : key === 'y' || event.shiftKey ? 'redo' : 'undo');
@@ -448,6 +495,7 @@ export function App() {
       if ('cancelled' in result) { setNotice('已取消打开工程'); return; }
       projectRef.current = result;
       setProject(result);
+      if (result.warnings?.length) setFailure(result.warnings.join('；'));
       editing.reset(result.sessionId);
       draftStore.reset();
       setSourceViews({});
@@ -469,7 +517,7 @@ export function App() {
   }
 
   async function openNode(node: TreeNode) {
-    if (openingProject.current || unresolvedOpen.current || editor.busy || editor.uncertain || intentRef.current || !node.path || !projectRef.current) return;
+    if (busy || openingProject.current || unresolvedOpen.current || editor.busy || editor.uncertain || intentRef.current || !node.path || !projectRef.current) return;
     setSelectedPath(node.path);
     const selected = ++selection.current;
     if (node.kind !== 'content') { setNotice(`贴图：${node.path}`); return; }
@@ -509,9 +557,13 @@ export function App() {
     <header className={styles.menu}>
       <span className={styles.brand}><span className={styles.mark}>M</span> MoMA</span>
       <span className={styles.caption}>模组助手</span>
+      <button className={styles.menuButton} disabled={!settings.state || workspaceBusy || needsRecovery || editor.uncertain || Boolean(intent)}
+        onClick={() => setSettingsOpen(true)}>设置</button>
+      {settings.uncertain && <button className={styles.menuButton} disabled={settings.busy}
+        onClick={() => void preferences.recover().catch(error => setFailure(message(error)))}>查询配置结果</button>}
     </header>
     <div className={styles.toolbar}>
-      <button className={styles.button} disabled={!metadata || busy || editor.busy || editor.uncertain}
+      <button className={styles.button} disabled={!metadata || workspaceBusy || editor.busy || editor.uncertain || !needsRecovery && (settings.busy || settings.uncertain)}
         onClick={() => needsRecovery ? void openProject() : void requestIntent({ kind: 'project' })}>{needsRecovery ? '查询打开结果' : '打开工程'}</button>
       <button className={styles.button} disabled={!documents.length || busy || editor.uncertain || decisionBusy}
         onClick={() => void editAction('save_opened')}>保存已打开内容</button>
@@ -527,8 +579,17 @@ export function App() {
       {editor.uncertain && <button className={styles.button} disabled={editor.busy}
         onClick={() => { void recoverOperation().catch(() => {}); }}>查询操作结果</button>}
       <span title={project?.root}>{project?.name ?? '未打开工程'}</span>
+      <div className={styles.panelTools} role="group" aria-label="工作台面板">
+        <button className={styles.button} aria-pressed={layout.filesVisible} disabled={!settings.state || settings.uncertain || needsRecovery}
+          title="切换文件面板（Ctrl+B）" onClick={() => togglePanel('filesVisible')}>文件面板</button>
+        <button className={styles.button} aria-pressed={layout.previewVisible} disabled={!settings.state || settings.uncertain || needsRecovery}
+          title="切换预览面板（Ctrl+Alt+P）" onClick={() => togglePanel('previewVisible')}>预览面板</button>
+        <button className={styles.button} disabled={!settings.state || settings.uncertain || needsRecovery}
+          onClick={() => changeLayout({ leftWidth: null, rightWidth: null, previewRatio: null, filesVisible: true, previewVisible: true })}>恢复布局</button>
+      </div>
     </div>
-    <main className={styles.workbench}>
+    <main className={styles.workbenchHost}>
+      <WorkbenchLayout layout={layout} onLayoutChange={changeLayout} files={
       <aside className={styles.sidebar} aria-label="文件">
         <h2 className={styles.panelHead}>文件</h2>
         <ContentTools sessionId={project?.sessionId ?? null} activePath={activePath}
@@ -536,8 +597,10 @@ export function App() {
           completionId={contentCompletion} recovery={editor.uncertain} recoveryBusy={editor.busy}
           onRecover={recoverOperation} onAction={contentAction}
           loadCatalogue={() => desktop.request<ContentCatalogue>('content_catalogue', {}, editing.getSnapshot().state?.sessionId ?? null)} />
-        {project ? <ProjectTree key={project.sessionId} nodes={project.tree} selectedPath={selectedPath} onOpen={node => void openNode(node)} /> : <p className={styles.emptySide}>尚未打开工程</p>}
-      </aside>
+        {project ? <ProjectTree key={project.sessionId} nodes={project.tree} selectedPath={selectedPath}
+          disabled={busy || needsRecovery || editor.busy || editor.uncertain || Boolean(intent)}
+          onOpen={node => void openNode(node)} /> : <p className={styles.emptySide}>尚未打开工程</p>}
+      </aside>} editor={
       <section className={styles.editor} aria-label="编辑区">
         <div className={styles.tabBar} role="tablist" aria-label="打开的内容">
           {documents.length === 0 ? <div className={styles.tab}>欢迎</div> : documents.map(document => <div className={styles.documentTab} key={document.path} data-active={activePath === document.path}>
@@ -546,6 +609,10 @@ export function App() {
           </div>)}
         </div>
         {failure && <div className={styles.problem} role="alert">{failure}<button aria-label="关闭提示" onClick={() => setFailure('')}>×</button></div>}
+        {settings.error && <div className={styles.problem} role="alert">{settings.error}
+          <button disabled={settings.busy} onClick={() => void (settings.uncertain ? preferences.recover() : preferences.load()).catch(error => setFailure(message(error)))}>
+            {settings.uncertain ? '查询配置结果' : '重新读取配置'}</button></div>}
+        {settings.state?.warnings.map(warning => <p className={styles.sourceWarning} key={warning} role="status">{warning}</p>)}
         {documents.length > 0 && <div className={styles.documentTools}>
           <span title={activePath ?? ''}>{activePath}</span>
           <button className={styles.button} disabled={documents.length < 2 && pendingReads.current.size === 0} onClick={() => {
@@ -629,9 +696,11 @@ export function App() {
             busy={validationBusy || editor.busy || editor.uncertain || busy} error={validationError}
             onValidate={() => validateOrExport('validate_project')} onLocate={issue => void locateIssue(issue)} />
         </div>}
-      </section>
+      </section>} preview={
       <aside className={styles.right} aria-label="预览与图层">
         <PreviewPanel document={activeDocument} projectSessionId={project?.sessionId} resourceRevision={resourceRevision} openPaths={documents.map(document => document.path)} revealLayer={layerFocus}
+          previewRatio={layout.previewRatio} onPreviewRatioChange={previewRatio => changeLayout({ ...layout, previewRatio })}
+          spriteZoom={settings.state?.values.sprite_zoom}
           layers={activePath ? {
             disabled: busy || editor.busy || editor.uncertain || decisionBusy || SOURCE_DRAFT_FIELD in (drafts[activePath] ?? {}),
             drafts: drafts[activePath] ?? {}, errors: draftState.errors[activePath] ?? {},
@@ -654,9 +723,13 @@ export function App() {
         {activeDocument && <ComparisonSection document={activeDocument} editing={editing}
           disabled={busy || editor.busy || editor.uncertain || decisionBusy || Boolean(intent)}
           hasDrafts={Object.keys(drafts[activeDocument.path] ?? {}).length > 0} />}
-      </aside>
+      </aside>} />
     </main>
     <footer className={styles.status}><span role="status">{notice || status}</span><span>{metadata ? `游戏版本 ${metadata.gameVersion}` : '离线工作台'}</span></footer>
+    {settingsOpen && settings.state && <PreferencesPanel state={settings.state}
+      busy={settings.busy || settings.uncertain || editor.busy || workspaceBusy}
+      error={settings.error} onUpdate={applySettings} onClose={() => setSettingsOpen(false)}
+      recovery={settings.uncertain ? { busy: settings.busy, onRecover: () => preferences.recover() } : undefined} />}
     {intent && <CloseDecision title={intent.kind === 'window' ? '关闭工作台' : intent.kind === 'project' ? '切换工程' : intent.kind === 'content' ? '继续内容操作' : '关闭内容'}
       paths={documents.filter(document => (document.dirty || document.path in drafts) &&
         (!('paths' in intent) || intent.paths.includes(document.path))).map(document => document.path)}

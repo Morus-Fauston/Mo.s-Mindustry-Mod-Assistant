@@ -165,8 +165,7 @@ export function ComparisonTable({ comparison, fieldNames, fieldDocs }: {
     <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="只读字段对比，可横向滚动">
       <table className={styles.table}><caption>实际字段对比</caption><thead><tr><th scope="col">字段</th><th scope="col">我的值</th><th scope="col">参考值</th></tr></thead>
         <tbody>{comparison.rows.map(row => <tr key={row.field} data-different={row.different ? 'true' : 'false'}>
-          <th scope="row" title={fieldDocs[row.field] ?? ''}>{fieldNames[row.field] ?? row.field}
-            {fieldNames[row.field] && <span className={styles.kind}>{row.field}</span>}
+          <th scope="row" data-field={row.field} title={fieldDocs[row.field] ?? ''}>{fieldNames[row.field] ?? row.field}
             {row.different && <span className={styles.kind}>不同</span>}</th>
           <td>{cell(row.current)}</td><td>{cell(row.reference)}</td>
         </tr>)}</tbody>

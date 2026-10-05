@@ -8,7 +8,7 @@ from pathlib import PurePosixPath
 from typing import Callable
 
 from app.core.commands import Command, SetFieldCommand
-from app.core.config_loader import get_field_docs, get_field_names_zh
+from app.core.config_loader import display_name, get_field_docs, get_field_names_zh
 from app.core.content_store import ContentData
 from app.core.metadata import normalize_content_type
 from app.core.session import ProjectSession
@@ -228,8 +228,9 @@ class EditingService:
 
     def document(self, path: str) -> dict:
         content = self.entry(path)
+        names = get_field_names_zh()
         common = {"sessionId": self.session_id, "path": path, "name": content.name,
-                  "category": content.category, "fieldNames": deepcopy(get_field_names_zh()),
+                  "category": content.category, "fieldNames": {key: display_name(key, names) for key in names},
                   "fieldDocs": deepcopy(get_field_docs()), "revision": self.revision, "dirty": self._dirty(path)}
         if isinstance(content, RawDocument):
             return {**common, "validData": False, "data": None, "form": None, "contentType": "Unknown",

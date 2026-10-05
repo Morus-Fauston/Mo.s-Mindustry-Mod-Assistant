@@ -63,7 +63,7 @@ async function confirmTwin(panel: Locator, category = 'units') {
 
 async function expectHealth(panel: Locator, current: number, reference: number) {
   const row = panel.getByRole('table', { name: '实际字段对比', exact: true })
-    .getByRole('rowheader', { name: /health/ }).locator('..');
+    .locator('th[data-field="health"]').locator('..');
   await expect.poll(async () => Number(await row.locator('td').nth(0).locator('span').first().textContent())).toBe(current);
   await expect.poll(async () => Number(await row.locator('td').nth(1).locator('span').first().textContent())).toBe(reference);
   await expect(row).toHaveAttribute('data-different', 'true');

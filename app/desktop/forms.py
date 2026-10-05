@@ -9,7 +9,7 @@ from math import isfinite
 import json
 import re
 
-from app.core.config_loader import get_field_docs, get_field_groups, get_field_names_zh
+from app.core.config_loader import display_name, get_field_docs, get_field_groups, get_field_names_zh
 from app.core.commands import Command, DeleteFieldCommand, ReplaceDataCommand, SetFieldCommand
 from app.core.content_store import ContentData
 from app.core.form_plan import (CAPABILITY_GROUPS, CAPABILITY_LINKAGE, compute_form_plan,
@@ -346,7 +346,7 @@ class FormService:
                 display = deepcopy(value if present else default)
                 if field.name == "name":
                     display = content.name
-                descriptor = {"name": field.name, "label": names.get(field.name, field.name),
+                descriptor = {"name": field.name, "label": display_name(field.name, names),
                     "help": docs.get(field.name, ""), "javaType": field.java_type, "mode": field.mode,
                     "control": control, "fieldType": field_type_hint(field, group_config, control),
                     "nullable": field.nullable, "readOnly": control == "readonly",
@@ -385,7 +385,7 @@ class FormService:
                 "locked": group.locked or group.group_name not in config,
                 "defaultExpanded": group.expanded, "capability": group.capability,
                 "enabled": enabled, "fields": fields,
-                "addableFields": [{"name": f.name, "label": names.get(f.name, f.name)} for f in candidates]})
+                "addableFields": [{"name": f.name, "label": display_name(f.name, names)} for f in candidates]})
         present_groups = {group["id"] for group in groups}
         subtype = infer_subtype(data["type"], data)
         addable_groups = [{"id": name, "label": GROUP_LABELS.get(name, name)}

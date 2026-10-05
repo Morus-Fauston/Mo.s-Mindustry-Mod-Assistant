@@ -25,6 +25,7 @@ export const test = base.extend<{ desktopHost: DesktopHostFixture; nativeZoom: n
     await writeFile(join(projectPath, 'content/units/broken.json'), '{invalid');
     await writeFile(join(projectPath, 'sprites/units/twin.png'), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'));
     await mkdir(join(temporary, 'config'));
+    await writeFile(join(temporary, 'config/settings.json'), JSON.stringify({ display_name_mode: 'zh' }));
     await writeFile(join(temporary, 'config/editor_state.json'), JSON.stringify({ last_project: projectPath }));
     const server = createServer();
     await new Promise<void>(done => server.listen(0, '127.0.0.1', done));

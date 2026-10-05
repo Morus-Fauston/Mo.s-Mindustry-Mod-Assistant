@@ -5,3 +5,7 @@
 .heading button:active { background: var(--selected); }
 .error { margin: 0; padding: 8px 12px; color: var(--error); line-height: 1.6; }
 .empty { margin: 12px; color: var(--muted); }
+.panel { min-width: 0; min-height: 342px; flex: 0 0 auto; display: flex; flex-direction: column; overflow: hidden; }
+.upper { min-width: 0; min-height: 0; flex: 0 0 auto; display: flex; flex-direction: column; overflow: hidden; }
+.canvasArea { min-height: 0; flex: 1; display: flex; flex-direction: column; overflow: auto; }
+.lower { min-height: 0; flex: 0 0 auto; overflow: auto; }

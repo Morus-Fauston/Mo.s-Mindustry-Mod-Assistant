@@ -6,7 +6,7 @@ import re
 from uuid import uuid4
 
 from app.core.commands import ArrayInsertCommand, ArrayMoveCommand, ArrayRemoveCommand
-from app.core.config_loader import get_field_docs, get_field_groups, get_field_names_zh
+from app.core.config_loader import display_name, get_field_docs, get_field_groups, get_field_names_zh
 from app.core.content_store import ContentData
 from app.core.form_labels import GROUP_LABELS
 from app.core.form_plan import type_default
@@ -191,7 +191,7 @@ class WeaponFormsService:
                     FormService.validate(probe, value)
                 except ValueError:
                     continue
-                fields.append({'name': name, 'label': names.get(name, name), 'help': docs.get(name, ''), 'defaultValue': value})
+                fields.append({'name': name, 'label': display_name(name, names), 'help': docs.get(name, ''), 'defaultValue': value})
             if fields:
                 groups.append({'id': group_name, 'label': GROUP_LABELS.get(group_name, group_name), 'fields': fields})
         return groups

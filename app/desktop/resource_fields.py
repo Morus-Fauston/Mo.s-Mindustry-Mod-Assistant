@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 import re
 from uuid import uuid4
 
-from app.core.config_loader import get_field_docs, get_field_groups, get_field_names_zh, get_config
+from app.core.config_loader import display_name, get_field_docs, get_field_groups, get_config
 from app.core.commands import ArrayInsertCommand, ArrayMoveCommand, ArrayRemoveCommand
 from app.core.content_store import ContentData
 from app.core.metadata import normalize_content_type
@@ -122,11 +122,11 @@ class ResourceFieldsService:
                 else:
                     self._attach(consumes, child, child_kind, child_resource, address, state, budget, child_name == "items")
                 children.append(child)
-            descriptor.update(children=children, addable=[{"name": key, "label": get_field_names_zh().get(key, key)}
+            descriptor.update(children=children, addable=[{"name": key, "label": display_name(key)}
                 for key in _CONSUMES if key not in consumes])
 
     def _descriptor(self, name, control, value, present, default=None):
-        return {"name": name, "label": get_field_names_zh().get(name, name), "help": get_field_docs().get(name, ""),
+        return {"name": name, "label": display_name(name), "help": get_field_docs().get(name, ""),
                 "control": control, "fieldType": {"reference": "ref", "number": "num", "boolean": "bool",
                     "resource_list": "arr", "resource_slot": "ref", "consumes": "obj"}.get(control, "str"),
                 "javaType": "String", "mode": "PRIMITIVE", "nullable": False, "readOnly": False,

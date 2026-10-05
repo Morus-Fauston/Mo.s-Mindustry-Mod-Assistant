@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 import re
 from uuid import uuid4
 
-from app.core.config_loader import get_field_docs, get_field_groups, get_field_names_zh
+from app.core.config_loader import display_name, get_field_docs, get_field_groups, get_field_names_zh
 from app.core.content_store import ContentData
 from app.core.metadata import normalize_content_type
 from app.core.ref_candidates import UNLOCKABLE_CATEGORIES
@@ -33,6 +33,12 @@ class _Leaf:
     name: str
     descriptor: dict
     optional: bool = False
+
+
+def _field_label(name, names):
+    """Research translations use qualified keys; English retains the JSON key."""
+    chinese = names.get(f"research.{name}", names.get(name))
+    return display_name(name, {name: chinese} if chinese else {})
 
 
 class ResearchFieldsService:
@@ -81,7 +87,7 @@ class ResearchFieldsService:
 
     def _field(self, route, data, address, name, control, *, categories=(), default=None, optional=False):
         names, docs = get_field_names_zh(), get_field_docs()
-        descriptor = {"name": name, "label": names.get(f"research.{name}", names.get(name, name)),
+        descriptor = {"name": name, "label": _field_label(name, names),
             "help": docs.get(f"research.{name}", docs.get(name, "")),
             "control": control, "fieldType": {"reference": "ref", "number": "num", "boolean": "bool"}.get(control, "str"),
             "javaType": {"number": "int", "boolean": "boolean"}.get(control, "String"),
@@ -118,7 +124,7 @@ class ResearchFieldsService:
             values = data.get(name, [])
             collection = self._collection(values, [*address, name], state, budget)
             names, docs = get_field_names_zh(), get_field_docs()
-            collection.update(name=name, label=names.get(f"research.{name}", names.get(name, name)),
+            collection.update(name=name, label=_field_label(name, names),
                               help=docs.get(f"research.{name}", docs.get(name, "")))
             descriptor[name] = collection
             for row in collection["rows"]:

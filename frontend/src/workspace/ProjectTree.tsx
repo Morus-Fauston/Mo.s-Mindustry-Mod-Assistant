@@ -7,6 +7,7 @@ interface ProjectTreeProps {
   nodes: TreeNode[];
   selectedPath: string | null;
   onOpen: (node: TreeNode) => void;
+  disabled?: boolean;
 }
 
 function NodeIcon({ kind }: { kind: TreeNode['kind'] }) {
@@ -18,7 +19,7 @@ function NodeIcon({ kind }: { kind: TreeNode['kind'] }) {
   </svg>;
 }
 
-export function ProjectTree({ nodes, selectedPath, onOpen }: ProjectTreeProps) {
+export function ProjectTree({ nodes, selectedPath, onOpen, disabled = false }: ProjectTreeProps) {
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState(() => new Set(nodes.filter(node => node.kind === 'group').map(node => node.id)));
   const [searchCollapsed, setSearchCollapsed] = useState(new Set<string>());
@@ -32,7 +33,8 @@ export function ProjectTree({ nodes, selectedPath, onOpen }: ProjectTreeProps) {
     ? new Set([...expandedGroups(filtered)].filter(id => !searchCollapsed.has(id)))
     : expanded, [searching, filtered, searchCollapsed, expanded]);
   const rows = useMemo(() => flattenTree(filtered, visibleExpanded), [filtered, visibleExpanded]);
-  const activeId = rows.some(row => row.node.id === focusedId) ? focusedId : rows[0]?.node.id;
+  const navigableRows = disabled ? rows.filter(row => row.node.kind === 'group') : rows;
+  const activeId = navigableRows.some(row => row.node.id === focusedId) ? focusedId : navigableRows[0]?.node.id;
 
   useEffect(() => {
     // Search is a temporary view; opening a result must not rewrite its saved folds.
@@ -84,21 +86,23 @@ export function ProjectTree({ nodes, selectedPath, onOpen }: ProjectTreeProps) {
   }
 
   function activate(node: TreeNode) {
+    if (disabled && node.kind !== 'group') return;
     setFocusedId(node.id);
     if (node.kind === 'group') toggle(node); else onOpen(node);
   }
 
-  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, row: TreeRow, index: number) {
+  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, row: TreeRow) {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const navigationIndex = navigableRows.findIndex(item => item.node.id === row.node.id);
     switch (event.key) {
-      case 'ArrowDown': focusRow(rows[Math.min(index + 1, rows.length - 1)]?.node.id); break;
-      case 'ArrowUp': focusRow(rows[Math.max(index - 1, 0)]?.node.id); break;
-      case 'Home': focusRow(rows[0]?.node.id); break;
-      case 'End': focusRow(rows.at(-1)?.node.id); break;
+      case 'ArrowDown': focusRow(navigableRows[Math.min(navigationIndex + 1, navigableRows.length - 1)]?.node.id); break;
+      case 'ArrowUp': focusRow(navigableRows[Math.max(navigationIndex - 1, 0)]?.node.id); break;
+      case 'Home': focusRow(navigableRows[0]?.node.id); break;
+      case 'End': focusRow(navigableRows.at(-1)?.node.id); break;
       case 'ArrowRight':
         if (row.node.kind === 'group') {
           if (!visibleExpanded.has(row.node.id)) toggle(row.node);
-          else if (rows[index + 1]?.parentId === row.node.id) focusRow(rows[index + 1].node.id);
+          else if (navigableRows[navigationIndex + 1]?.parentId === row.node.id) focusRow(navigableRows[navigationIndex + 1].node.id);
         }
         break;
       case 'ArrowLeft':
@@ -126,7 +130,8 @@ export function ProjectTree({ nodes, selectedPath, onOpen }: ProjectTreeProps) {
       </button>}
     </div>
     <div className={styles.tree} role="tree" aria-label="工程文件" aria-multiselectable="false">
-      {rows.map((row, index) => <button key={row.node.id} type="button" role="treeitem"
+      {rows.map(row => <button key={row.node.id} type="button" role="treeitem"
+        disabled={disabled && row.node.kind !== 'group'}
         ref={element => { if (element) buttons.current.set(row.node.id, element); else buttons.current.delete(row.node.id); }}
         className={styles.row} tabIndex={row.node.id === activeId ? 0 : -1}
         aria-level={row.depth + 1} aria-posinset={row.position} aria-setsize={row.siblings}
@@ -135,7 +140,7 @@ export function ProjectTree({ nodes, selectedPath, onOpen }: ProjectTreeProps) {
         data-node-id={row.node.id} data-node-kind={row.node.kind} data-path={row.node.path}
         title={[row.node.label, row.node.name, row.node.path, row.node.error].filter(Boolean).join('\n')}
         onFocus={() => setFocusedId(row.node.id)} onClick={() => activate(row.node)}
-        onKeyDown={event => onKeyDown(event, row, index)}>
+        onKeyDown={event => onKeyDown(event, row)}>
         <span className={styles.indents} aria-hidden="true">{Array.from({ length: row.depth }, (_, depth) =>
           <span className={styles.indent} key={depth} />)}</span>
         <span className={styles.chevron} aria-hidden="true">{row.node.kind === 'group' &&

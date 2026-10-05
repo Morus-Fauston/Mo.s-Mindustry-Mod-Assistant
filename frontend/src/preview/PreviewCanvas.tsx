@@ -3,7 +3,7 @@ import type { KeyboardEvent, PointerEvent } from 'react';
 import type { PreviewResource, PreviewScene } from './types';
 import { createDecodeBudget, decodePng, validateResource } from './resources';
 import { canvasBackingSize, fitViewport, panBy, sceneBounds, screenToScene, zoomAt } from './viewport';
-import type { Point, Size, Viewport } from './viewport';
+import type { Bounds, Point, Size, Viewport } from './viewport';
 import styles from './PreviewCanvas.module.css';
 import { sceneResources } from './dynamicResources';
 import { createTintCache } from './tint';
@@ -17,6 +17,40 @@ export interface PreviewCanvasProps {
   hiddenIds?: string[];
   selectedId?: string | null;
   dynamicReady?: boolean;
+  spriteZoom?: number;
+  initialView?: CanvasViewState;
+  onViewChange?: (view: CanvasViewState) => void;
+}
+
+export interface CanvasViewState {
+  viewport: Viewport;
+  checker: boolean;
+  grid: boolean;
+  mode: 'preset' | 'manual' | 'fit';
+  appliedZoom: number;
+  size: Size | null;
+}
+
+const baseZoom = (value: number) => Number.isInteger(value) && value >= 1 && value <= 8 ? value : 4;
+export const initialCanvasView = (): CanvasViewState => ({ viewport: { x: 0, y: 0, scale: 1 },
+  checker: true, grid: false, mode: 'preset', appliedZoom: 4, size: null });
+
+/** Only preferences and measured view dimensions can change this view policy. */
+export function reconcileCanvasView(current: CanvasViewState, bounds: Bounds, size: Size,
+  spriteZoom: number, ready: boolean): CanvasViewState {
+  if (!ready || size.width <= 1 || size.height <= 1) return current;
+  const scale = baseZoom(spriteZoom);
+  if (!current.size) return { ...current, appliedZoom: scale, size, mode: 'preset', viewport: {
+    scale, x: size.width / 2 - (bounds.x + bounds.width / 2) * scale,
+    y: size.height / 2 - (bounds.y + bounds.height / 2) * scale } };
+  const resized = current.size.width !== size.width || current.size.height !== size.height;
+  if (!resized && scale === current.appliedZoom) return current;
+  let viewport = resized ? panBy(current.viewport, { x: (size.width - current.size.width) / 2,
+    y: (size.height - current.size.height) / 2 }) : current.viewport;
+  if (scale !== current.appliedZoom) return { ...current, size, appliedZoom: scale, mode: 'preset',
+    viewport: zoomAt(viewport, { x: size.width / 2, y: size.height / 2 }, scale / viewport.scale) };
+  if (current.mode === 'fit') viewport = fitViewport(bounds, size);
+  return { ...current, size, viewport };
 }
 
 interface Images {
@@ -26,7 +60,8 @@ interface Images {
   loading: boolean;
 }
 
-export function PreviewCanvas({ scene, loadResource, hiddenIds = [], selectedId = null, dynamicReady = true }: PreviewCanvasProps) {
+export function PreviewCanvas({ scene, loadResource, hiddenIds = [], selectedId = null, dynamicReady = true,
+  spriteZoom = 4, initialView, onViewChange }: PreviewCanvasProps) {
   const hasLayers = Boolean(scene && (scene.layers.length || scene.circles.length));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
@@ -35,9 +70,10 @@ export function PreviewCanvas({ scene, loadResource, hiddenIds = [], selectedId 
   const [size, setSize] = useState<Size>({ width: 1, height: 1 });
   const [dpr, setDpr] = useState(() => window.devicePixelRatio || 1);
   const [themeVersion, setThemeVersion] = useState(0);
-  const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, scale: 1 });
-  const [checker, setChecker] = useState(true);
-  const [grid, setGrid] = useState(false);
+  const [view, setView] = useState<CanvasViewState>(() => initialView ?? initialCanvasView());
+  const { viewport, checker, grid } = view;
+  const setViewport = (next: Viewport | ((current: Viewport) => Viewport)) => setView(current => ({ ...current,
+    mode: 'manual', viewport: typeof next === 'function' ? next(current.viewport) : next }));
   const [retry, setRetry] = useState(0);
   const [dragging, setDragging] = useState(false);
   const drag = useRef<{ id: number; point: Point } | null>(null);
@@ -51,9 +87,7 @@ export function PreviewCanvas({ scene, loadResource, hiddenIds = [], selectedId 
   const drawCount = useRef(0);
   const available = useMemo(() => new Set(loaded.images.keys()), [loaded]);
   const pose = scene ? poseScene(scene, dynamicReady ? scene.dynamic ?? null : null, dynamicState, available) : null;
-  const fitted = useRef(false);
-  const autoFit = useRef(true);
-  const fittedSize = useRef<Size | null>(null);
+  useEffect(() => { onViewChange?.(view); }, [view, onViewChange]);
 
   useEffect(() => {
     const controller = new DynamicPreviewController(browserAnimationClock, setDynamicState);
@@ -108,13 +142,8 @@ export function PreviewCanvas({ scene, loadResource, hiddenIds = [], selectedId 
   }, []);
 
   useLayoutEffect(() => {
-    const resized = fittedSize.current?.width !== size.width || fittedSize.current?.height !== size.height;
-    if ((!fitted.current || autoFit.current && resized) && hasLayers && size.width > 1 && size.height > 1) {
-      fitted.current = true;
-      fittedSize.current = size;
-      setViewport(fitViewport(sceneBounds(scene), size));
-    }
-  }, [scene, size]);
+    setView(current => reconcileCanvasView(current, sceneBounds(scene), size, spriteZoom, hasLayers));
+  }, [scene, size, spriteZoom, hasLayers]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -240,19 +269,18 @@ export function PreviewCanvas({ scene, loadResource, hiddenIds = [], selectedId 
       const rect = canvas.getBoundingClientRect();
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? size.height : 1);
       const factor = Math.exp(-Math.max(-1000, Math.min(1000, delta)) * 0.0015);
-      autoFit.current = false;
       setViewport(current => zoomAt(current, { x: event.clientX - rect.left, y: event.clientY - rect.top }, factor));
     };
     canvas.addEventListener('wheel', wheel, { passive: false });
     return () => canvas.removeEventListener('wheel', wheel);
   }, [hasLayers, size.height]);
 
-  const fit = () => { autoFit.current = true; fittedSize.current = size; setViewport(fitViewport(sceneBounds(scene), size)); };
-  const zoom = (factor: number) => { autoFit.current = false; setViewport(current => zoomAt(current, { x: size.width / 2, y: size.height / 2 }, factor)); };
+  const fit = () => setView(current => ({ ...current, mode: 'fit', size,
+    viewport: fitViewport(sceneBounds(scene), size) }));
+  const zoom = (factor: number) => setViewport(current => zoomAt(current, { x: size.width / 2, y: size.height / 2 }, factor));
   const pointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
     if (!hasLayers || (event.button !== 0 && event.button !== 1)) return;
     event.preventDefault(); event.currentTarget.focus();
-    autoFit.current = false;
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = { id: event.pointerId, point: { x: event.clientX, y: event.clientY } };
     setDragging(true);
@@ -278,7 +306,7 @@ export function PreviewCanvas({ scene, loadResource, hiddenIds = [], selectedId 
   const keyDown = (event: KeyboardEvent<HTMLCanvasElement>) => {
     if (!hasLayers) return;
     const moves: Record<string, Point> = { ArrowLeft: { x: -20, y: 0 }, ArrowRight: { x: 20, y: 0 }, ArrowUp: { x: 0, y: -20 }, ArrowDown: { x: 0, y: 20 } };
-    if (moves[event.key]) { event.preventDefault(); autoFit.current = false; setViewport(current => panBy(current, moves[event.key])); }
+    if (moves[event.key]) { event.preventDefault(); setViewport(current => panBy(current, moves[event.key])); }
     else if (event.key === '+' || event.key === '=') { event.preventDefault(); zoom(1.25); }
     else if (event.key === '-') { event.preventDefault(); zoom(0.8); }
     else if (event.key === 'Enter' || event.key === 'Home') { event.preventDefault(); fit(); }
@@ -299,8 +327,8 @@ export function PreviewCanvas({ scene, loadResource, hiddenIds = [], selectedId 
       <button className={styles.button} disabled={!ready} onClick={() => zoom(0.8)} aria-label="缩小预览">−</button>
       <span className={styles.zoom}>{Math.round(viewport.scale * 100)}%</span>
       <button className={styles.button} disabled={!ready} onClick={() => zoom(1.25)} aria-label="放大预览">＋</button>
-      <button className={styles.button} aria-pressed={checker} onClick={() => setChecker(value => !value)}>棋盘</button>
-      <button className={styles.button} aria-pressed={grid} onClick={() => setGrid(value => !value)}>网格</button>
+      <button className={styles.button} aria-pressed={checker} onClick={() => setView(current => ({ ...current, checker: !current.checker }))}>棋盘</button>
+      <button className={styles.button} aria-pressed={grid} onClick={() => setView(current => ({ ...current, grid: !current.grid }))}>网格</button>
     </div>
     <div ref={surfaceRef} className={styles.surface}>
       <canvas ref={canvasRef} className={styles.canvas} tabIndex={ready ? 0 : -1} aria-label="贴图预览；滚轮缩放，拖动平移，回车适应窗口" data-dragging={dragging}

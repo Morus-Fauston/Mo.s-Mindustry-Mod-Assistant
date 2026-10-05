@@ -15,6 +15,26 @@ import app.core.session as session_mod
 
 
 @pytest.fixture(autouse=True)
+def isolate_preferences(tmp_path_factory, monkeypatch):
+    """Keep runtime configuration private; legacy UI assertions use Chinese labels.
+
+    Preference-specific tests may replace these paths with empty or real-default
+    fixtures, so production defaults are still exercised explicitly.
+    """
+    from app.core import config_loader, settings
+    from app.desktop import preferences
+
+    # Keep configuration outside the fixture's project tree and extraction root.
+    directory = tmp_path_factory.mktemp('isolated-user-config')
+    settings_file = directory / 'settings.json'
+    settings_file.write_text('{"display_name_mode":"zh"}', encoding='utf-8')
+    monkeypatch.setattr(preferences, 'user_config_dir', lambda: directory)
+    monkeypatch.setattr(settings, '_USER_FILE', settings_file)
+    monkeypatch.setattr(settings, '_instance', None)
+    monkeypatch.setattr(config_loader, '_current_mode', 'zh')
+
+
+@pytest.fixture(autouse=True)
 def isolate_editor_state(tmp_path, monkeypatch):
     """Redirect save/load_editor_state to a tmp file (session module scope)."""
     state_file = tmp_path / "editor_state.json"

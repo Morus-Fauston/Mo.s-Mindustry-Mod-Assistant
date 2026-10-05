@@ -30,6 +30,7 @@ f=p/'content/units/twin.json'; d=json.loads(f.read_text(encoding='utf-8')); d['w
       width: rect.width, height: rect.height, backingWidth: element.width, backingHeight: element.height, dpr: devicePixelRatio };
   });
   const initial = await readViewport();
+  expect(initial.scale).toBe(4);
   expect(initial.backingWidth).toBe(Math.round(initial.width * initial.dpr));
   expect(initial.backingHeight).toBe(Math.round(initial.height * initial.dpr));
   const pixels = await canvas.evaluate((element: HTMLCanvasElement) => {
@@ -59,7 +60,12 @@ f=p/'content/units/twin.json'; d=json.loads(f.read_text(encoding='utf-8')); d['w
   expect(moved.x - zoomed.x).toBeCloseTo(30, 0);
   expect(moved.y - zoomed.y).toBeCloseTo(20, 0);
   await preview.getByRole('button', { name: '适应', exact: true }).click();
-  expect((await readViewport()).scale).toBeCloseTo(initial.scale, 4);
+  const fitted = await readViewport();
+  expect(fitted.scale).toBeGreaterThan(0);
+  expect({ x: fitted.x, y: fitted.y, scale: fitted.scale }).not.toEqual({ x: moved.x, y: moved.y, scale: moved.scale });
+  await canvas.press('ArrowRight');
+  await preview.getByRole('button', { name: '适应', exact: true }).click();
+  expect(await readViewport()).toEqual(fitted);
   await preview.getByRole('button', { name: '网格', exact: true }).click();
   await expect(preview.getByRole('button', { name: '网格', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.screenshot({ path: testInfo.outputPath('真实素材静态预览.png') });

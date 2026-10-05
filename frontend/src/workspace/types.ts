@@ -17,6 +17,7 @@ export interface ProjectSnapshot {
   name: string;
   root: string;
   tree: TreeNode[];
+  warnings?: string[];
 }
 
 interface DocumentCommon {

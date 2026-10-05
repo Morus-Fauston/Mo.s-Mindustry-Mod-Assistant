@@ -16,6 +16,7 @@ Interface:
     save_contents(items) -> SaveReport
     undo() / redo()
     last_project_path() -> str | None
+    remember_project() -> str | None             (persistence warning, if any)
 """
 
 from __future__ import annotations
@@ -54,6 +55,7 @@ class ProjectSession:
         self._validator = Validator(self._metadata)
         self._project: Project | None = None
         self._open_contents: dict[str, ContentData] = {}
+        self._persistence_warning: str | None = None
 
     # ── read-only accessors (for UI wiring / EditorPanel construction) ──
 
@@ -72,6 +74,11 @@ class ProjectSession:
     @property
     def project(self) -> Project | None:
         return self._project
+
+    @property
+    def persistence_warning(self) -> str | None:
+        """Last recent-project persistence failure, separate from project success."""
+        return self._persistence_warning
 
     # ── project lifecycle ───────────────────────────────────────────────
 
@@ -218,7 +225,22 @@ class ProjectSession:
 
     def last_project_path(self) -> str | None:
         """Return the last opened project path from persisted state."""
-        return load_editor_state().get("last_project") or None
+        try:
+            value = load_editor_state().get("last_project")
+        except (OSError, UnicodeError, ValueError, RecursionError):
+            self._persistence_warning = "无法读取最近工程记录，已保留原配置文件，请检查文件内容和权限。"
+            return None
+        return value if isinstance(value, str) and value else None
+
+    def remember_project(self) -> str | None:
+        """Remember a successfully adopted project without changing history.
+
+        Call after new-project/redo adoption succeeds, never during candidate
+        preparation. Undo to an empty workspace leaves the previous path intact.
+        """
+        if self._project is None:
+            return None
+        return self._remember_project(self._project)
 
     # ── undo / redo ─────────────────────────────────────────────────────
 
@@ -230,6 +252,13 @@ class ProjectSession:
 
     # ── helpers ─────────────────────────────────────────────────────────
 
-    @staticmethod
-    def _remember_project(project: Project) -> None:
-        save_editor_state({"last_project": str(project.root)})
+    def _remember_project(self, project: Project) -> str | None:
+        try:
+            state = load_editor_state()
+            state["last_project"] = str(project.root)
+            save_editor_state(state)
+        except (OSError, UnicodeError, ValueError, RecursionError):
+            self._persistence_warning = "工程已打开，但最近工程记录保存失败；原配置文件已保留，请检查文件内容、占用和权限。"
+        else:
+            self._persistence_warning = None
+        return self._persistence_warning

@@ -14,7 +14,10 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
+from contextlib import suppress
 from pathlib import Path
+import tempfile
 from typing import Any
 
 from .paths import data_dir
@@ -116,30 +119,49 @@ def load_editor_state() -> dict[str, Any]:
     """Load editor_state.json (bypasses cache — mutable file).
 
     F-53：打包模式写 %APPDATA%/MoMA/editor_state.json（用户级，可写）。
+    Missing state is empty; unreadable or malformed state raises so a caller
+    cannot accidentally replace an existing configuration with defaults.
     """
     from .paths import user_config_dir
 
     path = user_config_dir() / "editor_state.json"
-    if not path.exists():
-        return {}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        return data if isinstance(data, dict) else {}
-    except (json.JSONDecodeError, OSError):
+    except FileNotFoundError:
         return {}
+    if not isinstance(data, dict):
+        raise ValueError("编辑器状态顶层必须是对象")
+    json.dumps(data, allow_nan=False)
+    return data
 
 
 def save_editor_state(state: dict[str, Any]) -> None:
-    """Persist editor state to editor_state.json (user config dir)."""
+    """Merge editor state atomically; failures leave the existing file intact.
+
+    Callers handle persistence errors separately from successful project work.
+    Unknown keys remain in the existing user configuration format.
+    """
     from .paths import ensure_user_config_dir
 
+    if not isinstance(state, dict):
+        raise ValueError("编辑器状态必须是对象")
+    merged = {**load_editor_state(), **state}
+    serialized = json.dumps(merged, ensure_ascii=False, indent=2, allow_nan=False)
+    temporary = None
     try:
         d = ensure_user_config_dir()
-        (d / "editor_state.json").write_text(
-            json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
-    except OSError:
-        pass
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=d,
+                                         prefix=".editor_state.json.", suffix=".tmp",
+                                         delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(serialized)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, d / "editor_state.json")
+    finally:
+        if temporary is not None:
+            with suppress(OSError):
+                temporary.unlink(missing_ok=True)
 
 
 # ── Display name formatting ──────────────────────────────────────────────

@@ -1,0 +1,24 @@
+.dialog { width: min(530px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 22px; border: 1px solid var(--line); border-radius: 4px; background: var(--canvas); color: var(--ink); font-size: 13px; }
+.dialog::backdrop { background: color-mix(in srgb, var(--ink) 25%, transparent); }
+.dialog h2 { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+.intro { margin: 0 0 16px; line-height: 1.7; color: var(--muted); }
+.field { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 10px; align-items: start; margin: 12px 0; }
+.field label { padding-top: 5px; line-height: 20px; overflow-wrap: anywhere; }
+.value { min-width: 0; }
+.control { --field-bg: var(--panel); --field-line: var(--line); --field-bar: var(--line); position: relative; min-width: 0; }
+.control[data-field-type="str"] { --field-bg: var(--str); --field-line: var(--str-line); --field-bar: var(--str-bar); }
+.control[data-field-type="num"] { --field-bg: var(--num); --field-line: var(--num-line); --field-bar: var(--num-bar); }
+.control::before { content: ''; position: absolute; left: 0; top: 4px; width: 3px; height: 22px; border-radius: 2px; background: var(--field-bar); pointer-events: none; }
+.control input, .control select { width: 100%; min-width: 0; min-height: 30px; padding: 4px 10px; line-height: 20px; border: 1px solid var(--field-line); background: var(--field-bg); color: var(--ink); font: inherit; }
+.control input[data-field-type="num"] { font-family: var(--font-number); font-variant-numeric: tabular-nums; }
+.control input:focus-visible, .control select:focus-visible { outline-offset: -1px; }
+.control [aria-invalid="true"] { border-color: var(--error); }
+.hint { margin: 4px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted); }
+.warning { color: var(--muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.error { margin: 4px 0 0; color: var(--error); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.actions button { min-height: 30px; padding: 5px 12px; border: 1px solid var(--line); background: var(--panel); }
+.actions button:active { background: var(--selected); }
+.actions .defaults { margin-right: auto; }
+@media (hover: hover) { .actions button:not(:disabled):hover { background: var(--panel2); } }
+@media (max-width: 420px) { .dialog { padding: 16px; } .field { grid-template-columns: minmax(0, 1fr); gap: 3px; } .field label { padding-top: 0; } }

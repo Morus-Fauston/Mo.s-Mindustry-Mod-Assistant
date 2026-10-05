@@ -1,9 +1,14 @@
-.app { height: 100%; display: grid; grid-template-rows: 35px 41px minmax(0, 1fr) 25px; }
+.app { height: 100%; display: grid; grid-template-rows: 35px auto minmax(0, 1fr) 25px; }
 .menu { display: flex; align-items: center; gap: 22px; padding: 0 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
 .brand { font-weight: 650; letter-spacing: .02em; }
 .mark { color: var(--accent); margin-right: 5px; }
 .caption { color: var(--muted); font-size: 12px; }
-.toolbar { display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--line); gap: 10px; background: var(--panel); }
+.menuButton { border: 0; background: transparent; padding: 4px 8px; font: inherit; color: var(--ink); }
+.menuButton:hover { background: var(--panel2); }
+.workbenchHost { display: flex; min-height: 0; min-width: 0; overflow: hidden; }
+.panelTools { display: flex; gap: 5px; margin-left: auto; flex-shrink: 0; }
+.toolbar { display: flex; flex-wrap: wrap; min-height: 41px; align-items: center; padding: 5px 14px; border-bottom: 1px solid var(--line); gap: 6px 10px; background: var(--panel); }
+.toolbar > span { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workbench { min-height: 0; display: grid; grid-template-columns: var(--left) minmax(380px, 1fr) var(--right); }
 .sidebar, .right { background: var(--panel); min-width: 0; display: flex; flex-direction: column; overflow: auto; }
 .sidebar { border-right: 1px solid var(--line); }

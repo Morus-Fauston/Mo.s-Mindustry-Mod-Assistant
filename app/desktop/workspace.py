@@ -12,7 +12,8 @@ from threading import RLock
 from typing import Callable
 from uuid import uuid4
 
-from app.core.config_loader import get_block_categories
+from app.core.config_loader import get_block_categories, set_display_mode
+from app.core.settings import get_settings
 from app.core.content_store import ContentData
 from app.core.project import Project
 from app.core.session import ProjectSession
@@ -28,6 +29,7 @@ from app.desktop.sprite_generation import SpriteGenerationService
 from app.desktop.resource_watch import ResourceWatch
 from app.desktop.source_editing import RawDocument, SourceEditingService
 from app.desktop.validation_export import ValidationExportService
+from app.desktop.preferences import PreferencesService
 
 
 class WorkspaceError(EditingError):
@@ -54,6 +56,8 @@ class WorkspaceService:
         self._generation: SpriteGenerationService | None = None
         self._resource_watch: ResourceWatch | None = None
         self._session = ProjectSession(metadata_dir)
+        self._preferences = PreferencesService()
+        self._sync_preferences(self._preferences.state())
         self._session_id: str | None = None
         self._editing = EditingService(self._session, None)
         self._content_actions: ContentActions | None = None
@@ -129,7 +133,7 @@ class WorkspaceService:
                 if envelope.get("sessionId") is not None and not isinstance(envelope["sessionId"], str):
                     raise WorkspaceError("INVALID_REQUEST", "会话标识无效。")
                 action, payload = envelope.get("action"), envelope.get("payload", {})
-                if action not in ("recent_projects", "open_project", "choose_project", "read_document",
+                if action not in ("preferences_state", "update_settings", "update_layout", "recent_projects", "open_project", "choose_project", "read_document",
                                   "content_catalogue", "create_content", "rename_content", "delete_content", "reveal_content", "create_project",
                                   "editing_state", "validate_project", "export_project", "set_field", "set_source", "format_source", "undo", "redo", "save_opened",
                                   "close_documents", "close_window", "preview_scene", "preview_resource",
@@ -186,6 +190,8 @@ class WorkspaceService:
             return response
 
     def _dispatch(self, action: str, payload: dict) -> dict:
+        if action in ("preferences_state", "update_settings", "update_layout"):
+            return self._preferences_action(action, payload)
         if action in ("reference_sources", "open_reference", "reference_candidates_for_compare", "compare_reference", "release_reference"):
             return self._reference_action(action, payload)
         if action == "content_catalogue":
@@ -292,8 +298,9 @@ class WorkspaceService:
             return {**self._editing.state(), "closeApproved": True}
         if action == "recent_projects":
             recent = self._session.last_project_path()
+            warnings = [self._session.persistence_warning] if self._session.persistence_warning else []
             if not isinstance(recent, str) or not recent or len(recent) > 4096 or "\x00" in recent:
-                return {"recentProjects": []}
+                return {"recentProjects": [], "warnings": warnings}
             path = Path(recent)
             name = path.name
             try:
@@ -302,7 +309,7 @@ class WorkspaceService:
                              if isinstance(value, str) and value.strip()), name)
             except (OSError, ValueError):
                 pass
-            return {"recentProjects": [{"path": str(path), "name": name}]}
+            return {"recentProjects": [{"path": str(path), "name": name}], "warnings": warnings}
         if action == "choose_project":
             self._check_open_decision(payload)
             if self._choose_directory is None:
@@ -317,6 +324,26 @@ class WorkspaceService:
         if "expectedRevision" in payload:
             self._editing.check_revision(payload)
         return self._read(payload.get("path"))
+
+    @staticmethod
+    def _sync_preferences(state: dict) -> None:
+        settings = get_settings()
+        for key in ("theme", "display_name_mode", "auto_save_interval", "sprite_zoom"):
+            settings.set(key, state["values"][key])
+        set_display_mode(state["values"]["display_name_mode"])
+
+    def _preferences_action(self, action: str, payload: dict) -> dict:
+        if action == "preferences_state":
+            if payload:
+                raise WorkspaceError("INVALID_REQUEST", "读取设置不接受额外参数。")
+            return self._preferences.state()
+        key = "patch" if action == "update_settings" else "layout"
+        if set(payload) != {key, "expectedPreferencesRevision"}:
+            raise WorkspaceError("INVALID_REQUEST", "设置请求参数无效。")
+        update = self._preferences.update_settings if action == "update_settings" else self._preferences.update_layout
+        state = update(payload[key], payload["expectedPreferencesRevision"])
+        self._sync_preferences(state)
+        return {"preferences": state, "state": self._editing.state()}
 
     def _check_open_decision(self, payload: dict) -> None:
         if self._editing.has_dirty():
@@ -335,7 +362,9 @@ class WorkspaceService:
             if not isinstance(project.mod_info.name, str) or not isinstance(project.mod_info.display_name, str):
                 raise ValueError("Invalid mod name")
             candidate = ProjectSession(self._metadata_dir)
-            candidate.open_project(root)
+            # Preparing a candidate must not replace the last successful project.
+            # Publish its recent path only after the complete service adoption.
+            candidate.attach_project(project)
             services = self._prepare_services(candidate)
         except (OSError, ValueError) as exc:
             raise WorkspaceError("PROJECT_OPEN_FAILED", "无法打开工程，请检查目录中的 mod.json 和文件访问权限。", str(root)) from exc
@@ -389,6 +418,9 @@ class WorkspaceService:
         self._resource_watch, self._resources = services["watch"], services["resources"]
         self._generation = services["generation"]
         self._reference_projects = services["references"]
+        if services["project"] is not None:
+            warning = self._session.remember_project()
+            services["project"]["warnings"] = [warning] if warning else []
 
     def _create_project(self, payload: dict) -> dict:
         if set(payload) - {"mod_id", "displayName", "author", "expectedRevision", "decision"}:

@@ -16,6 +16,16 @@ from app.desktop.validation_export import ValidationExportService
 PATH = "content/blocks/same.json"
 
 
+def _same_directory(candidate, expected: Path) -> bool:
+    """Compare a directory argument (str/bytes/Path/fd) against an expected path."""
+    if isinstance(candidate, int):
+        return False
+    try:
+        return Path(candidate) == expected
+    except (TypeError, ValueError, OSError):
+        return False
+
+
 @pytest.fixture
 def setup(tmp_path):
     root = tmp_path / "mod"
@@ -336,12 +346,22 @@ def test_unreadable_content_category_cannot_disappear_from_validation(setup, mon
     import os
 
     root, session, editing = setup
-    denied = root / "content/units"
+    denied = (root / "content/units").resolve()
+    # Path.iterdir() delegates to os.listdir() before Python 3.12 and to
+    # os.scandir() from 3.12 on, so patching only one leaves the simulated
+    # unreadable directory invisible on the other (CI runs 3.11). Patch both:
+    # a real unreadable directory raises from whichever primitive it uses.
+    listdir = os.listdir
     scandir = os.scandir
-    def failing_scandir(path):
-        if Path(path) == denied:
+    def failing_listdir(path="."):
+        if _same_directory(path, denied):
+            raise PermissionError("单位目录不可读")
+        return listdir(path)
+    def failing_scandir(path="."):
+        if _same_directory(path, denied):
             raise PermissionError("单位目录不可读")
         return scandir(path)
+    monkeypatch.setattr(os, "listdir", failing_listdir)
     monkeypatch.setattr(os, "scandir", failing_scandir)
     service = ValidationExportService(session, "session-validation", editing, None)
     with pytest.raises(EditingError) as caught:

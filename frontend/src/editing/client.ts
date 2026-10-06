@@ -89,6 +89,16 @@ export function createEditingClient(transport: EditingTransport) {
       publish({ state: null, busy: false, uncertain: false, result: undefined });
     },
     refresh,
+    settled: () => new Promise<void>(resolve => {
+      if (!snapshot.busy) { resolve(); return; }
+      const done = () => {
+        if (snapshot.busy) return;
+        subscribers.delete(done);
+        resolve();
+      };
+      subscribers.add(done);
+      done();
+    }),
     async run(action: string, payload: Record<string, unknown> = {}) {
       if (snapshot.uncertain) throw new DesktopError('RESULT_UNCONFIRMED', '请先查询原操作结果。');
       if (snapshot.busy) throw new DesktopError('BUSY', '请等待当前操作完成。');

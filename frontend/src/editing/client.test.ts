@@ -8,6 +8,25 @@ const initial: EditingState = { sessionId: 'one', revision: 2, documents: [],
 
 describe('关闭工程沿用唯一编辑串行通道', () => {
   const closed = { project: null, state: { ...initial, sessionId: 'closed', revision: 3 } };
+  it('提供可等待当前编辑请求结束的空闲屏障', async () => {
+    let finish!: () => void;
+    const client = createEditingClient({
+      async request<T>(action: string) {
+        if (action === 'editing_state') return initial as T;
+        await new Promise<void>(resolve => { finish = resolve; });
+        return initial as T;
+      },
+      async recoverRequest<T>() { return initial as T; },
+    });
+    client.reset('one'); await client.refresh();
+    const operation = client.run('save_opened');
+    const settled = client.settled();
+    let complete = false;
+    void settled.then(() => { complete = true; });
+    await Promise.resolve(); expect(complete).toBe(false);
+    finish(); await operation; await settled;
+    expect(complete).toBe(true);
+  });
   it.each([false, true])('采用空工程新身份；超时仅查询原ID并禁止重复关闭，timeout=%s', async timeout => {
     const calls: { action: string; payload: unknown; session: string | null; id?: string }[] = [];
     let queried: unknown;

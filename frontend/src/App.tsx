@@ -406,7 +406,9 @@ export function App() {
   async function requestIntent(target: CloseIntent) {
     if (startup.phase !== 'ready' || draftStore.getSnapshot().composing || contentRunning.current || validating.current
       || intentPreparing.current || intentRef.current || openingProject.current || unresolvedOpen.current
-      || editing.getSnapshot().busy || editing.getSnapshot().uncertain) return;
+      || editing.getSnapshot().uncertain) return;
+    if (editing.getSnapshot().busy) await editing.settled();
+    if (editing.getSnapshot().uncertain) return;
     if (target.kind === 'close-project' && !projectRef.current) return;
     intentPreparing.current = true; setPreparingIntent(true);
     try {

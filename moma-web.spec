@@ -1,5 +1,6 @@
 # Build after npm.cmd --prefix frontend run build.
 from pathlib import Path
+from PyInstaller.utils.hooks import copy_metadata
 
 root = Path(SPECPATH)
 config = root / "app" / "config"
@@ -7,6 +8,7 @@ data = [(str(p), "app/config") for p in config.glob("*.json")
         if p.name not in {"settings.json", "editor_state.json"}]
 data += [(str(root / "metadata"), "metadata"),
          (str(root / "frontend" / "dist"), "frontend/dist")]
+data += copy_metadata("moma")
 
 a = Analysis(
     [str(root / "run_web.py")], pathex=[str(root)], datas=data,

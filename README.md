@@ -10,9 +10,9 @@ GUI 化的 Mindustry 模组编辑器，填表单、点按钮就能做 JSON conte
 
 - **零门槛**，不用懂 JSON 语法，填表单就能做 mod
 - **不查文档**，每个字段自带中文注释和原版参考值，悬停即看
-- **不出错**，实时验证，非法输入直接屏蔽，引用不存在立刻标红
+- **有校验**，输入格式错误及时反馈，可运行工程校验定位问题
 - **有参照**，导入原版单位/方块对比数值，不用自己猜平衡性
-- **能跑通**，模板保证新建的 mod 能被游戏加载
+- **有模板**，常用内容可从模板开始，实际行为仍需在游戏中确认
 
 ---
 
@@ -22,15 +22,15 @@ GUI 化的 Mindustry 模组编辑器，填表单、点按钮就能做 JSON conte
 |------|------|
 | 工程管理 | 新建/打开 mod 工程，自动生成 `mod.json` 与目录结构 |
 | 内容创建 | 单位（地面/飞行/坦克/腿）、八类方块、武器，模板一键生成 |
-| JSON 输出预览 | 表单与 JSON 预览切换；合法修改 500ms 后可撤销回写，错误草稿不污染工程 |
+| JSON 源码编辑 | 表单与 JSON 源码切换；合法修改进入同一撤销历史，错误草稿不覆盖已生效结构 |
 | 属性表单 | 配置驱动的分组折叠表单，字段按类型着色（马卡龙色系） |
 | 字段注释 | 中文字段名 + 悬停说明 |
 | 武器系统 | 引用/内联双模式，子弹多态编辑器（5 种子弹类型） |
 | 精灵图预览 | 多图层叠放、缩放平移、图层导入/替换；动态模式可检查开火、方向、队伍色和血量 |
 | 参考对比 | 导入原版或其他 mod，数值差异高亮 |
 | 撤销/重做 | 全操作 Command Pattern，跨标签同步 |
-| 实时验证 | 保存时验证，状态栏错误计数，点击可跳转到错误字段；不生效字段保留值并给出 Warning |
-| 自动保存 | 固定每 3 分钟自动保存已打开工程 |
+| 输入与工程校验 | 输入错误就地反馈；“校验工程”生成问题报告，可定位支持的字段或源码位置 |
+| 自动保存 | 保存所有已打开内容；默认间隔 180 秒，可在设置中调整，设为 0 可关闭 |
 | 主题 | 浅色/深色双主题，即时切换 |
 
 ---
@@ -39,9 +39,9 @@ GUI 化的 Mindustry 模组编辑器，填表单、点按钮就能做 JSON conte
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│  菜单栏：文件 | 编辑 | 设置 | 工具 | 帮助                    │
+│  菜单栏：文件 | 设置 | 关于                                  │
 ├─────────────────────────────────────────────────────────────┤
-│  工具栏：[+ 单位] [+ 方块] [+ 武器] | [保存] [撤销] [重做]  │
+│  工具栏：打开工程 | 保存已打开内容 | 校验工程 | 导出模组      │
 ├──────────┬──────────────────────────────────┬───────────────┤
 │          │  [my-soldier ×] [my-cannon ×]    │               │
 │  文件树  │                                  │   预览区      │
@@ -60,48 +60,47 @@ GUI 化的 Mindustry 模组编辑器，填表单、点按钮就能做 JSON conte
 - 中间：标签页编辑区，每个打开的 content 文件一个标签
 - 右边栏上半：精灵图预览，支持滚轮缩放、拖动平移
 - 右边栏下半：精灵图图层树，可导入/替换图层
-- 状态栏：显示保存状态、验证错误数量，错误可点击跳转
+- 状态栏：显示当前操作状态与游戏资料版本；校验问题在报告面板查看和定位
 
 ---
 
 ## 系统要求
 
-- Python 3.11+
-- Windows 10/11（主要目标平台）
-- 目标游戏版本：Mindustry v159.7
+- 便携目录包：Windows 10/11 x64 与 Microsoft Edge WebView2 Runtime；运行无需 Python、Node 或联网。
+- 源码开发：Python 3.14、Node 24；已锁定的依赖和命令见 [Web 开发说明](frontend/README.md)。
+- 目标游戏版本：随包离线元数据；本项目基线为 Mindustry v159.7。
+- 当前为上半 UI 重构候选，最终验收状态与已知限制见 [发行使用说明](PACKAGE-GUIDE.md)。
 
 ---
 
 ## 安装与运行
 
+便携用户解压完整目录后双击 `MoMA-Web.exe`，不要只复制 exe。缺 WebView2 时按 [发行使用说明](PACKAGE-GUIDE.md) 准备微软官方离线安装程序。
+
+源码开发在仓库根目录运行：
+
 ```powershell
-# 1. 克隆仓库
-git clone https://github.com/Morus-Fauston/Mo.s-Mindustry-Mod-Assistant.git
-cd Mo.s-Mindustry-Mod-Assistant
-
-# 2. 创建虚拟环境并安装
-python -m venv .venv
-.venv\Scripts\pip install -e .
-
-# 3. 启动
-.venv\Scripts\python -m app.main
+py -3.14 -m venv .venv-web
+.venv-web/Scripts/python.exe -m pip install -r requirements-web.lock
+.venv-web/Scripts/python.exe -m pip install --no-deps -e .
+npm.cmd --prefix frontend ci
+npm.cmd --prefix frontend run build
+.venv-web/Scripts/python.exe run.py
 ```
 
-或直接双击 `run.bat`（需先完成步骤 2）。
-
-程序启动时会自动查找仓库内的 `metadata/` 目录，该目录已随仓库提供，通常不用额外生成。
+完成准备后也可双击 `run.bat`。默认 `run.py` 与 `moma` 使用 React + pywebview/WebView2；运行时只读取随包静态资源和离线元数据。旧 Qt 仅供历史回退与测试：另建环境安装 `.[legacy-qt]` 后运行 `run_qt.py`，不进入新发行依赖。
 
 ---
 
 ## 快速上手
 
 1. 启动 MoMA。
-2. 在欢迎页选择「新建工程」，填写 mod ID、名称和保存路径。
-3. 使用工具栏的「+ 单位」「+ 方块」「+ 武器」创建内容。
-4. 在左侧文件树中打开内容文件，右侧编辑区会显示表单。
+2. 在文件菜单或左侧选择“新建工程”，填写模组 ID、显示名称和作者，再通过系统对话框选择父目录。
+3. 点击左侧“新建内容”，选择内容类别和模板并填写名称。
+4. 在左侧文件树中打开内容文件，中间编辑区会显示表单。
 5. 修改字段。每个字段都有中文名和悬停说明。
 6. 如果有精灵图，可在右侧预览区导入 PNG 图层。
-7. 按 `Ctrl+S` 保存。保存时会自动验证，错误会显示在状态栏。
+7. 按 `Ctrl+S` 保存所有已打开内容；需要检查工程问题时点击“校验工程”，在报告中查看和定位。
 8. 将整个 mod 文件夹放入 Mindustry 的 mods 目录即可测试。
 
 常用快捷键：
@@ -110,7 +109,7 @@ python -m venv .venv
 |------|------|
 | `Ctrl+Shift+N` | 新建工程 |
 | `Ctrl+O` | 打开工程 |
-| `Ctrl+S` | 保存 |
+| `Ctrl+S` | 保存所有已打开内容 |
 | `Ctrl+Q` | 退出 |
 
 ---
@@ -138,7 +137,8 @@ python -m venv .venv
 
 ```text
 app/                    ← 主程序
-├── main.py             ← 入口
+├── desktop/            ← WebView2 宿主、桥接与编辑服务
+├── main.py             ← 历史 Qt 入口实现
 ├── core/               ← 业务逻辑（纯 Python，无 Qt 依赖）
 │   ├── project.py      ← 工程读写
 │   ├── session.py      ← 会话管理（保存/验证/状态）
@@ -148,7 +148,7 @@ app/                    ← 主程序
 │   ├── commands.py     ← Command Pattern 撤销/重做
 │   ├── metadata.py     ← 元数据加载
 │   └── content_store.py← 内容文件读写
-├── ui/                 ← 界面层（PySide6）
+├── ui/                 ← 历史 Qt 界面层（PySide6）
 │   ├── main_window.py  ← 主窗口
 │   ├── editor_panel.py ← 编辑区（表单）
 │   ├── file_tree.py    ← 文件树
@@ -157,7 +157,11 @@ app/                    ← 主程序
 │   ├── dialogs/        ← 对话框（新建/设置）
 │   └── widgets/        ← 自定义控件
 ├── config/             ← 配置文件（字段分组/翻译/分类）
-└── resources/          ← QSS 样式表
+└── resources/          ← 历史 Qt 的 QSS 样式表
+
+frontend/               ← React + TypeScript 界面与宿主验收脚本
+run.py                  ← 默认 Web 桌面入口
+run_qt.py               ← 历史 Qt 独立入口
 
 metadata/               ← 游戏元数据（提取工具生成，已随仓库提供）
 ├── manifest.json       ← 总索引
@@ -165,7 +169,7 @@ metadata/               ← 游戏元数据（提取工具生成，已随仓库�
 └── instances/          ← 原版内容实例值
 
 extractor/              ← Java 元数据提取工具（一次性）
-tests/                  ← pytest 测试（200+）
+tests/                  ← Python 业务、桥接与历史 Qt 测试
 ```
 
 ---
@@ -205,11 +209,16 @@ gradle run    # 需要 JDK 17+，首次构建从 JitPack 拉取 Mindustry 依赖
 
 ## 测试
 
+完整 Python 测试包含历史 Qt 用例，须在安装了 `.[legacy-qt]` 与 pytest 的独立测试环境中运行；目录包构建环境仍保持无 Qt。
+
 ```powershell
-pytest tests/ -q
+python -m pytest tests/ -q
+npm.cmd --prefix frontend run typecheck
+npm.cmd --prefix frontend test
+npm.cmd --prefix frontend run build
 ```
 
-测试覆盖 core 层的命令栈、配置加载、模板、验证器、元数据、工程读写、会话和表单计划。core 层不依赖 Qt，跑完约 1 秒。
+测试覆盖纯 Python 业务、桌面桥接、前端状态与历史 Qt 界面。Windows WebView2 实际宿主和发行包验收命令见 [Web 开发说明](frontend/README.md)；无头测试不能代替原生宿主验证。
 
 ---
 
@@ -219,9 +228,8 @@ pytest tests/ -q
 
 - `app/core/` 不 import Qt，业务逻辑保持可测试
 - 数据变更一律走 `CommandStack.execute()`，撤销/重做才一致
-- 禁止内联 `setStyleSheet`，样式走 QSS 和主题令牌
-- 字段类型着色用 QSS 属性选择器，比如 `*[fieldType="num"]`
-- 验证错误标记用 `[error="true"]` 属性
+- 新 Web 界面使用集中 CSS 变量与 CSS Modules，字段类型用 `data-field-type`，错误标记用 `aria-invalid`，保留马卡龙饰条
+- 历史 Qt 界面禁止内联 `setStyleSheet`，动态 hex 颜色值除外；字段类型用 QSS 属性选择器，如 `*[fieldType="num"]`，错误标记用 `[error="true"]`
 - 界面纯中文，不用 emoji
 - PowerShell 命令用 `;` 连接，不用 `&&`
 
@@ -237,9 +245,9 @@ pytest tests/ -q
 
 检查目标 mod 文件夹中是否存在合法的 `mod.json`。MoMA 需要读取 mod 基本信息。
 
-### 保存后出现验证错误
+### 输入或工程校验出现错误
 
-状态栏会显示错误数量。点击错误提示可跳转到第一个错误字段。字段变红表示该字段存在必填缺失、类型错误或引用无效等问题。
+输入错误会在对应字段或源码处反馈；“校验工程”将生成问题报告，支持的问题可跳转到字段或源码位置。保存失败时修改仍保留，解除文件占用或权限问题后再试；保存成功不等于所有游戏行为已经验证。
 
 ### 精灵图预览没有显示
 
@@ -251,10 +259,11 @@ pytest tests/ -q
 
 | 组件 | 技术 |
 |------|------|
-| GUI | Python 3.11+ / PySide6 |
+| 默认界面 | React + TypeScript；Python / pywebview + Windows WebView2 |
+| 历史界面 | PySide6，仅通过 `legacy-qt` 可选依赖安装 |
 | 图像处理 | Pillow |
 | 元数据提取 | Java 17 / Gradle（反射 Mindustry 类） |
-| 测试 | pytest |
+| 测试 | pytest、Vitest、Playwright 与 Windows 原生宿主验证 |
 
 ---
 

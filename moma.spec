@@ -1,11 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
-# MoMA PyInstaller 打包配置（F-53 / 规格 18.11）
+# MoMA 历史 Qt PyInstaller 打包配置（F-53 / 规格 18.11）
+# 新默认 WebView2 发行使用 moma-web.spec；本配方需安装 legacy-qt extra。
 #
 # 用法：
 #   pyinstaller moma.spec --noconfirm
 # 产物：dist/MoMA.exe（单文件，目标 <150MB）
 #
-# 入口：run.py（顶层脚本）——app/main.py 用相对导入，
+# 入口：run_qt.py（历史 Qt 顶层脚本）——app/main.py 用相对导入，
 # 直接作脚本入口会在打包后报 "attempted relative import with no known parent"。
 #
 # 路径约定（见 app/core/paths.py）：
@@ -17,7 +18,7 @@ from PyInstaller.utils.hooks import collect_data_files
 block_cipher = None
 
 a = Analysis(
-    ['run.py'],
+    ['run_qt.py'],
     pathex=[],
     binaries=[],
     datas=[

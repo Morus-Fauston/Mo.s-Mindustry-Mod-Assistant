@@ -1,5 +1,42 @@
 # Changelog
 
+## v0.4.0-alpha.23 (2026-10-06 17:42) — 上半 UI 重构：源码编辑无障碍层与入口收口
+
+### 新增
+
+- **源码编辑无障碍输入层**：CodeMirror 此前只提供视觉呈现，辅助技术无法编辑 JSON 源码。现在编辑区叠加一个原生 `textarea`（透明、覆盖全区域、`tabIndex=-1`），CodeMirror 侧标记 `aria-hidden`，读写双向同步，`onChange` 经同一 `dispatch` 回到会话；标签为「JSON 源码」，错误、只读描述与视觉层共用同一 `errorId`。
+
+### 调整
+
+- **开发入口收口**：新增 `tests/README.md`、`tools/README.md`、`examples/README.md` 三个入口文档，分别说明测试分层与证据边界、正式生成器与本地工具版本控制边界、示例及其私有资源依赖；README 的文档区改为「开发与文档入口」表，指向 AGENTS、CONTEXT、tests、tools、examples、extractor 与 CHANGELOG，并声明 `Docs/`、`.scratch/`、`辅助项目/`、`Mindustry-master/` 为本地私有材料。
+- **工具归属修正**：`tools/make_sample_mod.py` 由"一次性验证脚本"改判为正式可复现生成器，从 `.gitignore` 移除并随 Git 提供。
+- **本地票据入口**：AGENTS 补充 `.scratch/README.md` 入口、票据头部为单票状态唯一来源、证据放 `evidence/`、可再生文件放 `work/`，并更正 `docs/agents/` 的大小写路径；新增 `Docs/` 与 `.scratch/` 的交接说明。
+
+### 架构改进
+
+- **武器与工程编辑资料术语**：明确"编辑器中的独立武器管理不等于游戏支持独立 Weapon content 文件"；新增「MoMA 初始化」「工程编辑资料」「武器使用关联」「可再生缓存」四个术语，区分随工程保存的编辑资料与可从正式资料重建的缓存；重写「引用/内联/覆盖字段」，覆盖字段改为"未覆盖字段跟随源对象更新，取消覆盖后恢复跟随"。
+
+### 技术
+
+- **验证**：301 项前端测试（46 个测试文件）、`tsc --noEmit` 类型检查与 `vite build` 通过（产物 gzip 242.64 kB）；1441 项后端 `pytest tests/ -q` 通过。本条目不含真实 WebView2 宿主验证，窗口与原生行为结论沿用 alpha.22。
+- **行尾噪声**：`frontend/tests/source.spec.ts` 仅有 CRLF 差异，blob 哈希与 HEAD 相同，不计入本次改动。
+
+### 文件变更表
+
+| 文件 | 变更 |
+|:-----|:------|
+| `frontend/src/source/SourceEditor.tsx` | 新增无障碍 `textarea` 层与双向同步 |
+| `frontend/src/source/SourceEditor.module.css` | `.editor` 相对定位；新增 `.cmMount` 与 `.accessibilityInput` |
+| `.gitignore` | 移除 `tools/make_sample_mod.py` 忽略规则 |
+| `AGENTS.md` | 票据入口、状态来源、证据目录与路径大小写修正 |
+| `CONTEXT.md` | +4 术语；重写武器、引用、内联与覆盖字段 |
+| `README.md` | 文档区改为开发与文档入口表 |
+| `tests/README.md` | **新增** — 测试分层与证据边界 |
+| `tools/README.md` | **新增** — 工具入口与版本控制边界 |
+| `examples/README.md` | **新增** — 示例入口与私有资源依赖 |
+
+---
+
 ## v0.4.0-alpha.22 (2026-10-06 16:01) — 上半 UI 重构：发布候选与关闭流程屏障
 
 ### 修复

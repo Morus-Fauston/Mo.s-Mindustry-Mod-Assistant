@@ -169,7 +169,7 @@ metadata/               ← 游戏元数据（提取工具生成，已随仓库�
 └── instances/          ← 原版内容实例值
 
 extractor/              ← Java 元数据提取工具（一次性）
-tests/                  ← Python 业务、桥接与历史 Qt 测试
+tests/                  ← core、桌面桥接、配置、样本与 Qt 测试（见 tests/README.md）
 ```
 
 ---
@@ -218,7 +218,7 @@ npm.cmd --prefix frontend test
 npm.cmd --prefix frontend run build
 ```
 
-测试覆盖纯 Python 业务、桌面桥接、前端状态与历史 Qt 界面。Windows WebView2 实际宿主和发行包验收命令见 [Web 开发说明](frontend/README.md)；无头测试不能代替原生宿主验证。
+测试覆盖纯 core 规则、桌面桥接、前端状态、配置与样本契约，以及需要 PySide6 的 Qt 控件和场景行为。完整回归与 Windows 原生验证的边界见 [测试入口](tests/README.md)；新宿主与发行包的执行命令见 [Web 开发说明](frontend/README.md)。无头测试不能代替原生宿主验证。
 
 ---
 
@@ -267,11 +267,19 @@ npm.cmd --prefix frontend run build
 
 ---
 
-## 文档
+## 开发与文档入口
 
-- `CONTEXT.md`，术语表
-- `CHANGELOG.md`，更新日志
-- `extractor/README.md`，元数据提取工具说明
+| 入口 | 用途 |
+| --- | --- |
+| [AGENTS.md](AGENTS.md) | 开发硬约束及本地工作入口 |
+| [CONTEXT.md](CONTEXT.md) | 术语表 |
+| [tests](tests/README.md) | 测试分层和验证边界 |
+| [tools](tools/README.md) | 正式生成器、提取脚本和本地工具 |
+| [examples](examples/README.md) | 示例及私有资源依赖 |
+| [extractor](extractor/README.md) | Java 元数据提取工具 |
+| [CHANGELOG.md](CHANGELOG.md) | 更新日志 |
+
+`Docs/`、`.scratch/`、`辅助项目/` 和 `Mindustry-master/` 是本地私有材料，不随公开 Git 克隆提供。本机开发从 `Docs/README.md` 和 `.scratch/README.md` 进入；继续票据开发须由维护者提供相关规格、规划、票据及必要证据。应用运行所需的 `metadata/` 已随仓库提供。
 
 ---
 

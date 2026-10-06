@@ -10,7 +10,7 @@
 | **可解锁内容（unlockable content）** | 能进入科技树、可被研究或生产目标引用的内容：方块、单位、物品、液体、状态效果、星球、战区。武器不是可解锁内容，不能作为 research.parent、Research 或 Produce 的目标 |
 | **UnitType / 单位** | 能移动、有 AI 的实体。不含建筑 |
 | **Block / 方块** | 放置在地图上不可移动的实体（炮台、墙、矿机等）。不叫"建筑" |
-| **Weapon / 武器** | 可独立存在的 content 类型，也可内联在单位中。与单位、方块同级 |
+| **Weapon / 武器** | 单位装备的武器定义；在 MoMA 中可独立管理，也可在单位内编辑。编辑器中的独立管理不等于游戏支持独立 Weapon content 文件；后续工程结构的存储边界见[阶段性决策 D10](Docs/当前决策/工程结构与可靠保存-阶段性决策.md) |
 | **BulletType / 子弹** | 武器发射的实体。游戏输出中必须内联在武器/方块 JSON 的 `bullet` 字段里；Mindustry v8 未注册独立 bullet content 解析器，不能写入 `content/bullets/`（ADR-011） |
 | **Ability / 能力** | 单位的被动/主动技能。以内联对象数组形式定义在单位的 `abilities` 字段中，每条需指定能力类型 |
 | **字段（field）** | Content 的一个可编辑属性（如 health、speed） |
@@ -18,9 +18,9 @@
 | **内容标识符（content identifier）** | 引擎里 `content.name` 的值：mod 内容 = `mod.name + "-" + 文件名stem`，原版内容 = `文件名stem`。final，不可被 JSON 内 `name` 字段覆盖。其它内容引用它、精灵图查找它、bundle key 用它。MoMA 表单中只读镜像，不可编辑 |
 | **显示名（display name / localizedName）** | 游戏里给人看的名字。正式来源 = `bundles/bundle_*.properties` 的 `<type>.<content.name>.name`；JSON 内 `name` 字段 = 没写 bundle 时的兜底（引擎加载时写进 bundle 后从 JSON 中删除）。MoMA 本版不做 bundle 编辑器 |
 | **文件名（filename stem）** | 磁盘上 JSON 文件的 stem（如 `坦候.json` → `坦候`）。引擎加载时用它构造 content.name。精灵图 png 文件名必须与它一致，否则丢图。重命名文件 = 改 stem + 同步 png + 同步 JSON 内 name（如存在） |
-| **引用（reference）** | 通过名字指向游戏内已有对象。简单引用为字符串（如 `"ammoType": "copper"`）；武器引用为含 `name` 的对象，可附带覆盖字段 |
-| **内联（inline）** | 字段值为一个完整的嵌套对象定义（如 `"bullet": { "type": ..., "damage": ... }`）。武器条目中存在 `bullet` 键即视为内联 |
-| **覆盖字段（override field）** | 引用模式下，引用方可覆盖被引用对象的部分属性（如单位引用武器时覆盖 x、y、reload）。不改变被引用对象本身 |
+| **引用（reference）** | 通过标识指向另一个对象的关系。游戏内容引用如 `"ammoType": "copper"`；武器的编辑器使用关联不等于游戏能按名字加载独立武器文件 |
+| **内联（inline）** | 字段值为一个完整的嵌套对象定义（如 `"bullet": { "type": ..., "damage": ... }`）。完整游戏数据中可以同时存在编辑器另外维护的关联，不能仅凭内联数据判断是否存在关联 |
+| **覆盖字段（override field）** | 使用方为关联对象的某个字段单独指定的值（如武器的 x、y、reload），不改变源对象。覆盖字段保持使用方的值，未覆盖字段跟随源对象更新；取消覆盖后恢复跟随 |
 | **精灵图（sprite）** | 单位/方块的 PNG 图片素材 |
 | **图层（layer）** | 精灵图的变体文件（主体、-cell、-outline、-shadow 等），渲染时按顺序叠放 |
 | **Research（研究配置）** | Content 的科技树配置。兼容旧字符串写法和对象写法；对象含 parent、requirements、objectives、planet、root、name、requiresUnlock 七个字段。parent、Research、Produce 只引用可解锁内容；SectorComplete/OnSector 只引用战区；OnPlanet 只引用星球 |
@@ -30,6 +30,10 @@
 | 术语 | 定义 |
 |------|------|
 | **工程（project）** | 用户正在编辑的 mod 目录，可读写，显示在文件树中 |
+| **MoMA 初始化（MoMA initialization）** | 为尚无 MoMA 编辑资料的现有模组建立编辑资料，使其成为 MoMA 管理的工程；不同于迁移旧 MoMA 工程格式或找回已丢失的创作资料 |
+| **工程编辑资料（project authoring data）** | 随工程保存、用于 MoMA 编辑而非游戏运行的资料，例如备注和编辑关联。可以含无法从游戏文件完整重建的信息；不同于可再生缓存。后续结构边界见 [阶段性决策](Docs/当前决策/工程结构与可靠保存-阶段性决策.md) |
+| **武器使用关联（weapon usage link）** | MoMA 中将单位的某个武器项与独立武器定义连接的编辑关系，可附带使用方覆盖字段。解除关联后，该武器项成为保留当前有效数据的独立内联副本 |
+| **可再生缓存（rebuildable cache）** | 可以从正式资料重新生成的辅助数据，丢失不意味着创作资料丢失 |
 | **参考（reference）** | 导入的只读 mod 数据（原版或其他 mod），仅用于对比面板，不进入文件树 |
 | **模板（template）** | 预填好的最小可运行 content 骨架，新建时基于它创建 |
 | **元数据（metadata）** | 描述字段的数据：名称、类型、默认值、是否必填、引用来源。由提取工具生成 |

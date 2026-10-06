@@ -1,3 +1,12 @@
+v0.4.0-alpha.23 (2026-10-06 17:42)
+  新增: 源码编辑无障碍输入层（原生textarea与CodeMirror双向同步，视觉层标记aria-hidden）
+  调整: 新增tests/tools/examples三个入口README并重写README开发入口表；make_sample_mod.py改判为正式生成器移出gitignore；AGENTS补齐.scratch入口与evidence/work边界
+  架构: CONTEXT新增MoMA初始化、工程编辑资料、武器使用关联、可再生缓存；重写引用/内联/覆盖字段，明确独立武器管理不等于游戏独立武器文件
+  验证: 301前端（46文件）、类型检查、构建（gzip 242.64kB）与1441后端通过；不含真实WebView2宿主验证，原生结论沿用alpha.22
+  技术: source.spec.ts仅CRLF差异，blob哈希与HEAD相同，不计入改动
+
+====
+
 v0.4.0-alpha.21 (2026-10-06 08:32)
   修复: 补齐关闭工程、关于与旧入口快捷键；保存失败保留会话，超时查询原请求，源码版本优先当前项目
   验证: 1420后端、300前端、类型构建通过；真实WebView2入口、完整操作链与14个可达DPI格通过

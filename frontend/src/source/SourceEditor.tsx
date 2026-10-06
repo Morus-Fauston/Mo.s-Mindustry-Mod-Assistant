@@ -44,16 +44,22 @@ const highlight = HighlightStyle.define([
 
 function statusExtensions(props: SourceEditorProps, errorId: string): Extension {
   return [EditorState.readOnly.of(props.disabled), EditorView.editable.of(!props.disabled),
-    EditorView.contentAttributes.of({ 'aria-label': 'JSON 源码', 'aria-invalid': String(Boolean(props.error)),
-      'aria-describedby': props.error ? errorId : '', 'aria-readonly': String(props.disabled), spellcheck: 'false' })];
+    EditorView.contentAttributes.of({ 'aria-label': 'JSON 源码编辑区', 'aria-hidden': 'true',
+      'aria-invalid': String(Boolean(props.error)), 'aria-describedby': props.error ? errorId : '',
+      'aria-readonly': String(props.disabled), spellcheck: 'false' })];
 }
 
 /** CodeMirror owns presentation only; drafts and every undoable edit remain in the session. */
 export function SourceEditor(props: SourceEditorProps) {
   const mount = useRef<HTMLDivElement>(null);
+  const accessibilityInput = useRef<HTMLTextAreaElement>(null);
   const current = useRef<Instance | null>(null);
   const [composing, setComposing] = useState(false);
   const errorId = useId();
+  const syncAccessibilityInput = (text: string) => {
+    const input = accessibilityInput.current;
+    if (input && input.value !== text) input.value = text;
+  };
 
   useLayoutEffect(() => {
     if (!mount.current) return;
@@ -83,7 +89,10 @@ export function SourceEditor(props: SourceEditorProps) {
       ])),
       // No history extension, history keymap or Tab trap.
       keymap.of([...searchKeymap, ...defaultKeymap]),
-      EditorView.updateListener.of(update => forwardSourceChanges(update.transactions, text => instance.input.change(text))),
+      EditorView.updateListener.of(update => forwardSourceChanges(update.transactions, text => {
+        syncAccessibilityInput(text);
+        instance.input.change(text);
+      })),
       EditorView.domEventHandlers({
         compositionstart() { instance.input.composition(true); setComposing(true); },
         compositionend() { instance.input.composition(false); setComposing(false); },
@@ -95,6 +104,7 @@ export function SourceEditor(props: SourceEditorProps) {
       }),
     ] }) });
     current.current = instance;
+    syncAccessibilityInput(props.text);
     setComposing(false);
     return () => {
       instance.input.dispose(); instance.view.destroy();
@@ -114,6 +124,7 @@ export function SourceEditor(props: SourceEditorProps) {
     }
     const text = instance.view.state.doc.toString();
     if (text !== props.text) instance.view.dispatch(sourceEcho(text, props.text));
+    syncAccessibilityInput(props.text);
     instance.reveal(instance.view, props.focusRequest, props.disabled);
   }, [props, errorId, composing]);
 
@@ -127,6 +138,28 @@ export function SourceEditor(props: SourceEditorProps) {
       }}>格式化</button>
     </div>
     {props.error && <p className={styles.error} id={errorId} role="alert">{props.error}</p>}
-    <div ref={mount} className={styles.editor} />
+    <div className={styles.editor}>
+      <div ref={mount} className={styles.cmMount} />
+      <textarea
+        className={styles.accessibilityInput}
+        aria-label="JSON 源码"
+        aria-invalid={Boolean(props.error)}
+        aria-describedby={props.error ? errorId : undefined}
+        aria-readonly={props.disabled}
+        defaultValue={props.text}
+        disabled={false}
+        readOnly={props.disabled}
+        tabIndex={-1}
+        spellCheck={false}
+        onChange={event => {
+          const instance = current.current;
+          if (!instance || instance.props.disabled) return;
+          const next = event.currentTarget.value;
+          const previous = instance.view.state.doc.toString();
+          if (next === previous) return;
+          instance.view.dispatch({ changes: { from: 0, to: instance.view.state.doc.length, insert: next } });
+        }}
+      />
+    </div>
   </section>;
 }

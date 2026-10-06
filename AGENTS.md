@@ -51,8 +51,10 @@
 
 ### Issue tracker
 
-开发票据保存在本仓库 `.scratch/` 下的本地 Markdown 文件中。详见 `docs/agents/issue-tracker.md`。
+开发票据保存在本仓库 `.scratch/` 下的本地 Markdown 文件中，从 `.scratch/README.md` 进入。规则见 `Docs/agents/issue-tracker.md`；票据头部是单票状态的唯一来源，版本入口只维护导航。执行证据放在版本目录的 `evidence/`，可再生工作文件放在 `work/`；已有 A4 归档继续使用 `Docs/验证反馈/`。
 
 ### Domain docs
 
-本项目采用单上下文文档布局：术语在 `CONTEXT.md`，架构决策在 `Docs/ADR/`。详见 `docs/agents/domain.md`。
+本项目采用单上下文文档布局：术语在 `CONTEXT.md`，架构决策在 `Docs/ADR/`。详见 `Docs/agents/domain.md`。
+
+`Docs/` 与 `.scratch/` 是本地私有材料，不随公开 Git 克隆提供；需要继续开发时，按 `Docs/工作流/文档治理与手动交接.md` 准备必要材料。

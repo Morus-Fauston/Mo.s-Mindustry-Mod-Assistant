@@ -244,8 +244,7 @@ Mindustry-master/
 # Sample mod generated output (script artifacts, not distributed)
 sample-mod-output/
 
-# Sample mod generation script (one-off verification tool, not distributed)
-tools/make_sample_mod.py
+# tools/make_sample_mod.py is a tracked reproducible sample generator.
 
 # UI mockup SVG generator (local doc tool, Docs/ not distributed)
 tools/draw_ui_mockups.py

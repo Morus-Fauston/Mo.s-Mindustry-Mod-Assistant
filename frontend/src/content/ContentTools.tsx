@@ -10,7 +10,9 @@ const titles: Record<ContentDialog, string> = {
   create_project: '新建工程', create_content: '新建内容', rename_content: '重命名内容', delete_content: '删除内容',
 };
 
-export function ContentTools(props: ContentToolsProps) {
+export function ContentTools(props: ContentToolsProps & {
+  onRegisterCreateProject?: (open: ((button: HTMLButtonElement) => void) | null) => void;
+}) {
   const latest = useRef(props);
   const opener = useRef<HTMLButtonElement>(null);
   latest.current = props;
@@ -26,6 +28,10 @@ export function ContentTools(props: ContentToolsProps) {
   const open = (mode: ContentDialog, button: HTMLButtonElement) => {
     if (!blocked) { opener.current = button; void state.open(mode, props.activePath); }
   };
+  useLayoutEffect(() => {
+    props.onRegisterCreateProject?.(button => open('create_project', button));
+    return () => props.onRegisterCreateProject?.(null);
+  });
   return <div className={styles.tools} aria-label="工程与内容操作">
     <button type="button" className={styles.button} disabled={blocked} onClick={event => open('create_project', event.currentTarget)}>新建工程</button>
     <button type="button" className={styles.button} disabled={blocked || !props.sessionId} onClick={event => open('create_content', event.currentTarget)}>新建内容</button>

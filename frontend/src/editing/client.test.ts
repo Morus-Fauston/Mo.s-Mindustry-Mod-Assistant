@@ -6,6 +6,56 @@ import { createEditingClient, type EditingTransport } from './client';
 const initial: EditingState = { sessionId: 'one', revision: 2, documents: [],
   history: { canUndo: false, canRedo: false, undoDescription: '', redoDescription: '' }, autoSaveInterval: 180 };
 
+describe('关闭工程沿用唯一编辑串行通道', () => {
+  const closed = { project: null, state: { ...initial, sessionId: 'closed', revision: 3 } };
+  it.each([false, true])('采用空工程新身份；超时仅查询原ID并禁止重复关闭，timeout=%s', async timeout => {
+    const calls: { action: string; payload: unknown; session: string | null; id?: string }[] = [];
+    let queried: unknown;
+    const client = createEditingClient({
+      async request<T>(action: string, payload: unknown, session: string | null, id?: string) {
+        calls.push({ action, payload, session, id });
+        if (action === 'editing_state') return { ...initial, sessionId: session } as T;
+        if (timeout) throw new DesktopError('BRIDGE_TIMEOUT', '超时');
+        return closed as T;
+      },
+      async recoverRequest<T>(action: string, payload: unknown, session: string | null, id: string) {
+        queried = { action, payload, session, id }; return closed as T;
+      },
+    });
+    client.reset('one'); await client.refresh();
+    if (timeout) {
+      await expect(client.run('close_project', { decision: 'discard' })).rejects.toThrow('超时');
+      await expect(client.run('close_project', { decision: 'discard' })).rejects.toThrow();
+      await client.recover(); expect(queried).toEqual(calls[1]);
+    } else await client.run('close_project', { decision: 'discard' });
+    expect(calls[1]).toMatchObject({ payload: { decision: 'discard', expectedRevision: 2 }, session: 'one' });
+    expect(client.getSnapshot()).toMatchObject({ state: closed.state, uncertain: false, busy: false,
+      result: { action: 'close_project', data: closed } });
+    await client.refresh(); expect(calls.at(-1)?.session).toBe('closed');
+    expect(calls.filter(call => call.action === 'close_project')).toHaveLength(1);
+  });
+  it('失败不清空原state；关闭后迟到旧读取不复活工程', async () => {
+    let fail = true, reads = 0, finish!: (state: EditingState) => void;
+    const client = createEditingClient({
+      async request<T>(action: string) {
+        if (action === 'editing_state') {
+          if (++reads <= 2) return initial as T;
+          return await new Promise<EditingState>(resolve => { finish = resolve; }) as T;
+        }
+        if (fail) throw new DesktopError('SAVE_FAILED', '保存失败');
+        return closed as T;
+      }, async recoverRequest<T>() { return closed as T; },
+    });
+    client.reset('one'); await client.refresh();
+    await expect(client.run('close_project', { decision: 'save' })).rejects.toThrow('保存失败');
+    expect(client.getSnapshot().state).toEqual(initial);
+    fail = false;
+    const read = client.refresh(), rejected = expect(read).rejects.toMatchObject({ code: 'STALE_SESSION' });
+    await client.run('close_project', { decision: 'discard' }); finish(initial); await rejected;
+    expect(client.getSnapshot().state).toEqual(closed.state);
+  });
+});
+
 describe('工程创建与历史的受控会话转换', () => {
   const state = (sessionId: string, revision: number, canRedo = false): EditingState => ({ ...initial, sessionId, revision,
     history: { canUndo: !canRedo, canRedo, undoDescription: canRedo ? '' : '新建工程', redoDescription: canRedo ? '新建工程' : '' } });

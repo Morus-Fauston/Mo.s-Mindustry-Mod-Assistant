@@ -136,7 +136,7 @@ class WorkspaceService:
                 if action not in ("preferences_state", "update_settings", "update_layout", "recent_projects", "open_project", "choose_project", "read_document",
                                   "content_catalogue", "create_content", "rename_content", "delete_content", "reveal_content", "create_project",
                                   "editing_state", "validate_project", "export_project", "set_field", "set_source", "format_source", "undo", "redo", "save_opened",
-                                  "close_documents", "close_window", "preview_scene", "preview_resource",
+                                  "close_documents", "close_project", "close_window", "preview_scene", "preview_resource",
                                   "add_field", "delete_field", "set_capability", "add_group", "delete_group",
                                   "reference_candidates", "sprite_targets", "resource_state",
                                   "reference_sources", "open_reference", "reference_candidates_for_compare", "compare_reference", "release_reference",
@@ -279,6 +279,8 @@ class WorkspaceService:
             return self._editing.save(payload)
         if action == "close_documents":
             return self._editing.close(payload)
+        if action == "close_project":
+            return self._close_project(payload)
         if action == "close_window":
             self._editing.check_revision(payload)
             decision = payload.get("decision")
@@ -352,6 +354,21 @@ class WorkspaceService:
             self._editing.check_revision(payload)
         elif "expectedRevision" in payload:
             self._editing.check_revision(payload)
+
+    def _close_project(self, payload: dict) -> dict:
+        if set(payload) != {"decision", "expectedRevision"} or payload.get("decision") not in ("save", "discard"):
+            raise WorkspaceError("INVALID_CLOSE", "关闭工程请求无效，请明确选择保存或放弃。")
+        self._editing.check_revision(payload)
+        if self._session.project is None:
+            raise WorkspaceError("NO_PROJECT", "请先打开工程。")
+        services = self._prepare_services(ProjectSession(self._metadata_dir))
+        if payload["decision"] == "save":
+            self._editing.save(payload)
+        # Saving may advance revisions. The empty session must be newer than
+        # every acknowledged write, and is adopted only after saving succeeds.
+        services["revision"] = self._editing.revision + 1
+        self._adopt_services(services)
+        return {"project": None, "state": self._editing.state()}
 
     def _open(self, path: object) -> dict:
         if not isinstance(path, str) or not path or len(path) > 4096 or "\x00" in path or not Path(path).is_absolute():

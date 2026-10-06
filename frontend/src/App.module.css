@@ -5,6 +5,14 @@
 .caption { color: var(--muted); font-size: 12px; }
 .menuButton { border: 0; background: transparent; padding: 4px 8px; font: inherit; color: var(--ink); }
 .menuButton:hover { background: var(--panel2); }
+.fileMenu { position: relative; }
+.fileDropdown { position: absolute; top: 100%; left: 0; z-index: 20; min-width: 240px; padding: 5px; background: var(--panel); border: 1px solid var(--line); }
+.fileDropdown button { display: flex; justify-content: space-between; gap: 24px; width: 100%; border: 0; padding: 7px 10px; text-align: left; color: var(--ink); background: transparent; font: inherit; }
+.fileDropdown button:hover { background: var(--panel2); }
+.fileDropdown span { color: var(--muted); font-size: 12px; }
+.aboutDialog { color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 24px; min-width: 330px; }
+.aboutDialog h2 { margin-top: 0; font-size: 18px; }
+.aboutDialog > button { display: block; margin: 20px 0 0 auto; }
 .workbenchHost { display: flex; min-height: 0; min-width: 0; overflow: hidden; }
 .panelTools { display: flex; gap: 5px; margin-left: auto; flex-shrink: 0; }
 .toolbar { display: flex; flex-wrap: wrap; min-height: 41px; align-items: center; padding: 5px 14px; border-bottom: 1px solid var(--line); gap: 6px 10px; background: var(--panel); }

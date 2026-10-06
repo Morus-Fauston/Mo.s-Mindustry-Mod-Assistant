@@ -29,7 +29,7 @@ import { affectedContentPaths, reconcileContentViews, type ContentResult } from 
 
 type Startup = { phase: 'loading' } | { phase: 'ready'; data: BootstrapData } | { phase: 'error'; message: string };
 type Opening = { action: string; payload: Record<string, unknown>; sessionId: string | null; requestId: string };
-type CloseIntent = { kind: 'documents'; paths: string[] } | { kind: 'project'; path?: string } | { kind: 'window' }
+type CloseIntent = { kind: 'documents'; paths: string[] } | { kind: 'project'; path?: string } | { kind: 'close-project' } | { kind: 'window' }
   | { kind: 'content'; paths: string[]; resolve: (choice: CloseChoice) => void };
 
 const categoryLabels: Record<string, string> = {
@@ -47,6 +47,13 @@ export function App() {
   const [preferences] = useState(() => createPreferencesController(desktop, editing));
   const settings = useSyncExternalStore(preferences.subscribe, preferences.getSnapshot);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [fileMenuOpen, setFileMenuOpen] = useState(false);
+  const fileButton = useRef<HTMLButtonElement>(null);
+  const createProjectOpener = useRef<((button: HTMLButtonElement) => void) | null>(null);
+  const registerCreateProject = useCallback((open: ((button: HTMLButtonElement) => void) | null) => {
+    createProjectOpener.current = open;
+  }, []);
   const layout = settings.layout ?? { leftWidth: null, rightWidth: null, previewRatio: null, filesVisible: true, previewVisible: true };
   const documents = editor.state?.documents ?? [];
   const [draftStore] = useState(() => createDraftStore(async (path, field, text) => {
@@ -146,7 +153,7 @@ export function App() {
 
   useEffect(() => {
     const completed = editor.result;
-    if (completed && ['create_content', 'rename_content', 'delete_content', 'reveal_content', 'create_project', 'undo', 'redo'].includes(completed.action)) {
+    if (completed && ['create_content', 'rename_content', 'delete_content', 'reveal_content', 'create_project', 'close_project', 'undo', 'redo'].includes(completed.action)) {
       const result = completed.data as ContentResult;
       const state = editing.getSnapshot().state;
       if (!state) return;
@@ -176,6 +183,7 @@ export function App() {
       if (!['undo', 'redo'].includes(completed.action)) {
         setContentCompletion(completed.requestId);
         setNotice(result.cancelled ? '已取消新建工程' : completed.action === 'create_project' ? '已创建工程'
+          : completed.action === 'close_project' ? '已关闭工程'
           : completed.action === 'reveal_content' ? '已定位文件' : '内容操作已完成，可通过撤销恢复。');
       }
       return;
@@ -227,7 +235,7 @@ export function App() {
   async function recoverOperation() {
     try {
       await editing.recover(); setFailure('');
-      if (!['validate_project', 'export_project', 'confirm_generation', 'create_project', 'create_content',
+      if (!['validate_project', 'export_project', 'confirm_generation', 'create_project', 'close_project', 'create_content',
         'rename_content', 'delete_content', 'reveal_content'].includes(editing.getSnapshot().result?.action ?? '')) setNotice('已取得原操作结果');
     } catch (error) { setFailure(message(error)); throw error; }
   }
@@ -367,6 +375,7 @@ export function App() {
   function clearIntent() { intentRef.current = null; setIntent(null); setDecisionError(''); }
 
   async function executeIntent(target: CloseIntent, choice: CloseChoice) {
+    if (editing.getSnapshot().busy || editing.getSnapshot().uncertain || decisionBusy) return;
     if (target.kind === 'content') { clearIntent(); target.resolve(choice); return; }
     if (choice === 'cancel') { clearIntent(); return; }
     setDecisionBusy(true);
@@ -384,6 +393,8 @@ export function App() {
         if (choice === 'save') await editing.run('save_opened');
         clearIntent();
         await openProject(target.path, choice === 'discard');
+      } else if (target.kind === 'close-project') {
+        await editing.run('close_project', { decision: choice });
       } else {
         await editing.run('close_window', { decision: choice });
       }
@@ -393,7 +404,10 @@ export function App() {
   }
 
   async function requestIntent(target: CloseIntent) {
-    if (intentPreparing.current || intentRef.current || openingProject.current || unresolvedOpen.current || editing.getSnapshot().uncertain) return;
+    if (startup.phase !== 'ready' || draftStore.getSnapshot().composing || contentRunning.current || validating.current
+      || intentPreparing.current || intentRef.current || openingProject.current || unresolvedOpen.current
+      || editing.getSnapshot().busy || editing.getSnapshot().uncertain) return;
+    if (target.kind === 'close-project' && !projectRef.current) return;
     intentPreparing.current = true; setPreparingIntent(true);
     try {
     await preferences.flush();
@@ -426,13 +440,27 @@ export function App() {
     }
     await preferences.updateSettings(patch);
   }
-  const handlers = useRef({ requestIntent, editAction, togglePanel });
-  handlers.current = { requestIntent, editAction, togglePanel };
+  function fileAction(action: 'create' | 'open' | 'close' | 'quit') {
+    setFileMenuOpen(false);
+    if (startup.phase !== 'ready' || busy || contentRunning.current || validating.current || draftStore.getSnapshot().composing
+      || editing.getSnapshot().busy || editing.getSnapshot().uncertain || intentRef.current || document.querySelector('dialog[open]')) return;
+    if (action === 'create') { if (fileButton.current) createProjectOpener.current?.(fileButton.current); }
+    else void requestIntent({ kind: action === 'open' ? 'project' : action === 'close' ? 'close-project' : 'window' });
+  }
+  const handlers = useRef({ requestIntent, editAction, togglePanel, fileAction });
+  handlers.current = { requestIntent, editAction, togglePanel, fileAction };
   useEffect(() => {
     const close = () => { void handlers.current.requestIntent({ kind: 'window' }); };
     const keys = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.isComposing || intentRef.current || document.querySelector('dialog[open]')) return;
+      if (!(event.ctrlKey || event.metaKey)) return;
       const key = event.key.toLowerCase();
+      const file = !event.altKey && (key === 'n' && event.shiftKey ? 'create' : !event.shiftKey && key === 'o' ? 'open' : !event.shiftKey && key === 'q' ? 'quit' : null);
+      if (file) {
+        event.preventDefault();
+        if (!event.repeat && !event.isComposing && !intentRef.current && !document.querySelector('dialog[open]')) handlers.current.fileAction(file);
+        return;
+      }
+      if (event.isComposing || event.repeat || intentRef.current || document.querySelector('dialog[open]')) return;
       if (key === 'b' && !event.altKey || key === 'p' && event.altKey) {
         event.preventDefault(); handlers.current.togglePanel(key === 'b' ? 'filesVisible' : 'previewVisible'); return;
       }
@@ -557,8 +585,24 @@ export function App() {
     <header className={styles.menu}>
       <span className={styles.brand}><span className={styles.mark}>M</span> MoMA</span>
       <span className={styles.caption}>模组助手</span>
+      <div className={styles.fileMenu} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFileMenuOpen(false); }}
+        onKeyDown={event => { if (event.key === 'Escape') { setFileMenuOpen(false); fileButton.current?.focus(); } }}>
+        <button ref={fileButton} className={styles.menuButton} aria-haspopup="menu" aria-expanded={fileMenuOpen}
+          onClick={() => setFileMenuOpen(value => !value)}>文件</button>
+        {fileMenuOpen && <div role="menu" aria-label="文件操作" className={styles.fileDropdown}>
+          <button role="menuitem" disabled={!metadata || !editor.state || busy || contentBusy || editor.busy || editor.uncertain || needsRecovery}
+            onClick={() => fileAction('create')}>新建工程 <span>Ctrl+Shift+N</span></button>
+          <button role="menuitem" disabled={!metadata || busy || editor.busy || editor.uncertain || needsRecovery}
+            onClick={() => fileAction('open')}>打开工程 <span>Ctrl+O</span></button>
+          <button role="menuitem" disabled={!project || busy || editor.busy || editor.uncertain || needsRecovery}
+            onClick={() => fileAction('close')}>关闭工程</button>
+          <button role="menuitem" disabled={!metadata || busy || editor.busy || editor.uncertain || needsRecovery}
+            onClick={() => fileAction('quit')}>退出 <span>Ctrl+Q</span></button>
+        </div>}
+      </div>
       <button className={styles.menuButton} disabled={!settings.state || workspaceBusy || needsRecovery || editor.uncertain || Boolean(intent)}
         onClick={() => setSettingsOpen(true)}>设置</button>
+      <button className={styles.menuButton} disabled={!metadata || Boolean(intent)} onClick={() => setAboutOpen(true)}>关于</button>
       {settings.uncertain && <button className={styles.menuButton} disabled={settings.busy}
         onClick={() => void preferences.recover().catch(error => setFailure(message(error)))}>查询配置结果</button>}
     </header>
@@ -593,6 +637,7 @@ export function App() {
       <aside className={styles.sidebar} aria-label="文件">
         <h2 className={styles.panelHead}>文件</h2>
         <ContentTools sessionId={project?.sessionId ?? null} activePath={activePath}
+          onRegisterCreateProject={registerCreateProject}
           disabled={!metadata || !editor.state || busy || contentBusy || editor.busy || editor.uncertain || needsRecovery || Boolean(intent)}
           completionId={contentCompletion} recovery={editor.uncertain} recoveryBusy={editor.busy}
           onRecover={recoverOperation} onAction={contentAction}
@@ -730,11 +775,37 @@ export function App() {
       busy={settings.busy || settings.uncertain || editor.busy || workspaceBusy}
       error={settings.error} onUpdate={applySettings} onClose={() => setSettingsOpen(false)}
       recovery={settings.uncertain ? { busy: settings.busy, onRecover: () => preferences.recover() } : undefined} />}
-    {intent && <CloseDecision title={intent.kind === 'window' ? '关闭工作台' : intent.kind === 'project' ? '切换工程' : intent.kind === 'content' ? '继续内容操作' : '关闭内容'}
+    {aboutOpen && startup.phase === 'ready' && <AboutDialog data={startup.data} onClose={() => setAboutOpen(false)} />}
+    {intent && <CloseDecision title={intent.kind === 'window' ? '关闭工作台' : intent.kind === 'project' ? '切换工程' : intent.kind === 'close-project' ? '关闭工程' : intent.kind === 'content' ? '继续内容操作' : '关闭内容'}
       paths={documents.filter(document => (document.dirty || document.path in drafts) &&
         (!('paths' in intent) || intent.paths.includes(document.path))).map(document => document.path)}
-      busy={decisionBusy || editor.busy} error={decisionError} onChoose={choice => void executeIntent(intent, choice)} />}
+      busy={decisionBusy || editor.busy} error={decisionError} onChoose={choice => void executeIntent(intent, choice)}
+      recovery={editor.uncertain ? () => {
+        void recoverOperation().then(() => {
+          const result = editing.getSnapshot().result;
+          if (result?.action === 'close_project' || result?.action === 'close_window') clearIntent();
+          else if (result?.action === 'close_documents' && intent.kind === 'documents') {
+            draftStore.removePaths(intent.paths); clearIntent();
+          } else setDecisionError('原操作已确认，请继续选择。');
+        }).catch(error => setDecisionError(message(error)));
+      } : undefined} />}
   </div>;
+}
+
+function AboutDialog({ data, onClose }: { data: BootstrapData; onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useLayoutEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const element = dialog.current; element?.showModal();
+    return () => { element?.close(); if (previous?.isConnected) previous.focus(); };
+  }, []);
+  return <dialog ref={dialog} className={styles.aboutDialog} aria-labelledby="about-title"
+    onCancel={event => { event.preventDefault(); onClose(); }}>
+    <h2 id="about-title">关于模组助手</h2>
+    <dl className={styles.catalogue}><dt>产品版本</dt><dd>{data.application.version}</dd>
+      <dt>目标游戏版本</dt><dd>{data.metadata.gameVersion}</dd></dl>
+    <button className={styles.button} autoFocus onClick={onClose}>关闭</button>
+  </dialog>;
 }
 
 function message(error: unknown): string {

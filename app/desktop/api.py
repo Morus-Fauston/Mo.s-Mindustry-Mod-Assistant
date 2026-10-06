@@ -3,13 +3,37 @@
 from __future__ import annotations
 
 import re
+from importlib.metadata import PackageNotFoundError, version as distribution_version
 from pathlib import Path
 from threading import RLock, BoundedSemaphore
 from typing import Any, Callable
+import tomllib
 
 from app.core.metadata import Metadata
+from app.core.paths import data_dir, is_frozen
 
 PROTOCOL_VERSION = 1
+
+
+def _application_version() -> str:
+    """Prefer the checkout's version; frozen builds use bundled metadata only."""
+    project_text = None
+    if not is_frozen():
+        try:
+            project_text = (data_dir() / "pyproject.toml").read_text(encoding="utf-8")
+        except FileNotFoundError:
+            pass
+    if project_text is not None:
+        project = tomllib.loads(project_text).get("project", {})
+        version = project.get("version") if isinstance(project, dict) else None
+    else:
+        try:
+            version = distribution_version("moma")
+        except PackageNotFoundError as exc:
+            raise ValueError("Application version metadata is missing") from exc
+    if not isinstance(version, str) or not version.strip():
+        raise ValueError("Application version metadata is missing")
+    return version
 
 
 class DesktopApi:
@@ -95,6 +119,7 @@ class DesktopApi:
                         if not (self._metadata_dir / "instances" / category).is_dir():
                             raise ValueError("Metadata instance directory is missing")
                     self._bootstrap = {
+                        "application": {"version": _application_version()},
                         "metadata": {
                             "gameVersion": metadata.game_version,
                             "classCount": len(metadata.available_classes),

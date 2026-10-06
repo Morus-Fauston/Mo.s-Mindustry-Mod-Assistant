@@ -82,8 +82,13 @@ def create_test_window(*args, **kwargs):
 webview.create_window = create_test_window
 
 
+host_lifetime = int(os.environ.get("MOMA_TEST_HOST_LIFETIME_SECONDS", "120"))
+if not 30 <= host_lifetime <= 600:
+    raise ValueError("Test host lifetime must be between 30 and 600 seconds")
+
+
 def watch_stop():
-    deadline = time.monotonic() + 120
+    deadline = time.monotonic() + host_lifetime
     while not stop_path.exists() and time.monotonic() < deadline:
         time.sleep(0.1)
     # Test teardown may discard its temporary project even after a failed assertion.

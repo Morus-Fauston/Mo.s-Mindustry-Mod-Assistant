@@ -3,7 +3,7 @@ import { createDesktopClient, type DesktopHost } from './desktop';
 
 const summary = {
   ok: true as const, protocolVersion: 1,
-  data: { metadata: { gameVersion: '159', classCount: 2, categories: [] } },
+  data: { application: { version: '0.3.0a5' }, metadata: { gameVersion: '159', classCount: 2, categories: [] } },
 };
 
 describe('受控工程创建与历史转换', () => {
@@ -18,6 +18,27 @@ describe('受控工程创建与历史转换', () => {
     host.pywebview = { api: { bootstrap: async () => summary, request } };
     return { host, client: createDesktopClient(host) };
   }
+  const closed = { ...state('closed'), documents: [], history: { canUndo: false, canRedo: false, undoDescription: '', redoDescription: '' } };
+  it('关闭工程接收空工作台新身份并隔离旧读取', async () => {
+    let finish!: () => void;
+    const data = { project: null, state: closed };
+    const { client } = setup(envelope => envelope.action === 'read_document'
+      ? new Promise(resolve => { finish = () => resolve(response(envelope, {}, 'old')); })
+      : Promise.resolve(response(envelope, data, 'closed')));
+    const read = client.request('read_document', {}, 'old');
+    const rejected = expect(read).rejects.toMatchObject({ code: 'STALE_SESSION' });
+    expect(await client.request('close_project', { decision: 'discard', expectedRevision: 2 }, 'old')).toEqual(data);
+    finish(); await rejected;
+  });
+  it.each([
+    { state: closed }, { project, state: closed },
+    { project: null, state: { ...closed, documents: [{ sessionId: 'closed' }] } },
+    { project: null, state: { ...closed, history: { ...closed.history, canUndo: true } } },
+    { project: null, state: { ...closed, history: { ...closed.history, redoDescription: '旧历史' } } },
+  ])('关闭工程拒绝非空或不完整的工作台（%j）', async data => {
+    const { client } = setup(async envelope => response(envelope, data, 'closed'));
+    await expect(client.request('close_project', { decision: 'discard' }, 'old')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
   it.each(['create_project', 'undo', 'redo'])('%s仅接收身份一致的工程转换', async action => {
     const data = action === 'create_project' ? { state: state(), project } : { ...state(), project: action === 'undo' ? null : project };
     const { client } = setup(async envelope => response(envelope, data));
@@ -77,6 +98,12 @@ describe('受控工程创建与历史转换', () => {
 
 describe('桌面启动桥接', () => {
   afterEach(() => vi.useRealTimers());
+
+  it.each([undefined, null, {}, { version: '' }, { version: 3 }])('拒绝缺失或无效的产品版本（%j）', async application => {
+    const host = new EventTarget() as DesktopHost;
+    host.pywebview = { api: { bootstrap: async () => ({ ...summary, data: { ...summary.data, application } }) } };
+    await expect(createDesktopClient(host).bootstrap()).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
 
   it('等待真实宿主就绪，合并同时发生的读取', async () => {
     const host = new EventTarget() as DesktopHost;

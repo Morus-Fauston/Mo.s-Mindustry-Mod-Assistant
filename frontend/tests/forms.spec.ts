@@ -141,8 +141,7 @@ test('字段候选、不可删除约束、依赖不生效与空字符串', async
   await form.getByRole('button', { name: '添加基础属性字段', exact: true }).click();
   await page.getByRole('menuitem', { name: '显示星球', exact: true }).click();
   await expect(field(form, 'shownPlanets')).toBeVisible();
-  await field(form, 'shownPlanets').getByRole('button', { name: '显示星球的操作' }).click();
-  await page.getByRole('menuitem', { name: '删除字段', exact: true }).click();
+  await field(form, 'shownPlanets').getByRole('button', { name: '删除显示星球字段', exact: true }).click();
   await expect(field(form, 'shownPlanets')).toHaveCount(0);
   await commit(input(form, 'description'), '');
   await save(page);
@@ -202,23 +201,43 @@ for (const percent of [100, 125, 150, 200]) test.describe(`原生页面缩放${p
         const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
         const control = element.closest('[data-control]');
         const bar = control ? getComputedStyle(control, '::before') : null;
+        const inForm = Boolean(element.closest('[aria-label="内容字段"]'));
+        const booleanKind = element.matches('input[type="checkbox"]') && inForm
+          ? control?.getAttribute('data-control') === 'boolean' ? 'field'
+            : element.parentElement?.parentElement?.parentElement?.matches('section[data-group]') ? 'capability' : null
+          : null;
+        const glyph = booleanKind ? element.nextElementSibling?.querySelector('svg')?.getBoundingClientRect() : null;
         return { label: element.getAttribute('aria-label'), type: element.getAttribute('type') ?? element.tagName,
           field: element.closest('[data-field]')?.getAttribute('data-field'),
+          group: element.closest('[data-group]')?.getAttribute('data-group'), booleanKind,
+          glyphWidth: glyph?.width, glyphHeight: glyph?.height,
           x: rect.x, y: rect.y, width: rect.width, height: rect.height,
           textStart: rect.x + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft),
           inset: parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft),
           barHeight: bar?.height, color: style.color, background: style.backgroundColor,
           viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio } };
       }));
+      // Preserve every measured input even if a specific form assertion fails.
+      // Preview/generation checkboxes remain in evidence, with their own identity.
+      matrix.push({ theme, pageZoomPercent: percent, systemDpr, measurements });
+      await writeFile(testInfo.outputPath('全输入主题缩放测量.json'), JSON.stringify({
+        boundary: '实际WebView2页面缩放，系统DPI保持原值；不代替第21票四档Windows系统DPI和三窗口矩阵', matrix,
+      }, null, 2));
       const fieldInputs = measurements.filter(item => item.field && ['text', 'TEXTAREA'].includes(item.type) && item.width > 0);
       expect(fieldInputs.length).toBeGreaterThan(8);
       const insets = fieldInputs.map(item => item.inset);
       expect(Math.max(...insets) - Math.min(...insets)).toBeLessThan(.1);
-      for (const item of measurements.filter(item => item.type === 'checkbox' && item.width > 0)) {
-        expect(item.width).toBeCloseTo(20, 0); expect(item.height).toBeCloseTo(20, 0);
-        if (item.field) expect(item.barHeight).toBe('22px');
+      const formBooleans = measurements.filter(item => item.booleanKind && item.width > 0);
+      expect(formBooleans.some(item => item.field === 'flying'), '必须实际测到基础表单 flying 布尔字段，不能因选择范围为空而通过').toBe(true);
+      expect(formBooleans.some(item => item.booleanKind === 'capability'), '必须实际测到表单能力组复选框').toBe(true);
+      for (const item of formBooleans) {
+        const identity = `${theme}/${percent}% 表单布尔控件 ${JSON.stringify({ label: item.label, group: item.group, field: item.field, kind: item.booleanKind })}`;
+        expect(item.width, `${identity} 点击热区宽应为20px`).toBeCloseTo(20, 0);
+        expect(item.height, `${identity} 点击热区高应为20px`).toBeCloseTo(20, 0);
+        expect(item.glyphWidth, `${identity} 内部勾选图形宽应为14px`).toBeCloseTo(14, 0);
+        expect(item.glyphHeight, `${identity} 内部勾选图形高应为14px`).toBeCloseTo(14, 0);
+        if (item.booleanKind === 'field') expect(item.barHeight, `${identity} 马卡龙饰条高应为22px`).toBe('22px');
       }
-      matrix.push({ theme, pageZoomPercent: percent, systemDpr, measurements });
       await form.evaluate(element => { element.scrollTop = 0; });
       await page.screenshot({ path: testInfo.outputPath(`表单-${theme}-${percent}.png`) });
     }

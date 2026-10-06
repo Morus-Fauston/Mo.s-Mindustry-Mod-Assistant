@@ -7,9 +7,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # 固定具体版本：ubuntu-latest 自 2026-10-19 起逐步迁移到 Ubuntu 26.04，
+    # 迁移期内系统变动会让 apt 依赖与离屏行为静默改变。升级时显式改这里并重跑验证。
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install system libs (PySide6 headless)
         run: |
@@ -19,7 +21,7 @@ jobs:
           echo "STEP_APT_DONE"
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
